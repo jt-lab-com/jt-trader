@@ -14,6 +14,7 @@ jobs:
       - name: Build and push Docker image
         uses: docker/build-push-action@v3
         with:
+          context: .
           build-args: |
             "SITE_API_HOST=https://jt-lab.com"
           file: docker/Dockerfile
