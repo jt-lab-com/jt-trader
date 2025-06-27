@@ -1,0 +1,68 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model Runtime {
+  id           Int      @id @default(autoincrement())
+  accountId    String
+  name         String
+  prefix       String
+  strategy     String
+  strategyId   String   @default("")
+  strategyType String   @default("local")
+  strategyPath String?
+  args         String?
+  runtimeType  String   @default("market")
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+}
+
+model Scenario {
+  id           Int           @id @default(autoincrement())
+  accountId    String
+  name         String
+  strategy     String
+  strategyId   String        @default("")
+  strategyType String        @default("local")
+  strategyPath String?
+  artifacts    String?
+  runtimeType  String        @default("market")
+  start        String
+  end          String
+  args         String?
+  dynamicArgs  String?
+  isDone       Boolean       @default(false)
+  sets         ScenarioSet[]
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+}
+
+model ScenarioSet {
+  id         Int      @id @default(autoincrement())
+  scenarioId Int
+  args       String
+  artifacts  String?
+  status     Int      @default(0)
+  isDone     Boolean  @default(false)
+  scenario   Scenario @relation(fields: [scenarioId], references: [id], onDelete: Cascade)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+}
+
+model Config {
+  id        Int      @id @default(autoincrement())
+  accountId String
+  name      String
+  type      String
+  value     String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}

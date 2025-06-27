@@ -1,0 +1,1 @@
+import { lazy } from "react";export const StrategyFilesPage = lazy(() => import("./StrategyFilesPage"));

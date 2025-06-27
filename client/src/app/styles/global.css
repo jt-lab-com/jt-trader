@@ -1,0 +1,51 @@
+/* scrollbar */
+@import 'simplebar-react/dist/simplebar.min.css';
+
+.light-theme {
+    --code-editor-background: #fffffe;
+    --code-editor-secondary-background: #f9f9f9;
+    --code-editor-scrollbar-backgound: #171717;
+    --code-editor-color: #000;
+    --code-editor-selected: rgba(0, 0, 0, 0.05);
+    --code-editor-context-menu-color: rgba(0, 0, 0, 0.7);
+    --code-editor-context-menu-button-hover: #0060c0;
+    --code-editor-context-menu-hover-color: #fff;
+    --code-editor-context-menu-background: #fff;
+    --code-editor-context-menu-box-shadow: 0 2px 15px 0 rgba(0, 0, 0, 0.16);
+
+    --header-box-shadow: 0 0 15px 0 rgba(0, 0, 0, 0.1);
+
+    --splitter-background-color: rgba(0, 0, 0, 0.05);
+    --splitter-hover-background-color: rgba(0, 0, 0, 0.05);
+    --splitter-drag-background-color: rgba(0, 0, 0, 0.1);
+
+    --background-color: #fff;
+    --background-secondary-color: #fafafa;
+
+    --border-secondary-color: #eaeaea;
+}
+
+.dark-theme {
+    --code-editor-background: #1e1e1e;
+    --code-editor-secondary-background: #252525;
+    --code-editor-scrollbar-backgound: #171717;
+    --code-editor-color: #fff;
+    --code-editor-selected: rgba(255, 255, 255, 0.1);
+    --code-editor-context-menu-color: #fff;
+    --code-editor-context-menu-button-hover: #04395e;
+    --code-editor-context-menu-hover-color: #fff;
+    --code-editor-context-menu-background: #3c3c3c;
+
+    --header-box-shadow: 0 0 0 1px #333;
+
+    --splitter-background-color: rgb(50 50 50);
+    --splitter-hover-background-color: rgb(55 55 55);
+    --splitter-drag-background-color: rgb(55 55 55);
+
+    /*--background-color: #000;*/
+    --background-color: rgba(22, 28, 36, 1);
+    /*--background-secondary-color: #111;*/
+    --background-secondary-color: rgba(145, 158, 171, 0.12);
+
+    --border-secondary-color: #333;
+}

@@ -1,0 +1,21 @@
+name: Build Public Docker image
+
+on:
+  workflow_dispatch:
+
+jobs:
+
+  build:
+
+    runs-on: vfx-builder
+
+    steps:
+      - uses: actions/checkout@v3
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v3
+        with:
+          build-args: |
+            "SITE_API_HOST=https://jt-lab.com"
+          file: docker/Dockerfile
+          push: true
+          tags: jtlab/jtl-worker:${{ github.ref_name }}

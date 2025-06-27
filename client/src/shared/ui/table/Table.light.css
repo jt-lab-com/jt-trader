@@ -1,0 +1,104 @@
+.tabulator {
+  position: relative;
+  background-color: #e6e6e6;
+  font-size: 14px;
+  text-align: left;
+  overflow: hidden;
+  border-radius: 8px;
+  border: none;
+  /*border-color: transparent;*/
+  transform: translateZ(0);
+}
+
+.tabulator-tableholder::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+.tabulator-tableholder::-webkit-scrollbar-track {
+  background: #e6e6e6;
+}
+
+.tabulator-tableholder::-webkit-scrollbar-thumb {
+  background: rgba(0, 0, 0, 0.2);
+  border-radius: 10px;
+}
+
+.tabulator-tableholder::-webkit-scrollbar-thumb:hover {
+  background: rgba(0, 0, 0, 0.5);
+}
+
+.tabulator .tabulator-footer {
+  border-top: none;
+  background-color: #e6e6e6;
+  color: #555;
+  font-weight: 700;
+  white-space: nowrap;
+  user-select: none;
+}
+
+.tabulator .tabulator-header {
+  background: #e6e6e6;
+}
+
+.tabulator .tabulator-header .tabulator-col {
+  display: inline-flex;
+  position: relative;
+  box-sizing: border-box;
+  flex-direction: column;
+  justify-content: flex-start;
+  border-right: 1px solid #aaa;
+  background: transparent;
+  text-align: left;
+  vertical-align: bottom;
+  overflow: hidden;
+  border-right-color: rgba(255, 255, 255, 0.46);
+}
+
+.tabulator .tabulator-header .tabulator-col .tabulator-header-filter input, .tabulator .tabulator-header .tabulator-col .tabulator-header-filter select {
+  /*background: rgba(255, 255, 255, 0.24);*/
+  border-radius: 4px;
+  border-width: 1px;
+  /*border-color: light-dark(rgb(118, 118, 118), rgb(133, 133, 133));*/
+}
+
+.tabulator .tabulator-header .tabulator-col.tabulator-sortable.tabulator-col-sorter-element:hover {
+  /*background: rgba(0, 0, 0, 0.2);*/
+}
+
+.tabulator-row {
+  /*background: #444A51;*/
+}
+
+.tabulator-row.tabulator-row-even {
+  /*background: #323A43;*/
+}
+
+.download-csv {
+  background: transparent;
+  border-radius: 8px;
+  border: 1px solid rgba(145, 158, 171, 0.32);
+  color: black;
+  outline: none;
+  padding: 7px 12px;
+  cursor: pointer;
+}
+
+.download-csv:hover {
+  background: rgba(0, 0, 0, 0.2);
+}
+
+.tabulator .tabulator-footer .tabulator-page {
+  border: 1px solid rgba(145, 158, 171, 0.32);
+  border-radius: 4px;
+  background: rgba(255, 255, 255, 0.32);
+  color: inherit;
+  padding: 4px 8px;
+  font-weight: 400;
+
+}
+
+.tabulator .tabulator-footer .tabulator-page.active {
+  background: #9fa8b0;
+  color: white;
+}
