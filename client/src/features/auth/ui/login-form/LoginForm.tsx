@@ -9,6 +9,7 @@ import Typography from "@mui/material/Typography";
 import { useSnackbar } from "notistack";
 import { FC } from "react";
 import { FormProvider, useForm } from "react-hook-form";
+import { useAuth } from "@/entities/user";
 import { RoutePath } from "@/shared/const/router";
 import { useAppDispatch } from "@/shared/lib/hooks/useAppDispatch";
 import { useBoolean } from "@/shared/lib/hooks/useBoolean";
@@ -23,6 +24,7 @@ interface LoginFormProps {}
 
 export const LoginForm: FC<LoginFormProps> = () => {
   const dispatch = useAppDispatch();
+  const { isGuest } = useAuth();
   const { enqueueSnackbar } = useSnackbar();
   const password = useBoolean();
 
@@ -91,18 +93,22 @@ export const LoginForm: FC<LoginFormProps> = () => {
               Login
             </LoadingButton>
           </Stack>
-          <Stack justifyContent={"center"} my={2}>
-            <Divider variant={"fullWidth"}>
-              <Typography textTransform={"uppercase"} variant={"overline"} color={"text.disabled"}>
-                or
-              </Typography>
-            </Divider>
-          </Stack>
-          <Stack justifyContent={"center"} mb={2}>
-            <Button component={RouterLink} href={RoutePath.strategies}>
-              Continue without login
-            </Button>
-          </Stack>
+          {isGuest && (
+            <>
+              <Stack justifyContent={"center"} my={2}>
+                <Divider variant={"fullWidth"}>
+                  <Typography textTransform={"uppercase"} variant={"overline"} color={"text.disabled"}>
+                    or
+                  </Typography>
+                </Divider>
+              </Stack>
+              <Stack justifyContent={"center"} mb={2}>
+                <Button component={RouterLink} href={RoutePath.strategies}>
+                  Continue without login
+                </Button>
+              </Stack>
+            </>
+          )}
         </Stack>
       </form>
     </FormProvider>
