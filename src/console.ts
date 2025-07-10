@@ -104,7 +104,7 @@ async function bootstrap() {
   const orderService = app.get(OrderService);
   orderService.updateConfig({
     marketOrderSpread,
-    pricePrecision: symbolInfo?.precision?.price,
+    pricePrecision: +symbolInfo?.info.pricePrecision,
     defaultLeverage,
     balance,
     takerFee,
