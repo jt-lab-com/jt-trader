@@ -100,11 +100,12 @@ async function bootstrap() {
   dataFeed.setDataFlow('subscriber');
 
   const symbolInfo = processFactory.getSymbolInfo(symbol);
+  const pricePrecision = isNaN(+symbolInfo?.info.pricePrecision) ? 2 : +symbolInfo?.info.pricePrecision;
 
   const orderService = app.get(OrderService);
   orderService.updateConfig({
     marketOrderSpread,
-    pricePrecision: +symbolInfo?.info.pricePrecision,
+    pricePrecision,
     defaultLeverage,
     balance,
     takerFee,
