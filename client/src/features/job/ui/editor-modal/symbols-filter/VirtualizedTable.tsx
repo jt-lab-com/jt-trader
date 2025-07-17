@@ -11,10 +11,10 @@ import TableHead from "@mui/material/TableHead";
 import TableRow from "@mui/material/TableRow";
 import TableSortLabel from "@mui/material/TableSortLabel";
 import Typography from "@mui/material/Typography";
-import { ExchangeMarkets } from "@packages/types";
 import { get } from "lodash";
 import { FC, forwardRef, useCallback, useMemo } from "react";
 import { TableVirtuoso, TableComponents } from "react-virtuoso";
+import { ExchangeMarkets } from "@/entities/markets";
 import { fCurrency } from "@/shared/lib/utils/format-number";
 import { SortOrder } from "@/shared/types";
 
@@ -25,7 +25,10 @@ interface VirtualizedTableProps {
   order: SortOrder;
   orderBy: string;
   loading: boolean;
-  onSortChange: (key: "symbol" | "quoteVolume" | "limits.leverage.max", order: SortOrder) => void;
+  onSortChange: (
+    key: "symbol" | "quoteVolume" | "limits.leverage.max" | "minSizeUSDT",
+    order: SortOrder
+  ) => void;
   onToggleSymbol: (symbol: string) => void;
 }
 
@@ -85,9 +88,16 @@ export const VirtualizedTable: FC<VirtualizedTableProps> = (props) => {
       currency: false,
       checkbox: false,
     },
+    {
+      label: "Min USDT",
+      width: 200,
+      rowKey: "minSizeUSDT" as const,
+      currency: true,
+      checkbox: false,
+    },
   ];
 
-  const createSortHandler = (key: "symbol" | "quoteVolume" | "limits.leverage.max") => () => {
+  const createSortHandler = (key: "symbol" | "quoteVolume" | "limits.leverage.max" | "minSizeUSDT") => () => {
     const isAsc = orderBy === key && order === "asc";
     onSortChange(key, isAsc ? "desc" : "asc");
   };

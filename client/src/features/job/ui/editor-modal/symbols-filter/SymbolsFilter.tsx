@@ -3,9 +3,10 @@ import Grid from "@mui/material/Grid";
 import Popover from "@mui/material/Popover";
 import { useTheme } from "@mui/material/styles";
 import TextField from "@mui/material/TextField";
-import { ExchangeMarkets, StrategyDefinedArgsFilters } from "@packages/types";
+import { StrategyDefinedArgsFilters } from "@packages/types";
 import { FC, useEffect, useRef, useState, MouseEvent, ChangeEvent, useCallback } from "react";
 import { useFormContext, useWatch } from "react-hook-form";
+import { ExchangeMarkets } from "@/entities/markets";
 import { useBoolean } from "@/shared/lib/hooks/useBoolean";
 import { useDebounceValue } from "@/shared/lib/hooks/useDebounceValue";
 import { SortOrder } from "@/shared/types";
@@ -27,7 +28,7 @@ interface FiltersState {
 
 interface SortState {
   order: SortOrder;
-  orderBy: "symbol" | "quoteVolume" | "limits.leverage.max";
+  orderBy: "symbol" | "quoteVolume" | "limits.leverage.max" | "minSizeUSDT";
 }
 
 export const SymbolsFilter: FC<SymbolsFilterProps> = (props) => {
@@ -111,7 +112,10 @@ export const SymbolsFilter: FC<SymbolsFilterProps> = (props) => {
     setFiltersState((prev) => ({ ...prev, minLeverage: e.target.value }));
   };
 
-  const handleSortChange = (orderBy: "symbol" | "quoteVolume" | "limits.leverage.max", order: SortOrder) => {
+  const handleSortChange = (
+    orderBy: "symbol" | "quoteVolume" | "limits.leverage.max" | "minSizeUSDT",
+    order: SortOrder
+  ) => {
     setSortState({ order, orderBy });
   };
 
