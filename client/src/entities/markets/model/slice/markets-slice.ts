@@ -1,6 +1,6 @@
 import { ExchangeMarketsResponsePayload } from "@packages/types";
 import { createSlice, PayloadAction } from "@reduxjs/toolkit";
-import { MarketsSchema } from "../types";
+import { ExchangeMarkets, MarketsSchema } from "../types";
 
 const initialState: MarketsSchema = {
   __inited: false,
@@ -14,7 +14,10 @@ const marketsSlice = createSlice({
     setInited: (state) => {
       state.__inited = true;
     },
-    setMarkets: (state, action: PayloadAction<ExchangeMarketsResponsePayload>) => {
+    setMarkets: (
+      state,
+      action: PayloadAction<Omit<ExchangeMarketsResponsePayload, "data"> & { data: ExchangeMarkets[] }>
+    ) => {
       const { exchange, data } = action.payload;
 
       state.data[exchange] = {

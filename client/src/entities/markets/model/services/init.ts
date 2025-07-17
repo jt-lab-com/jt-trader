@@ -12,11 +12,15 @@ export const initMarkets = createAsyncThunk<void, void, ThunkConfig<void>>("mark
   if (isInited) return;
 
   subscribe(WS_SERVER_EVENTS.EXCHANGE_MARKETS_RESPONSE, (payload) => {
-    payload.data.forEach((market) => {
-      market.minSizeUSDT = market.contractSize * market.close * market.precision.amount;
-    });
-
-    dispatch(marketsActions.setMarkets(payload));
+    dispatch(
+      marketsActions.setMarkets({
+        exchange: payload.exchange,
+        data: payload.data.map((market) => ({
+          ...market,
+          minSizeUSDT: market.contractSize * market.close * market.precision.amount,
+        })),
+      })
+    );
   });
 
   dispatch(marketsActions.setInited());
