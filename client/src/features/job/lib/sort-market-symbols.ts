@@ -1,10 +1,10 @@
-import { ExchangeMarkets } from "@packages/types";
+import { ExchangeMarkets } from "@/entities/markets";
 import { SortOrder } from "@/shared/types";
 
 interface SortMarketSymbolsOptions {
   selectedSymbols: string[];
   order: SortOrder;
-  orderBy: "symbol" | "quoteVolume" | "limits.leverage.max";
+  orderBy: "symbol" | "quoteVolume" | "limits.leverage.max" | "minSizeUSDT";
 }
 
 export const sortMarketSymbols = (markets: ExchangeMarkets[], sortOptions: SortMarketSymbolsOptions) => {
@@ -34,6 +34,13 @@ export const sortMarketSymbols = (markets: ExchangeMarkets[], sortOptions: SortM
       if (!b.limits.leverage.max && a.limits.leverage.max) return -1;
       if (!a.limits.leverage.max && !b.limits.leverage.max) return 0;
       return (a.limits.leverage.max - b.limits.leverage.max) * (isAsc ? -1 : 1);
+    }
+
+    if (orderBy === "minSizeUSDT") {
+      if (!a.minSizeUSDT && b.minSizeUSDT) return 1;
+      if (!b.minSizeUSDT && a.minSizeUSDT) return -1;
+      if (!a.minSizeUSDT && !b.minSizeUSDT) return 0;
+      return (a.minSizeUSDT - b.minSizeUSDT) * (isAsc ? -1 : 1);
     }
 
     return 0;

@@ -1,6 +1,10 @@
-import { ExchangeMarkets } from "@packages/types";
+import { ExchangeMarkets as WSExchangeMarkets } from "@packages/types";
 
 type ExchangeName = string;
+
+export interface ExchangeMarkets extends WSExchangeMarkets {
+  minSizeUSDT: number;
+}
 
 export interface MarketsSchema {
   __inited: boolean;
