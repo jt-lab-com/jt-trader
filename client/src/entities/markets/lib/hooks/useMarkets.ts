@@ -1,10 +1,10 @@
-import { ExchangeMarkets } from "@packages/types";
 import { useEffect } from "react";
 import { useSelector } from "react-redux";
 import { useAppDispatch } from "@/shared/lib/hooks/useAppDispatch";
 import { getMarketsData } from "../../model/selectors";
 import { fetchExchangeMarkets } from "../../model/services/fetch-exchange-markets";
 import { initMarkets } from "../../model/services/init";
+import { ExchangeMarkets } from "../../model/types";
 
 export const useMarkets = (exchange: string): ExchangeMarkets[] | null => {
   const dispatch = useAppDispatch();
