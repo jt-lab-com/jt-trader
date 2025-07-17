@@ -44,6 +44,9 @@ export class CCXTService implements ExchangeSDKInterface {
       }
       exchange.options['adjustForTimeDifference'] = true;
       exchange.options['defaultType'] = 'swap';
+      exchange.options['marginMode'] = 'cross'; // or 'cross' or 'isolated'
+      exchange.options['defaultMarginMode'] = 'cross'; // 'cross' or 'isolated'
+
 
       this.sdk.set(key, exchange);
     }
