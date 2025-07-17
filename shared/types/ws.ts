@@ -570,6 +570,11 @@ export interface ExchangeMarkets {
   symbol: string;
   base: string;
   quoteVolume: number;
+  contractSize: number;
+  close: number;
+  precision: {
+    amount: number;
+  };
   limits: ExchangeMarketLimits;
 }
 

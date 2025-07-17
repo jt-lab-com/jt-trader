@@ -1,4 +1,4 @@
-import { ExchangeMarkets } from "@packages/types";
+import { ExchangeMarkets } from "@/entities/markets";
 import { SymbolFilters, filterMarketSymbols } from "./filter-market-symbols";
 
 export const getAvailableMarketSymbols = (
