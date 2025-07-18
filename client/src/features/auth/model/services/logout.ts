@@ -11,5 +11,5 @@ export const logout = createAsyncThunk<void, void, ThunkConfig<void>>("auth/logo
   localStorage.removeItem(LS_ACCESS_SECRET_KEY);
 
   dispatch(userActions.logout());
-  dispatch(auth(true));
+  dispatch(auth({ forceReconnect: true }));
 });

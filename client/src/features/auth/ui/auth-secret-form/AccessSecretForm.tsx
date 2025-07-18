@@ -4,6 +4,7 @@ import IconButton from "@mui/material/IconButton";
 import InputAdornment from "@mui/material/InputAdornment";
 import Stack from "@mui/material/Stack";
 import Typography from "@mui/material/Typography";
+import { useSnackbar } from "notistack";
 import { FC } from "react";
 import { FormProvider, useForm } from "react-hook-form";
 import { LS_ACCESS_SECRET_KEY } from "@/shared/const/local-storage";
@@ -19,6 +20,7 @@ interface AccessSecretFormProps {}
 
 export const AccessSecretForm: FC<AccessSecretFormProps> = () => {
   const dispatch = useAppDispatch();
+  const { enqueueSnackbar } = useSnackbar();
   const hidden = useBoolean();
   const methods = useForm<{ accessSecret: string }>({
     resolver: yupResolver(yup.object().shape({ accessSecret: yup.string().required() })),
@@ -30,7 +32,14 @@ export const AccessSecretForm: FC<AccessSecretFormProps> = () => {
 
   const handleLogin = methods.handleSubmit(({ accessSecret }) => {
     localStorage.setItem(LS_ACCESS_SECRET_KEY, accessSecret);
-    dispatch(auth(true));
+    dispatch(
+      auth({
+        forceReconnect: true,
+        onAuthFailure: () => {
+          enqueueSnackbar({ message: "Invalid secret key", variant: "error" });
+        },
+      })
+    );
   });
 
   return (

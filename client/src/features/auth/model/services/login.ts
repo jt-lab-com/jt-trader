@@ -25,7 +25,7 @@ export const login = createAsyncThunk<void, LoginParams, ThunkConfig<string>>(
           }
 
           localStorage.setItem(LS_ACCESS_TOKEN_KEY, payload.accessToken.replace("Bearer ", ""));
-          dispatch(auth(true));
+          dispatch(auth({ forceReconnect: true }));
           res();
         });
 
