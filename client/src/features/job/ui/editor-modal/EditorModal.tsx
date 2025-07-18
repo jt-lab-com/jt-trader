@@ -109,6 +109,7 @@ export const EditorModal: FC<EditorModalProps> = (props) => {
       "args",
       definedArgs
         ?.filter((arg) => arg.key !== "symbols")
+        .filter((arg) => arg.mode !== "tester")
         .map(({ key, defaultValue, options }) => ({
           key,
           value: defaultValue?.toString() ?? "",
