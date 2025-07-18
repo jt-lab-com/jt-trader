@@ -64,9 +64,9 @@ export class EventsGateway implements OnGatewayDisconnect, OnGatewayConnection {
   }
 
   async handleConnection(client: SocketClient, ...args: any[]): Promise<void> {
-    const { accessToken } = client.handshake.auth;
+    const { accessToken, accessSecret } = client.handshake.auth;
 
-    const { error, data } = await this.connectionService.authUser(client, accessToken);
+    const { error, data, errorCode } = await this.connectionService.authUser(client, accessToken, accessSecret);
 
     if (!error && !!data.id) {
       client.emit('message', { event: 'authenticated', payload: { ...data, engineMode: process.env.ENGINE_MODE } });
@@ -76,7 +76,7 @@ export class EventsGateway implements OnGatewayDisconnect, OnGatewayConnection {
       return;
     }
 
-    client.emit('message', { event: 'unauthorized' });
+    client.emit('message', { event: 'unauthorized', payload: { code: errorCode } });
     this.logger.error({ socketId: client.id }, 'Socket auth error');
     // client.disconnect();
   }
