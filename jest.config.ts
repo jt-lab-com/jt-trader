@@ -17,6 +17,8 @@ const config: Config = {
   globals: {
     ARGS: {},
   },
+  projects: ['src', 'client/src'],
+  testPathIgnorePatterns: ['strategy-source', '.rollup'],
 };
 
 export default config;
