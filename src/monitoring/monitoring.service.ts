@@ -31,7 +31,7 @@ export class MonitoringService {
 
   public async checkProxy() {
     const logData = [];
-    for (let url of ['https://icanhazip.com', 'https://ipinfo.io/ip']) {
+    for (const url of ['https://icanhazip.com', 'https://ipinfo.io/ip']) {
       try {
         const { data } = await axios({
           method: 'GET',
@@ -47,7 +47,7 @@ export class MonitoringService {
     return logData;
   }
 
-  private formatReport(data: Object): Object {
+  private formatReport(data: object): object {
     const result = [];
 
     result.push(

@@ -95,7 +95,7 @@ export const Table = <T extends object>(props: TabulatorTableProps<T>) => {
 };
 
 const TabulatorTable = <T extends object>(props: TabulatorTableProps<T>) => {
-  const { data, title, fullHeight, rowHeight, rowFormatter, onDataFiltered } = props;
+  const { data, title, rowHeight, rowFormatter, onDataFiltered } = props;
 
   const instanceRef = useRef<Tabulator | null>(null);
   const nodeRef = useRef<HTMLDivElement | null>(null);

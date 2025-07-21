@@ -1,6 +1,6 @@
 import { StrategyArgsType } from '../../exchange/interface/strategy.interface';
 import { ExchangeKeysType } from '../../../common/interface/exchange-sdk.interface';
-import { Balance, Exchange, OrderBook, Ticker } from 'ccxt';
+import { Balance, Exchange, Ticker } from 'ccxt';
 import { DataFeedFactory } from '../../data-feed/data-feed.factory';
 import { CCXTService } from '../../exchange/ccxt.service';
 import { PinoLogger } from 'nestjs-pino';
@@ -28,7 +28,7 @@ export class ScriptProcessContextBase {
   protected callbacks: Map<string, ((args: any[], data?: any) => void | Promise<void>)[]>;
   protected ticker: { [symbol: string]: Ticker };
   protected lastOnTimer: number;
-  protected tickIsLocked: boolean = false;
+  protected tickIsLocked = false;
   protected _callInstance: (method: string, data?: any, emitOnly?: boolean) => Promise<any>;
   protected setTimeouts: any[] = [];
 
@@ -70,7 +70,7 @@ export class ScriptProcessContextBase {
   }
 
   public systemLog(...args) {
-    this.systemLogger.info(args[1] ? args[1] : {}, args[0])
+    this.systemLogger.info(args[1] ? args[1] : {}, args[0]);
   }
 
   public debug(...args) {
@@ -227,7 +227,7 @@ export class ScriptProcessContextBase {
     }
 
     const items = this.callbacks.get(method);
-    for (let callback of items) {
+    for (const callback of items) {
       callback(args, data);
     }
   }

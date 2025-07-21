@@ -1,5 +1,5 @@
-import { InjectPinoLogger, Logger, PinoLogger } from 'nestjs-pino';
 import { ExceptionHandler } from '@nestjs/core/errors/exception-handler';
+import { InjectPinoLogger, Logger, PinoLogger } from 'nestjs-pino';
 import { RuntimeException } from '@nestjs/core/errors/exceptions';
 import { EventEmitter2 } from '@nestjs/event-emitter';
 import { ScriptService } from '../environment/script/script.service';
@@ -23,17 +23,16 @@ export class MainProcessExceptionHandler implements ExceptionHandler {
       key?: string;
       loc?: any;
       accountId?: any;
-      args?: {}
+      args?: object;
     },
   ): void => {
-
     let stack;
     try {
       stack = e.stack;
     } catch (e) {
       stack = e.toString();
     }
-    this.systemLogger.error({ stack: stack.split("\n"), cause: e.cause, args: e.args  }, e.toString());
+    this.systemLogger.error({ stack: stack.split('\n'), cause: e.cause, args: e.args }, e.toString());
 
     if (typeof e.cause !== 'string') {
       e.cause = undefined;
@@ -58,7 +57,7 @@ export class MainProcessExceptionHandler implements ExceptionHandler {
           });
         }
 
-        this.scriptService.stopAll(true, true).finally(() => {});
+        void this.scriptService.stopAll(true, true);
         this.emitter.emit('client.update-background-jobs-list');
         break;
       }
@@ -84,7 +83,7 @@ export class MainProcessExceptionHandler implements ExceptionHandler {
       case ExceptionReasonType.UserScript: {
         const { stack } = e;
         let formattedStack = stack;
-        for (let entry of ['at VM2', 'at runInContext', 'at null']) {
+        for (const entry of ['at VM2', 'at runInContext', 'at null']) {
           formattedStack = stack && stack?.indexOf(entry) > -1 ? stack.slice(0, stack.indexOf(entry)) : stack;
         }
         // formattedStack = formattedStack.indexOf('node_modules') > -1 ? e.toString() : formattedStack;
@@ -115,7 +114,7 @@ export class MainProcessExceptionHandler implements ExceptionHandler {
       }
 
       default: {
-        this.scriptService.stopAll(true, true).finally(() => {});
+        void this.scriptService.stopAll(true, true);
         this.emitter.emit('client.update-background-jobs-list');
         this.emitter.emit('client.fatal-error-event');
         this.processFactory.getAllRuntimeLoggers().map((logger) => {

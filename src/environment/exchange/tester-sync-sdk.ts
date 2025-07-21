@@ -2,8 +2,6 @@ import { HistoryBarsService } from '../history-bars/history-bars.service';
 import { Ticker } from 'ccxt';
 import { EventEmitterInterface } from '../../common/interface/event-emitter.interface';
 import { SyncEventEmitter } from '../../common/sync-event-emitter';
-import { OrderInterface } from './interface/order.interface';
-import { PinoLogger } from 'nestjs-pino';
 import { OrderServiceInterface } from './interface/order-service.interface';
 
 export const TICK_EVENT = 'tick-event';
