@@ -1,13 +1,13 @@
 import { Log } from "@packages/types";
 import { useEffect } from "react";
 import { useSelector } from "react-redux";
-import { ConsoleLogFormat, TableLogFormat } from "@/entities/log/model/types";
 import { useAppDispatch } from "@/shared/lib/hooks/useAppDispatch";
 import { getFilteredProcessLogs, getProcessLogs } from "../../model/selectors";
 import { fetchLogs } from "../../model/services/fetch";
 import { initLogs } from "../../model/services/init";
 import { subscribeLogsUpdate } from "../../model/services/subscribe";
 import { logsActions } from "../../model/slice/logs-slice";
+import { ConsoleLogFormat, TableLogFormat } from "../../model/types";
 
 interface UseLogsReturnParams {
   logs: Log[];

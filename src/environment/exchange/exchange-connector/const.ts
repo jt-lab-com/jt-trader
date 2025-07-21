@@ -40,12 +40,12 @@ const BINANCE = {
   fields: [
     {
       name: BINANCE_KEYS.API_KEY,
-      type: 'string' as 'string',
+      type: 'string' as const,
       label: 'API Key',
     },
     {
       name: BINANCE_KEYS.API_SECRET,
-      type: 'string' as 'string',
+      type: 'string' as const,
       label: 'API Secret',
     },
   ],
@@ -59,12 +59,12 @@ const BINANCE_USDM = {
   fields: [
     {
       name: BINANCE_USDM_KEYS.API_KEY,
-      type: 'string' as 'string',
+      type: 'string' as const,
       label: 'API Key',
     },
     {
       name: BINANCE_USDM_KEYS.API_SECRET,
-      type: 'string' as 'string',
+      type: 'string' as const,
       label: 'API Secret',
     },
   ],
@@ -78,12 +78,12 @@ const BINANCE_US = {
   fields: [
     {
       name: BINANCE_USDM_KEYS.API_KEY,
-      type: 'string' as 'string',
+      type: 'string' as const,
       label: 'API Key',
     },
     {
       name: BINANCE_USDM_KEYS.API_SECRET,
-      type: 'string' as 'string',
+      type: 'string' as const,
       label: 'API Secret',
     },
   ],
@@ -97,12 +97,12 @@ const BINANCE_TESTNET = {
   fields: [
     {
       name: BINANCE_TESTNET_KEYS.API_KEY,
-      type: 'string' as 'string',
+      type: 'string' as const,
       label: 'API Key',
     },
     {
       name: BINANCE_TESTNET_KEYS.API_SECRET,
-      type: 'string' as 'string',
+      type: 'string' as const,
       label: 'API Secret',
     },
   ],
@@ -116,17 +116,17 @@ const OKX = {
   fields: [
     {
       name: OKX_KEYS.API_KEY,
-      type: 'string' as 'string',
+      type: 'string' as const,
       label: 'API Key',
     },
     {
       name: OKX_KEYS.API_SECRET,
-      type: 'string' as 'string',
+      type: 'string' as const,
       label: 'API Secret',
     },
     {
       name: OKX_KEYS.PASSWORD,
-      type: 'string' as 'string',
+      type: 'string' as const,
       label: 'Password',
     },
   ],
@@ -140,17 +140,17 @@ const GATE_IO = {
   fields: [
     {
       name: GATE_IO_KEYS.API_KEY,
-      type: 'string' as 'string',
+      type: 'string' as const,
       label: 'API Key',
     },
     {
       name: GATE_IO_KEYS.API_SECRET,
-      type: 'string' as 'string',
+      type: 'string' as const,
       label: 'API Secret',
     },
     {
       name: GATE_IO_KEYS.USER_ID,
-      type: 'string' as 'string',
+      type: 'string' as const,
       label: 'User ID',
     },
   ],
@@ -172,12 +172,12 @@ const BYBIT = {
   fields: [
     {
       name: BYBIT_KEYS.API_KEY,
-      type: 'string' as 'string',
+      type: 'string' as const,
       label: 'API Key',
     },
     {
       name: BYBIT_KEYS.API_SECRET,
-      type: 'string' as 'string',
+      type: 'string' as const,
       label: 'API Secret',
     },
   ],

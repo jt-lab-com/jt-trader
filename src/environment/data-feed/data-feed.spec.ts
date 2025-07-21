@@ -7,15 +7,13 @@ describe('DataFeed', () => {
   const [method, symbol] = args;
   const errorMsg = 'Failed!';
 
-  beforeEach(() => {
-
-  });
+  beforeEach(() => {});
 
   describe('test scenario', () => {
     let tickCounter = 0;
 
-    let sdk: Exchange = {
-      [method](s: string, params?: {}) {
+    const sdk: Exchange = {
+      [method](s: string, params?: object) {
         return Promise.resolve({} as Ticker);
       },
     } as unknown as Exchange;
@@ -34,7 +32,7 @@ describe('DataFeed', () => {
       expect(msg).toBe('DataFeed retry called');
     });
 
-    jest.spyOn(sdk, method).mockImplementation((s: string, params?: {}) => {
+    jest.spyOn(sdk, method).mockImplementation((s: string, params?: object) => {
       tickCounter++;
       return new Promise((res, rej) => {
         if (tickCounter % 3 === 0) rej(new Error(errorMsg));
