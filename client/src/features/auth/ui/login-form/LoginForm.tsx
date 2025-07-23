@@ -50,7 +50,7 @@ export const LoginForm: FC<LoginFormProps> = () => {
         <Stack justifyContent={"center"}>
           <Stack direction={"column"} alignItems={"center"} mb={5}>
             <Logo width={80} height={80} />
-            <Typography component={"h1"} variant={"h4"} mt={5}>
+            <Typography component={"h1"} variant={"h4"} textAlign={"center"} mt={5}>
               Log in to Your JT Lab Account
             </Typography>
           </Stack>

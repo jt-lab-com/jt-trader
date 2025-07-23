@@ -1,0 +1,2 @@
+npx eslint src/ client/src/ --ext .ts,.tsx --ignore-pattern strategy-source/
+yarn test --testPathIgnorePatterns="strategy-source" --testPathIgnorePatterns=".rollup"

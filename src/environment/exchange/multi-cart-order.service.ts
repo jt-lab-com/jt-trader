@@ -52,7 +52,7 @@ export class MultiCartOrderService implements OrderServiceInterface {
 
   public checkUpdates(): OrderInterface[] | undefined {
     const updates: OrderInterface[] = [];
-    for (let [symbol, cart] of this.carts.entries()) {
+    for (const [symbol, cart] of this.carts.entries()) {
       const items = cart.checkUpdates();
       if (items && items.length > 0) {
         updates.push(...items);
@@ -63,20 +63,20 @@ export class MultiCartOrderService implements OrderServiceInterface {
   }
 
   updateConfig(config: SystemParamsInterface & { balance?: number }): void {
-    for (let [, cart] of this.carts.entries()) {
+    for (const [, cart] of this.carts.entries()) {
       cart.updateConfig(config);
     }
   }
 
   enableHedgeMode(): void {
-    for (let [, cart] of this.carts.entries()) {
+    for (const [, cart] of this.carts.entries()) {
       cart.enableHedgeMode();
     }
   }
 
   getBalance() {
     let [balance, marginBalance]: number[] = [0, 0];
-    for (let [, cart] of this.carts.entries()) {
+    for (const [, cart] of this.carts.entries()) {
       const { balance: itemBalance, marginBalance: itemMarginBalance } = cart.getBalance();
       balance += itemBalance - this.balance;
     }
@@ -85,8 +85,8 @@ export class MultiCartOrderService implements OrderServiceInterface {
   }
 
   getBalanceFee(): number {
-    let fee: number = 0;
-    for (let [, cart] of this.carts.entries()) {
+    let fee = 0;
+    for (const [, cart] of this.carts.entries()) {
       fee += cart.getBalanceFee();
     }
 
@@ -94,7 +94,7 @@ export class MultiCartOrderService implements OrderServiceInterface {
   }
 
   getConfig(): SystemParamsInterface {
-    for (let [, cart] of this.carts.entries()) {
+    for (const [, cart] of this.carts.entries()) {
       return cart.getConfig();
     }
   }
@@ -105,16 +105,16 @@ export class MultiCartOrderService implements OrderServiceInterface {
 
   getOrders(): OrderInterface[] {
     const set: OrderInterface[] = [];
-    for (let [, cart] of this.carts.entries()) {
+    for (const [, cart] of this.carts.entries()) {
       set.push(...cart.getOrders());
     }
 
     return set;
   }
 
-  getPositions(): Object[] {
+  getPositions(): object[] {
     const set: OrderInterface[] = [];
-    for (let [, cart] of this.carts.entries()) {
+    for (const [, cart] of this.carts.entries()) {
       set.push(...cart.getPositions());
     }
 
@@ -122,14 +122,14 @@ export class MultiCartOrderService implements OrderServiceInterface {
   }
 
   getPricePrecision(): number {
-    for (let [, cart] of this.carts.entries()) {
+    for (const [, cart] of this.carts.entries()) {
       return cart.getPricePrecision();
     }
   }
 
   getProfit(): number {
-    let profit: number = 0;
-    for (let [, cart] of this.carts.entries()) {
+    let profit = 0;
+    for (const [, cart] of this.carts.entries()) {
       profit += cart.getProfit();
     }
 

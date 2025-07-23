@@ -5,13 +5,13 @@ import { AccountService } from '../environment/account/account.service';
 import { UserConnections, AuthUserResult, ExchangeTickerSubscribeParams, SocketClient } from './types';
 import { UserAuthData } from '../common/api/types';
 import { ACCOUNT_DEVELOPER_ACCESS } from '../environment/account/const';
-import * as cookie from 'cookie';
+import { WS_AUTH_ERROR_CODE } from '@packages/types';
 
 @Injectable()
 export class ConnectionService {
   private readonly _connections: Map<string, UserConnections> = new Map();
   private readonly isStandalone: boolean;
-  private readonly accessSecret: string;
+  private readonly accessSecret: string | null;
 
   constructor(
     @InjectPinoLogger(ConnectionService.name) private readonly logger: PinoLogger,
@@ -19,17 +19,16 @@ export class ConnectionService {
     private readonly accountService: AccountService,
   ) {
     this.isStandalone = process.env.STANDALONE_APP === '1';
-    this.accessSecret = process.env.ACCESS_SECRET;
+    this.accessSecret = process.env.ACCESS_SECRET ?? null;
   }
 
-  async authUser(client: SocketClient, accessToken: string): Promise<AuthUserResult> {
-    if (this.accessSecret) {
-      const cookies = cookie.parse(client.handshake.headers.cookie);
-      const secret = cookies['accessSecret'];
-      if (!secret || secret !== this.accessSecret) {
-        this.logger.error({ id: client.id, message: 'access secret does not match' }, 'Auth user error');
-        return { error: true, data: null };
-      }
+  async authUser(client: SocketClient, accessToken: string, accessSecret?: string): Promise<AuthUserResult> {
+    if (this.accessSecret && accessSecret !== this.accessSecret) {
+      return {
+        error: true,
+        errorCode: WS_AUTH_ERROR_CODE.INVALID_SECRET,
+        data: null,
+      };
     }
 
     try {
@@ -70,6 +69,7 @@ export class ConnectionService {
 
     return {
       error: true,
+      errorCode: WS_AUTH_ERROR_CODE.INVALID_ACCESS_TOKEN,
       data: null,
     };
   }

@@ -10,6 +10,7 @@ export interface UserConnections {
 
 export interface AuthUserResult {
   error: boolean;
+  errorCode?: number;
   data: UserAuthData | null;
 }
 

@@ -1,8 +1,12 @@
 import type { Exchange } from './exchange';
 import { ExchangeField } from './exchange';
 import { Ticker } from 'ccxt';
-import { ScenarioSet, ScenarioSetArg } from '../../client/src/entities/scenario/model/types';
-import { TESTER_SCENARIO_DEFAULTS } from '../../src/environment/account/const';
+import { ScenarioSet } from '../../client/src/entities/scenario/model/types';
+
+export enum WS_AUTH_ERROR_CODE {
+  INVALID_ACCESS_TOKEN = 4001,
+  INVALID_SECRET = 4002,
+}
 
 export enum WS_CLIENT_EVENTS {
   LOGIN = 'login',
@@ -114,7 +118,10 @@ export type WS_CLIENT_EVENT_PAYLOAD = {
 };
 
 export enum WS_SERVER_EVENTS {
-  LOGIN_RESPONSE = 'login_response',
+  AUTHENTICATED = 'authenticated',
+  UNAUTHORIZED_RESPONSE = 'unauthorized',
+
+  LOGIN_RESPONSE = 'login-response',
 
   BACKGROUND_JOBS_LIST_RESPONSE = 'background-jobs-list-response',
 
@@ -168,6 +175,8 @@ export enum WS_SERVER_EVENTS {
 }
 
 export type WS_SERVER_EVENT_PAYLOAD = {
+  [WS_SERVER_EVENTS.AUTHENTICATED]: { id: number; email: string; engineMode: string };
+  [WS_SERVER_EVENTS.UNAUTHORIZED_RESPONSE]: { code: number };
   [WS_SERVER_EVENTS.LOGIN_RESPONSE]: { error: boolean; accessToken: string; message: string };
 
   [WS_SERVER_EVENTS.CLIENT_NOTIFICATION]: ClientNotificationPayload;
@@ -422,6 +431,7 @@ export interface ScenarioExecInfo {
 export interface StrategyArg {
   key: string;
   value: string;
+  mode?: 'runtime' | 'tester';
 }
 
 export type JobRuntimeType = 'market' | 'system';

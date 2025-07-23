@@ -2,12 +2,19 @@ import { createAsyncThunk } from "@reduxjs/toolkit";
 import { EngineMode, configActions } from "@/entities/config";
 import { AuthData, userActions } from "@/entities/user";
 import { wsConnect } from "@/shared/api/socket";
-import { LS_ACCESS_TOKEN_KEY } from "@/shared/const/local-storage";
+import { LS_ACCESS_SECRET_KEY, LS_ACCESS_TOKEN_KEY } from "@/shared/const/local-storage";
 import { ThunkConfig } from "@/shared/types/store";
 
-export const auth = createAsyncThunk<void, boolean | undefined, ThunkConfig<void>>(
+interface AuthOptions {
+  forceReconnect?: boolean;
+  onAuthSuccess?: VoidFunction;
+  onAuthFailure?: (message: string) => void;
+}
+
+export const auth = createAsyncThunk<void, AuthOptions | undefined, ThunkConfig<string>>(
   "app/initialize",
-  (forceReconnect, thunkAPI) => {
+  (options = {}, thunkAPI) => {
+    const { forceReconnect = false, onAuthFailure, onAuthSuccess } = options;
     const { dispatch } = thunkAPI;
 
     const url = new URL(document.location.href);
@@ -25,14 +32,19 @@ export const auth = createAsyncThunk<void, boolean | undefined, ThunkConfig<void
       token = localStorage.getItem(LS_ACCESS_TOKEN_KEY) ?? "";
     }
 
+    const accessSecret = localStorage.getItem(LS_ACCESS_SECRET_KEY) ?? "";
+
     wsConnect(token, {
       forceReconnect,
+      accessSecret,
       onAuthSuccess: (payload: AuthData & { engineMode: EngineMode }) => {
         dispatch(userActions.setAuthData(payload));
         dispatch(configActions.setEngineMode(payload.engineMode));
+        onAuthSuccess?.();
       },
-      onAuthRejected: () => {
-        dispatch(userActions.setAuthError());
+      onAuthRejected: ({ code }) => {
+        dispatch(userActions.setAuthError(code));
+        onAuthFailure?.("Unauthorized");
       },
     });
   }

@@ -1,4 +1,5 @@
 import {
+  WS_AUTH_ERROR_CODE,
   WS_CLIENT_EVENT_PAYLOAD,
   WS_CLIENT_EVENTS,
   WS_SERVER_EVENT_PAYLOAD,
@@ -25,20 +26,28 @@ let _socketAuth = false;
 
 interface WsConnectOptions {
   forceReconnect?: boolean;
+  accessSecret?: string;
   onAuthSuccess(payload: { id: number; email: string; engineMode: string }): void;
-  onAuthRejected(): void;
+  onAuthRejected(payload: { code: WS_AUTH_ERROR_CODE }): void;
 }
 
 export const wsConnect = (authToken: string, options: WsConnectOptions) => {
-  const { onAuthSuccess, onAuthRejected, forceReconnect } = options;
+  const { onAuthSuccess, onAuthRejected, forceReconnect, accessSecret } = options;
 
   if (_socket && !forceReconnect) {
-    if (_socket.connected) return;
+    if (!_socket.connected) return;
     _socket.connect();
     return;
   }
 
-  _socket = socketIO(config.wsHost, { transports: ["websocket"], auth: { accessToken: authToken } });
+  if (forceReconnect && _socket) {
+    _socket.disconnect();
+  }
+
+  _socket = socketIO(config.wsHost, {
+    transports: ["websocket"],
+    auth: { accessToken: authToken, accessSecret },
+  });
 
   _socket.on("error", (err) => {
     console.error(err);
@@ -50,10 +59,10 @@ export const wsConnect = (authToken: string, options: WsConnectOptions) => {
 
   _socket.on("message", ({ event, payload }: { event: string; payload: never }) => {
     if (event === "unauthorized") {
-      onAuthRejected();
+      onAuthRejected(payload);
     }
 
-    if (event === "authenticated") {
+    if (event === WS_SERVER_EVENTS.AUTHENTICATED) {
       onAuthSuccess(payload);
       if (__DEV__) console.log("ws connected");
       _socketAuth = true;

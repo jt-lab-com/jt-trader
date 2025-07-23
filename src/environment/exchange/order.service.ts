@@ -17,14 +17,14 @@ export class OrderService implements OrderServiceInterface {
   private balance: number;
   private marginBalance: number;
   private profit: number;
-  private marketOrderSpread: number = 0.0001;
-  private pricePrecision: number = 2;
-  private triggerPriceMax: number = 0;
-  private triggerPriceMin: number = 0;
-  private defaultLeverage: number = 1;
-  private makerFee: number = 0;
-  private takerFee: number = 0;
-  private balanceFee: number = 0;
+  private marketOrderSpread = 0.0001;
+  private pricePrecision = 2;
+  private triggerPriceMax = 0;
+  private triggerPriceMin = 0;
+  private defaultLeverage = 1;
+  private makerFee = 0;
+  private takerFee = 0;
+  private balanceFee = 0;
   private kline: KLineInterface;
 
   constructor(@InjectPinoLogger(OrderService.name) private readonly logger: PinoLogger) {
@@ -205,7 +205,7 @@ export class OrderService implements OrderServiceInterface {
       (this.triggerPriceMax && kLine.high >= this.triggerPriceMax) ||
       (this.triggerPriceMin && kLine.low <= this.triggerPriceMin)
     ) {
-      let executed: boolean = false;
+      let executed = false;
       this.orders
         .filter(
           (order) => order.timestamp < this.getCurrentTime() && ['open', 'untriggered'].indexOf(order.status) > -1,
@@ -278,8 +278,7 @@ export class OrderService implements OrderServiceInterface {
       const prevContracts = position.contracts;
       const shiftedContracts: number = position.contracts + ratio * order.amount;
 
-      if (!isFinite(shiftedContracts))
-        throw new Error("positions.contracts variable type overloaded")
+      if (!isFinite(shiftedContracts)) throw new Error('positions.contracts variable type overloaded');
 
       if (shiftedContracts < 0) {
         order.amount = position.contracts;
@@ -338,7 +337,7 @@ export class OrderService implements OrderServiceInterface {
     return this.profit;
   };
 
-  public getPositions = (): Object[] => {
+  public getPositions = (): object[] => {
     return this.positions.map((position) => ({ ...position }));
   };
 

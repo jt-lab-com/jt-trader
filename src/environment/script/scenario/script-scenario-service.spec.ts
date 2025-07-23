@@ -6,7 +6,7 @@ import { PinoLogger } from 'nestjs-pino';
 import { EventEmitter2 } from '@nestjs/event-emitter';
 
 describe('ScriptScenarioService', () => {
-  const logger = {} as PinoLogger;
+  const logger = { warn: jest.fn() } as unknown as PinoLogger;
   const storageService: ScriptScenarioStorageService = {
     async getScenario(id: number): Promise<ScenarioInterface> {
       return Promise.resolve({} as ScenarioInterface);

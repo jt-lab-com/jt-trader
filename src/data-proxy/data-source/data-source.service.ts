@@ -10,9 +10,9 @@ const SUBSCRIBE_QUOTES = 'SUBSCRIBE_QUOTES';
 
 @Injectable()
 export class DataSourceService {
-  private sources: Object = {};
-  private listeners: Object = {};
-  private isStarted: boolean = false;
+  private sources: object = {};
+  private listeners: object = {};
+  private isStarted = false;
 
   constructor(
     @InjectPinoLogger(DataSourceService.name) private readonly logger: PinoLogger,

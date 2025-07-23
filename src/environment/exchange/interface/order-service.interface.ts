@@ -19,7 +19,7 @@ export interface OrderServiceInterface {
 
   getProfit(): number;
 
-  getPositions(): Object[];
+  getPositions(): object[];
 
   getOrders(): OrderInterface[];
 

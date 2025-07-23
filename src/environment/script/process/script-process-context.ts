@@ -102,7 +102,7 @@ export class ScriptProcessContext extends ScriptProcessContextBase {
       this.subscribers.set(
         'positions::all',
         this.dataFeedFactory.subscribePositions(connectionName, symbols, this.keys, (data) => {
-          for (let position of data) {
+          for (const position of data) {
             const index = this.positions.findIndex(
               (item) => item.symbol === position.symbol && item.side === position.side,
             );
@@ -159,7 +159,7 @@ export class ScriptProcessContext extends ScriptProcessContextBase {
     }
 
     const items = this.callbacks.get(method);
-    for (let callback of items) {
+    for (const callback of items) {
       await callback(args, data);
     }
   }
@@ -230,7 +230,10 @@ export class ScriptProcessContext extends ScriptProcessContextBase {
     };
   }
 
-  public async getPositions(symbols: string[], params: { forceFetch: boolean } & {}): Promise<Position[]> {
+  public async getPositions(
+    symbols: string[],
+    params: { forceFetch: boolean } & Record<string, unknown>,
+  ): Promise<Position[]> {
     if (params?.forceFetch) {
       this.positions = await this._call<Position[]>('fetchPositions', [undefined, params]);
     }
