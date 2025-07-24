@@ -12,6 +12,7 @@ import { DEFINED_ARGS_FILENAME, SCRIPT_VERSION_FILENAME } from './config/const';
 import { StrategyItem } from '../types';
 import { parseVersionPlugin } from './plugins/parse-version';
 import * as virtual from 'rollup-plugin-virtual';
+import { EventEmitter2 } from '@nestjs/event-emitter';
 
 export interface StrategyBundle {
   content: string;
@@ -45,6 +46,7 @@ export class ScriptBundlerService {
   constructor(
     @InjectPinoLogger(ScriptBundlerService.name) private readonly logger: PinoLogger,
     private readonly siteApi: SiteApi,
+    private readonly eventEmitter: EventEmitter2,
   ) {
     this.sourcePath = process.env.STRATEGY_FILES_PATH;
   }
@@ -87,6 +89,12 @@ export class ScriptBundlerService {
         version,
       };
     } catch (e) {
+      this.eventEmitter.emit('client.notification', {
+        accountId,
+        message: 'Error while compiling the script. See logs for details.',
+        type: 'error',
+      });
+
       e.cause = ExceptionReasonType.BundlerError;
       e.key = key;
       throw e;
@@ -129,7 +137,7 @@ export class ScriptBundlerService {
       parseVersionPlugin(fullFilePath, this.logger),
     ];
 
-    let isSyncTester = process.env.NODE_ENV === 'tester-sync';
+    const isSyncTester = process.env.NODE_ENV === 'tester-sync';
     if (isSyncTester) {
       plugins.push(removeAsyncAwaitPlugin());
     }
