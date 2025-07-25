@@ -1,4 +1,3 @@
 [submodule "strategy-source"]
 	path = strategy-source
-	url = https://github.com/xsystems8/jt-lib.git
-	branch = main
+	url = git@github.com:jt-lab-com/jt-lib.git
