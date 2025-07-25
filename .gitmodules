@@ -1,0 +1,3 @@
+[submodule "strategy-source"]
+	path = strategy-source
+	url = git@github.com:jt-lab-com/jt-lib.git
