@@ -1,33 +1,1 @@
-version: "3.9"
-
-services:
-  app:
-    image: jtlab/jtl-worker:main
-    restart: always
-    env_file:
-      - .env
-    environment:
-      - STRATEGY_FILES_PATH=/www/app/strategy-source/
-      - DATABASE_URL=file:/www/app/storage.db
-      - MARKETS_FILE_PATH=/www/app/markets.json
-      - ARTIFACTS_DIR_PATH=/www/app/artifacts
-      - LOGS_DIR_PATH=/www/app/artifacts
-      - HISTORY_BARS_PATH=/www/app/history-bars
-      - REDIS_URL=redis://redis:6379
-      - ROLLUP_TS_CONFIG=/www/app/tsconfig.bundler.json
-      - SITE_API_HOST=https://jt-lab.com
-      - "DISABLE_TESTER_ARTIFACTS_CACHE=1"
-    ports:
-      - "8080:8080"
-    volumes:
-      - ./strategy-source/src/:/www/app/strategy-source:cached
-      - ./storage.db:/www/app/storage.db:delegated
-      - ./history-bars:/www/app/history-bars
-      - ./markets.json:/www/app/markets.json
-      - ./artifacts:/www/app/artifacts
-
-  redis:
-    image: redis:alpine
-    restart: always
-    volumes:
-      - ./redis:/data
+version: "3.9"services:  app:    image: jtlab/jtl-worker:main    restart: always    env_file:      - .env    environment:      - STRATEGY_FILES_PATH=/www/app/strategy-source/      - DATABASE_URL=file:/www/app/storage.db      - MARKETS_FILE_PATH=/www/app/markets.json      - ARTIFACTS_DIR_PATH=/www/app/artifacts      - LOGS_DIR_PATH=/www/app/artifacts      - HISTORY_BARS_PATH=/www/app/history-bars      - REDIS_URL=redis://redis:6379      - ROLLUP_TS_CONFIG=/www/app/tsconfig.bundler.json      - SITE_API_HOST=https://jt-lab.com      - "DISABLE_TESTER_ARTIFACTS_CACHE=1"    ports:      - "8080:8080"    volumes:      - ./strategy-source/src/:/www/app/strategy-source:cached      - ./storage.db:/www/app/storage.db:delegated      - ./history-bars:/www/app/history-bars      - ./markets.json:/www/app/markets.json      - ./artifacts:/www/app/artifacts  redis:    image: redis:alpine    restart: always    volumes:      - ./redis:/data
