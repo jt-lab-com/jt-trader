@@ -14,7 +14,7 @@ import { ScriptScenarioService } from './script/scenario/script-scenario.service
 import { ScriptScenarioStorageService } from './script/storage/script-scenario-storage.service';
 import { ScriptTesterService } from './script-tester/script-tester.service';
 import { ScriptArtifactsService } from './script/artifacts/script-artifacts.service';
-import { PrismaService } from './prisma/prisma.service';
+import { PrismaService } from '../common/prisma/prisma.service';
 import { ConfigService } from './config/config.service';
 import { CCXTMockSyncService } from './exchange/ccxt-mock-sync.service';
 import { ScriptLogsService } from './script/artifacts/script-logs.service';
