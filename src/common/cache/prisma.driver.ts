@@ -35,7 +35,7 @@ export class PrismaDriver implements CacheDriverInterface {
 
   async set(key: string, data: string, ttl: number): Promise<void> {
     const fields = {
-      value: data,
+      value: data.toString(),
       expiredAt: new Date(Date.now() + ttl * 1000),
     };
 
@@ -51,14 +51,14 @@ export class PrismaDriver implements CacheDriverInterface {
   }
 
   subscribe = (key: string, callback: (data: any) => void): number => {
-    throw new Error("Invalid \'subscribe\' method via CACHE_DRIVER=\'disk\' value");
+    throw new Error('Invalid \'subscribe\' method via CACHE_DRIVER=\'disk\' value');
   };
 
   unsubscribe = (id: number): void => {
-    throw new Error("Invalid \'unsubscribe\' method via CACHE_DRIVER=\'disk\' value");
+    throw new Error('Invalid \'unsubscribe\' method via CACHE_DRIVER=\'disk\' value');
   };
 
   publish = async (key: string, message: any, toJSON: boolean = false): Promise<any> => {
-    throw new Error("Invalid \'publish\' method via CACHE_DRIVER=\'disk\' value");
+    throw new Error('Invalid \'publish\' method via CACHE_DRIVER=\'disk\' value');
   };
 }
