@@ -1,7 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import * as fs from 'fs';
 import * as path from 'path';
-import { PrismaService } from '../../prisma/prisma.service';
 import { Runtime as PrismaRuntime, Scenario as PrismaScenario } from '@prisma/client';
 import { ScriptArtifactsService } from '../artifacts/script-artifacts.service';
 import { nanoid } from 'nanoid';
@@ -9,6 +8,7 @@ import { StrategyItem, StrategyItemType } from '../types';
 import { Strategy as ServerResponseStrategy, StrategyDefinedArg } from '@packages/types';
 import { parseDefinedArgs } from '../utils/parse-defined-args';
 import { InjectPinoLogger, PinoLogger } from 'nestjs-pino';
+import { PrismaService } from '../../../common/prisma/prisma.service';
 
 type Runtime = {
   id?: number;

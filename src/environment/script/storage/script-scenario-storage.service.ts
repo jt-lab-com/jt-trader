@@ -1,10 +1,10 @@
 import { Injectable } from '@nestjs/common';
 import { InjectPinoLogger, PinoLogger } from 'nestjs-pino';
-import { PrismaService } from '../../prisma/prisma.service';
 import { Scenario, ScenarioSet } from '@prisma/client';
 import { ScriptArtifactsService } from '../artifacts/script-artifacts.service';
 import { SystemParamsInterface } from '../scenario/script-scenario.service';
 import { StrategyItem } from '../types';
+import { PrismaService } from '../../../common/prisma/prisma.service';
 
 export type ScenarioStatusType = 0 | 1 | 2 | 3;
 

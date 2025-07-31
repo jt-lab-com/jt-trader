@@ -7,10 +7,17 @@ jobs:
 
   build:
 
-    runs-on: vfx-builder
+    runs-on: ubuntu-22.04
 
     steps:
       - uses: actions/checkout@v3
+
+      - name: Log in to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: jtlab
+          password: ${{ secrets.DOCKER_TOKEN }}
+
       - name: Build and push Docker image
         uses: docker/build-push-action@v3
         with:

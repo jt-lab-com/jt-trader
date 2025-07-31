@@ -1,91 +1,43 @@
-import { Injectable } from '@nestjs/common';
-import { InjectRedis } from '@liaoliaots/nestjs-redis';
-import Redis from 'ioredis';
+import { Inject, Injectable } from '@nestjs/common';
 import * as os from 'os';
-import { promisify } from 'util';
+import { CacheDriverInterface } from './cache-driver.interface';
 
 const DEFAULT_TTL = 4 * 24 * 60 * 60;
 
 @Injectable()
 export class CacheService {
-  private setter: (...args: any[]) => Promise<void>;
-  private publisher: (...args: any[]) => Promise<void>;
-  private subscribers: Map<number, { event: string; callback: (data: any) => Promise<void> | void }>;
-  private sequence: number;
+  constructor(@Inject('CacheDriverInterface') private readonly driver: CacheDriverInterface) {}
 
-  constructor(
-    @InjectRedis() private readonly client: Redis,
-    @InjectRedis('subscriber') private readonly clientSubscriber: Redis,
-  ) {
-    this.setter = promisify(client.set).bind(client);
-    this.publisher = promisify(client.publish).bind(client);
-
-    this.subscribers = new Map();
-    this.sequence = 0;
-
-    if (!(process.env.DATA_PROXY_MODE === '1')) return;
-
-    this.clientSubscriber.on('message', (channel, data) => {
-      if (this.subscribers.size === 0) return;
-      for (let [, { event, callback }] of this.subscribers.entries()) {
-        if (channel === event) callback(data);
-      }
-    });
+  private formatKey(key: string): string {
+    return `${os.hostname()}::${key}`;
   }
 
-  keys = (key: string): Promise<string[]> =>
-    new Promise<string[]>((resolve, reject) => {
-      this.client.keys(`${os.hostname()}::${key}*`, (err, data) => {
-        if (err) reject(err);
-        else resolve(data);
-      });
-    });
+  public keys(key: string): Promise<string[]> {
+    return this.driver.keys(`${this.formatKey(key)}*`);
+  }
 
-  get = (key: string): Promise<string> =>
-    new Promise<string>((resolve, reject) => {
-      this.client.get(`${os.hostname()}::${key}`, (err, data) => {
-        if (err) reject(err);
-        else resolve(data);
-      });
-    });
+  public get(key: string): Promise<string> {
+    return this.driver.get(this.formatKey(key));
+  }
 
-  set = async (key: string, data: string, ttl: number = DEFAULT_TTL): Promise<void> => {
-    return await this.setter(`${os.hostname()}::${key}`, data, 'EX', ttl);
-  };
+  public set(key: string, data: string, ttl: number = DEFAULT_TTL): Promise<void> {
+    return this.driver.set(this.formatKey(key), data, ttl);
+  }
 
-  delete = (key: string): Promise<void> =>
-    new Promise<void>((resolve, reject) => {
-      this.client.del(`${os.hostname()}::${key}`, (err) => {
-        if (err) reject(err);
-        resolve();
-      });
-    });
+  public delete(key: string): Promise<void> {
+    return this.driver.delete(this.formatKey(key));
+  }
 
-  deleteAllHostKeys = async (): Promise<void> => {
-    const keys = await this.keys('*');
+  public async deleteAllHostKeys(): Promise<void> {
+    const keys = await this.keys('');
     if (!keys.length) return;
 
-    return await new Promise<void>((resolve, reject) => {
-      this.client.del(keys, (err) => {
-        if (err) reject(err);
-        resolve();
-      });
-    });
-  };
+    return this.driver.deleteBulk(keys);
+  }
 
-  subscribe = (key: string, callback: (data: any) => void): number => {
-    const id = ++this.sequence;
-    this.clientSubscriber.subscribe(key);
-    this.subscribers.set(id, { event: key, callback });
-    this.sequence++;
-    return id;
-  };
+  subscribe = this.driver.subscribe
 
-  unsubscribe = (id: number): void => {
-    this.subscribers.delete(id);
-  };
+  unsubscribe = this.driver.unsubscribe;
 
-  publish = async (key: string, message: any, toJSON: boolean = false): Promise<any> => {
-    return await this.publisher(key, toJSON ? JSON.stringify(message) : message);
-  };
+  publish = this.driver.publish;
 }
