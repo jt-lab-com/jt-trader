@@ -58,7 +58,7 @@ export class TesterSyncSDK {
     this.iterator++;
     const data = this.getRow();
 
-    if (this.iterator % 100000 === 0) {
+    if (this.iterator % 50000 === 0) {
       console.log(
         'Tick END ' + this.iterator + ' - ' + data.timestamp + ` - ${((Date.now() - this.lstTms) / 1000).toFixed(2)}`,
       );
@@ -84,7 +84,7 @@ export class TesterSyncSDK {
 
     this.events.emit(TICK_END_EVENT, data); // createOrder 3
 
-    if (this.iterator % 100000 === 0) {
+    if (this.iterator % 5000 === 0) {
       setImmediate(() => {
         this.runTicker(symbol);
       });
