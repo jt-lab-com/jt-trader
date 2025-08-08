@@ -1,18 +1,17 @@
 import Box from "@mui/material/Box";
-import Button from "@mui/material/Button";
-import MenuItem from "@mui/material/MenuItem";
+import Divider from "@mui/material/Divider";
 import Stack from "@mui/material/Stack";
-import TextField from "@mui/material/TextField";
 import Typography from "@mui/material/Typography";
 import { IChartApi } from "lightweight-charts";
-import { ChangeEvent, FC, useEffect, useRef, useState } from "react";
+import { FC, useEffect, useRef, useState } from "react";
 import { useBoolean } from "@/shared/lib/hooks/useBoolean";
-import { SvgColor } from "@/shared/ui/svg-color";
 import { TVChartLight } from "@/shared/ui/tv-chart-light";
 import { ChartPlaybackDatafeed } from "../../../lib/chart-playback/datafeed";
 import { chartEvents } from "../../../lib/chart-playback/events";
 import { ChartPlayerSpeed } from "../../../lib/chart-playback/player";
 import { ChartPlaybackData } from "../../../model/types";
+import { PlayButton } from "./PlayButton";
+import { SpeedSelector } from "./SpeedSelector";
 
 interface TradingViewPlayerLightProps {
   data: ChartPlaybackData;
@@ -54,8 +53,7 @@ export const TradingViewPlayerLight: FC<TradingViewPlayerLightProps> = (props) =
     void datafeedRef.current.loadChart({ ...playbackData, defaultSpeed: chartSpeed });
   };
 
-  const handleSpeedChange = (e: ChangeEvent<HTMLInputElement>) => {
-    const speed = e.target.value as ChartPlayerSpeed;
+  const handleSpeedChange = (speed: ChartPlayerSpeed) => {
     setChartSpeed(speed);
     chartEvents.emit("speedChange", speed);
   };
@@ -68,35 +66,17 @@ export const TradingViewPlayerLight: FC<TradingViewPlayerLightProps> = (props) =
   return (
     <Stack sx={{ flexGrow: 1, height: "100%" }}>
       <Box sx={{ mb: 3, height: "20%" }}>
-        <Typography sx={{ mb: 3 }} variant={"h5"}>
-          {data.symbols[currentSymbolIndex].symbol} | {data.symbols[currentSymbolIndex].interval}
-        </Typography>
-        <Stack direction={"row"} gap={3} alignItems={"center"}>
-          <Button
-            variant={"outlined"}
-            onClick={handlePlayClicked}
-            size={"small"}
-            startIcon={
-              <SvgColor
-                size={15}
-                src={`/assets/icons/solid/${playing.value ? "ic-solar_pause" : "ic-solar_play"}.svg`}
-              />
-            }
-          >
-            {playing.value ? "Pause" : "Play"}
-          </Button>
-          <TextField
-            sx={{ minWidth: 120 }}
-            label={"Playback speed"}
-            select
-            value={chartSpeed}
-            onChange={handleSpeedChange}
-            size={"small"}
-          >
-            <MenuItem value={ChartPlayerSpeed.x1}>x1</MenuItem>
-            <MenuItem value={ChartPlayerSpeed.x2}>x2</MenuItem>
-            <MenuItem value={ChartPlayerSpeed.x4}>x4</MenuItem>
-          </TextField>
+        <Stack direction={"row"} gap={3}>
+          <Box>
+            <Typography sx={{ mb: 3 }} variant={"h5"}>
+              {data.symbols[currentSymbolIndex].symbol} | {data.symbols[currentSymbolIndex].interval}
+            </Typography>
+            <Stack direction={"row"} gap={3} alignItems={"center"}>
+              <PlayButton isPlaying={playing.value} onClick={handlePlayClicked} />
+              <SpeedSelector chartSpeed={chartSpeed} onChange={handleSpeedChange} />
+            </Stack>
+          </Box>
+          <Divider flexItem orientation={"vertical"} />
         </Stack>
       </Box>
       <TVChartLight sx={{ height: "75vh", border: "1px solid black" }} chartRef={chartRef} />

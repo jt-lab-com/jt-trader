@@ -1,3 +1,5 @@
+import { LineStyle, LineWidth } from "lightweight-charts";
+
 export interface PlaybackChartSymbolData {
   startTime: number;
   endTime: number;
@@ -5,6 +7,7 @@ export interface PlaybackChartSymbolData {
   interval: string;
   visibleRange?: PlaybackChartVisibleRange;
   shapes?: PlaybackChartShape[];
+  priceLines?: PlaybackChartPriceLine[];
 }
 
 export interface PlaybackChartVisibleRange {
@@ -24,4 +27,19 @@ export interface PlaybackChartShape {
 export interface PlaybackChartShapeOptions {
   color?: string;
   size?: number;
+}
+
+export interface PlaybackChartPriceLine {
+  id?: string;
+  renderTime: number;
+  price: number;
+  title: string;
+  options?: PlaybackChartPriceLineOptions;
+}
+
+export interface PlaybackChartPriceLineOptions {
+  color?: string;
+  lineWidth?: LineWidth;
+  lineStyle?: LineStyle;
+  axisLabelVisible?: boolean;
 }

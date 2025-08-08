@@ -4,15 +4,17 @@ import {
   CandlestickSeries,
   createSeriesMarkers,
   IChartApi,
+  IPriceLine,
   ISeriesApi,
   ISeriesMarkersPluginApi,
+  LineStyle,
   SeriesMarker,
   Time,
   UTCTimestamp,
 } from "lightweight-charts";
 import { HistoryBarsLoader } from "@/shared/api/history-bars-loader";
 import { roundTimeByTimeframe } from "@/shared/lib/utils/timeframe";
-import { PlaybackChartShape, PlaybackChartSymbolData } from "../../model/types";
+import { PlaybackChartPriceLine, PlaybackChartShape, PlaybackChartSymbolData } from "../../model/types";
 import { chartEvents } from "./events";
 import { ChartPlayer, ChartPlayerSpeed } from "./player";
 
@@ -34,11 +36,14 @@ interface LoadChartParams extends PlaybackChartSymbolData {
   defaultSpeed?: ChartPlayerSpeed;
 }
 
+type UserPriceLineId = string;
+
 export class ChartPlaybackDatafeed {
   private readonly chart: IChartApi;
   private readonly barsLoader: HistoryBarsLoader;
   private candleStickSeries: ISeriesApi<"Candlestick"> | null = null;
   private seriesMarkers: ISeriesMarkersPluginApi<Time> | null = null;
+  private renderedPriceLinesMap: Record<UserPriceLineId, IPriceLine> = {};
   private player: ChartPlayer | null = null;
 
   constructor(params: ChartPlaybackParams) {
@@ -67,6 +72,7 @@ export class ChartPlaybackDatafeed {
       endTime,
       defaultSpeed = ChartPlayerSpeed.x1,
       shapes,
+      priceLines,
       visibleRange,
     } = params;
 
@@ -82,6 +88,20 @@ export class ChartPlaybackDatafeed {
 
       acc[timestamp] = [shape];
 
+      return acc;
+    }, {});
+
+    const priceLinesMap = priceLines?.reduce<Record<number, PlaybackChartPriceLine[]>>((acc, line) => {
+      const timeframeMs = resolutionMsMap[interval];
+      const timeframeMinutes = timeframeMs / 1000 / 60;
+      const timestamp = roundTimeByTimeframe(line.renderTime, timeframeMinutes);
+
+      if (acc[timestamp]) {
+        acc[timestamp].push(line);
+        return acc;
+      }
+
+      acc[timestamp] = [line];
       return acc;
     }, {});
 
@@ -126,6 +146,32 @@ export class ChartPlaybackDatafeed {
 
         const prevShapes = this.seriesMarkers?.markers();
         this.seriesMarkers?.setMarkers([...(prevShapes ?? []), ...shapes]);
+      }
+
+      if (priceLinesMap?.[candle.time]) {
+        const priceLinesData = priceLinesMap[candle.time].map((line) => ({
+          id: line.id,
+          price: line.price,
+          title: line.title,
+          color: line.options?.color ?? "black",
+          lineWidth: line.options?.lineWidth ?? 2,
+          lineStyle: line.options?.lineStyle ?? LineStyle.Dashed,
+          axisLabelVisible: line.options?.axisLabelVisible ?? true,
+        }));
+
+        delete priceLinesMap[candle.time];
+
+        for (const lineData of priceLinesData) {
+          if (lineData.id && this.renderedPriceLinesMap[lineData.id]) {
+            this.candleStickSeries.removePriceLine(this.renderedPriceLinesMap[lineData.id]);
+          }
+
+          const priceLine = this.candleStickSeries.createPriceLine(lineData);
+
+          if (lineData.id) {
+            this.renderedPriceLinesMap[lineData.id] = priceLine;
+          }
+        }
       }
     };
 
