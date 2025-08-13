@@ -7,69 +7,62 @@ import { FC, useEffect, useRef, useState } from "react";
 import { useBoolean } from "@/shared/lib/hooks/useBoolean";
 import { TVChartLight } from "@/shared/ui/tv-chart-light";
 import { ChartPlaybackDatafeed } from "../../../lib/chart-playback/datafeed";
-import { chartEvents } from "../../../lib/chart-playback/events";
+import { chartEvents, Events } from "../../../lib/chart-playback/events";
 import { ChartPlayerSpeed } from "../../../lib/chart-playback/player";
-import { ChartPlaybackData } from "../../../model/types";
+import { PlaybackChartSymbolData } from "../../../model/types";
+import { CardList } from "./cards/CardList";
 import { PlayButton } from "./PlayButton";
 import { SpeedSelector } from "./SpeedSelector";
 
 interface TradingViewPlayerLightProps {
-  data: ChartPlaybackData;
+  data: PlaybackChartSymbolData;
   s3Host: string;
 }
 
 export const TradingViewPlayerLight: FC<TradingViewPlayerLightProps> = (props) => {
   const { data, s3Host } = props;
+  const { cards } = data;
   const chartRef = useRef<IChartApi | null>(null);
   const datafeedRef = useRef<ChartPlaybackDatafeed | null>(null);
   const playing = useBoolean();
 
   const [chartSpeed, setChartSpeed] = useState(ChartPlayerSpeed.x1);
-  const [currentSymbolIndex, setCurrentSymbolIndex] = useState(0);
+
+  useEffect(() => {
+    const unsub = chartEvents.on(Events.End, () => {
+      playing.onFalse();
+    });
+
+    return () => {
+      unsub();
+    };
+  }, []);
 
   useEffect(() => {
     if (!chartRef.current || datafeedRef.current) return;
     datafeedRef.current = new ChartPlaybackDatafeed({ chart: chartRef.current, s3Host });
+    datafeedRef.current.loadChart({ ...data, defaultSpeed: chartSpeed }).catch((e) => {
+      console.error(e);
+    });
   }, [chartRef.current]);
-
-  useEffect(() => {
-    handleLoadChart();
-    const eventListeners = [chartEvents.on("end", handlePlaybackEnd)];
-
-    return () => {
-      eventListeners.forEach((unsub) => unsub());
-    };
-  }, [currentSymbolIndex]);
-
-  const handlePlaybackEnd = () => {
-    playing.onFalse();
-    if (currentSymbolIndex === data.symbols.length - 1) return;
-    setCurrentSymbolIndex((prev) => ++prev);
-  };
-
-  const handleLoadChart = () => {
-    if (!datafeedRef.current) return;
-    const playbackData = data.symbols[currentSymbolIndex];
-    void datafeedRef.current.loadChart({ ...playbackData, defaultSpeed: chartSpeed });
-  };
 
   const handleSpeedChange = (speed: ChartPlayerSpeed) => {
     setChartSpeed(speed);
-    chartEvents.emit("speedChange", speed);
+    chartEvents.emit(Events.SpeedChange, speed);
   };
 
   const handlePlayClicked = () => {
     playing.onToggle();
-    chartEvents.emit(playing.value ? "pause" : "play");
+    chartEvents.emit(playing.value ? Events.Pause : Events.Play);
   };
 
   return (
-    <Stack sx={{ flexGrow: 1, height: "100%" }}>
+    <Stack sx={{ flexGrow: 1, height: "100%", overflow: "hidden" }}>
       <Box sx={{ mb: 3, height: "20%" }}>
         <Stack direction={"row"} gap={3}>
           <Box>
             <Typography sx={{ mb: 3 }} variant={"h5"}>
-              {data.symbols[currentSymbolIndex].symbol} | {data.symbols[currentSymbolIndex].interval}
+              {data.symbol} | {data.interval}
             </Typography>
             <Stack direction={"row"} gap={3} alignItems={"center"}>
               <PlayButton isPlaying={playing.value} onClick={handlePlayClicked} />
@@ -77,6 +70,7 @@ export const TradingViewPlayerLight: FC<TradingViewPlayerLightProps> = (props) =
             </Stack>
           </Box>
           <Divider flexItem orientation={"vertical"} />
+          <CardList data={cards} />
         </Stack>
       </Box>
       <TVChartLight sx={{ height: "75vh", border: "1px solid black" }} chartRef={chartRef} />

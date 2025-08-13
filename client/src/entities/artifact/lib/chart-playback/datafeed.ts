@@ -14,8 +14,13 @@ import {
 } from "lightweight-charts";
 import { HistoryBarsLoader } from "@/shared/api/history-bars-loader";
 import { roundTimeByTimeframe } from "@/shared/lib/utils/timeframe";
-import { PlaybackChartPriceLine, PlaybackChartShape, PlaybackChartSymbolData } from "../../model/types";
-import { chartEvents } from "./events";
+import {
+  PlaybackChartCard,
+  PlaybackChartPriceLine,
+  PlaybackChartShape,
+  PlaybackChartSymbolData,
+} from "../../model/types";
+import { chartEvents, Events } from "./events";
 import { ChartPlayer, ChartPlayerSpeed } from "./player";
 
 const resolutionMsMap: Record<string, number> = {
@@ -37,6 +42,8 @@ interface LoadChartParams extends PlaybackChartSymbolData {
 }
 
 type UserPriceLineId = string;
+type Drawable = PlaybackChartShape | PlaybackChartPriceLine | PlaybackChartCard;
+type DrawableMap<T extends Drawable> = Record<number, T[]>;
 
 export class ChartPlaybackDatafeed {
   private readonly chart: IChartApi;
@@ -50,16 +57,16 @@ export class ChartPlaybackDatafeed {
     this.chart = params.chart;
     this.barsLoader = new HistoryBarsLoader(params.s3Host);
 
-    chartEvents.on("play", () => {
+    chartEvents.on(Events.Play, () => {
       this.player?.play();
     });
-    chartEvents.on("pause", () => {
+    chartEvents.on(Events.Pause, () => {
       this.player?.pause();
     });
-    chartEvents.on("speedChange", (speed: string) => {
+    chartEvents.on(Events.SpeedChange, (speed: string) => {
       this.player?.changeSpeed(speed);
     });
-    chartEvents.on("close", () => {
+    chartEvents.on(Events.Close, () => {
       chartEvents.removeAllListeners();
     });
   }
@@ -73,37 +80,17 @@ export class ChartPlaybackDatafeed {
       defaultSpeed = ChartPlayerSpeed.x1,
       shapes,
       priceLines,
+      cards,
       visibleRange,
     } = params;
 
-    const shapesMap = shapes?.reduce<Record<number, PlaybackChartShape[]>>((acc, shape) => {
-      const timeframeMs = resolutionMsMap[interval];
-      const timeframeMinutes = timeframeMs / 1000 / 60;
-      const timestamp = roundTimeByTimeframe(shape.renderTime, timeframeMinutes);
+    let shapesMap: DrawableMap<PlaybackChartShape>;
+    let priceLinesMap: DrawableMap<PlaybackChartPriceLine>;
+    let cardsMap: DrawableMap<PlaybackChartCard>;
 
-      if (acc[timestamp]) {
-        acc[timestamp].push(shape);
-        return acc;
-      }
-
-      acc[timestamp] = [shape];
-
-      return acc;
-    }, {});
-
-    const priceLinesMap = priceLines?.reduce<Record<number, PlaybackChartPriceLine[]>>((acc, line) => {
-      const timeframeMs = resolutionMsMap[interval];
-      const timeframeMinutes = timeframeMs / 1000 / 60;
-      const timestamp = roundTimeByTimeframe(line.renderTime, timeframeMinutes);
-
-      if (acc[timestamp]) {
-        acc[timestamp].push(line);
-        return acc;
-      }
-
-      acc[timestamp] = [line];
-      return acc;
-    }, {});
+    if (shapes) shapesMap = shapesMap = this.groupDrawablesByTime(shapes, interval);
+    if (priceLines) priceLinesMap = this.groupDrawablesByTime(priceLines, interval);
+    if (cards) cardsMap = this.groupDrawablesByTime(cards, interval);
 
     const history = await this.loadHistory(symbol, interval, startTime);
 
@@ -126,8 +113,7 @@ export class ChartPlaybackDatafeed {
 
     const onTick = (candle: CandleStick) => {
       if (!this.candleStickSeries) return;
-
-      this.candleStickSeries.update({ ...candle, time: (candle.time / 1000) as UTCTimestamp });
+      this.candleStickSeries.update({ ...candle, time: (candle.time / 1000) as Time });
 
       if (shapesMap?.[candle.time]) {
         const shapes = shapesMap[candle.time].map(
@@ -173,6 +159,14 @@ export class ChartPlaybackDatafeed {
           }
         }
       }
+
+      if (cardsMap?.[candle.time]) {
+        for (const card of cardsMap[candle.time]) {
+          chartEvents.emit(Events.CardValueChange, card.id, card.value);
+        }
+      }
+
+      chartEvents.emit(Events.Tick, candle);
     };
 
     const candles = await this.barsLoader.getBars(symbol, interval, startTime, endTime);
@@ -181,6 +175,22 @@ export class ChartPlaybackDatafeed {
       onTick,
       defaultSpeed,
     });
+  }
+
+  private groupDrawablesByTime<T extends Drawable>(data: T[], interval: string): DrawableMap<T> {
+    return data.reduce<Record<number, T[]>>((acc, item) => {
+      const timeframeMs = resolutionMsMap[interval];
+      const timeframeMinutes = timeframeMs / 1000 / 60;
+      const timestamp = roundTimeByTimeframe(item.renderTime, timeframeMinutes);
+
+      if (acc[timestamp]) {
+        acc[timestamp].push(item);
+        return acc;
+      }
+
+      acc[timestamp] = [item];
+      return acc;
+    }, {});
   }
 
   private async loadHistory(symbol: string, interval: string, timeTo: number) {

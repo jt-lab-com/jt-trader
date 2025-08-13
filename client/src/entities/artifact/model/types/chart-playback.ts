@@ -8,6 +8,7 @@ export interface PlaybackChartSymbolData {
   visibleRange?: PlaybackChartVisibleRange;
   shapes?: PlaybackChartShape[];
   priceLines?: PlaybackChartPriceLine[];
+  cards?: PlaybackChartCard[];
 }
 
 export interface PlaybackChartVisibleRange {
@@ -42,4 +43,47 @@ export interface PlaybackChartPriceLineOptions {
   lineWidth?: LineWidth;
   lineStyle?: LineStyle;
   axisLabelVisible?: boolean;
+}
+
+export type PlaybackChartCard<T extends CardType = CardType> = T extends CardType.Text
+  ? PlaybackChartTextCard
+  : T extends CardType.Formula
+  ? PaybackChartFormulaCard
+  : T extends CardType.Date
+  ? PlaybackChartDateCard
+  : T extends CardType.Currency
+  ? PlaybackChartCurrencyCard
+  : never;
+
+interface PlaybackChartBaseCard {
+  id?: string;
+  title: string;
+  renderTime: number;
+}
+
+interface PlaybackChartTextCard extends PlaybackChartBaseCard {
+  type: CardType.Text;
+  value: string;
+}
+
+interface PaybackChartFormulaCard extends PlaybackChartBaseCard {
+  type: CardType.Formula;
+  value: string;
+}
+
+interface PlaybackChartDateCard extends PlaybackChartBaseCard {
+  type: CardType.Date;
+  value: number | string;
+}
+
+interface PlaybackChartCurrencyCard extends PlaybackChartBaseCard {
+  type: CardType.Currency;
+  value: number;
+}
+
+export enum CardType {
+  Text = "text",
+  Formula = "formula",
+  Date = "date",
+  Currency = "currency",
 }

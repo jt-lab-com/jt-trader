@@ -27,6 +27,7 @@
     "dayjs": "^1.11.12",
     "eslint-linter-browserify": "^8.48.0",
     "events": "^3.3.0",
+    "expr-eval": "^2.0.2",
     "framer-motion": "^11.3.24",
     "highlight.js": "^11.9.0",
     "jszip": "^3.10.1",

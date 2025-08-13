@@ -21,7 +21,7 @@ export interface ArtifactBlock {
     | ActionButtonData
     | ActionButtonData[]
     | TextBlockData
-    | ChartPlaybackData;
+    | PlaybackChartSymbolData;
 }
 
 export enum ArtifactBlockType {
@@ -105,22 +105,6 @@ export interface ActionButtonData {
 }
 
 export type TableData = Record<string, unknown>;
-
-export interface ChartPlaybackData {
-  symbols: PlaybackChartSymbolData[];
-}
-
-// export interface TVChartData {
-//   exchange: string;
-//   interval: number;
-//   startTime: number;
-//   endTime: number;
-//   table: Array<TVTableShapeItem>;
-//   shapes: TVUserShape[];
-//   multipointShapes: TVUserMultipointShape[];
-//   indicator?: CustomIndicator;
-//   oscillator?: CustomOscillator;
-// }
 
 export interface CustomIndicator {
   name?: string;

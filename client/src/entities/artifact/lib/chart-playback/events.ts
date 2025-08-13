@@ -2,10 +2,20 @@ type ListenersType = {
   [event: string]: Array<(...args: any[]) => void | Promise<void>>;
 };
 
+export enum Events {
+  Play = "play",
+  Pause = "pause",
+  End = "end",
+  SpeedChange = "speed_change",
+  Tick = "tick",
+  CardValueChange = "card_value_change",
+  Close = "close",
+}
+
 class ChartEventEmitter {
   listeners: ListenersType = {};
 
-  on(event: string, handler: (...args: any[]) => void | Promise<void>): VoidFunction {
+  on(event: Events, handler: (...args: any[]) => void | Promise<void>): VoidFunction {
     if (!this.listeners[event]) {
       this.listeners[event] = [];
     }
@@ -17,7 +27,7 @@ class ChartEventEmitter {
     };
   }
 
-  emit(event: string, ...args: unknown[]) {
+  emit(event: Events, ...args: unknown[]) {
     if (!this.listeners[event]) {
       return null;
     }
