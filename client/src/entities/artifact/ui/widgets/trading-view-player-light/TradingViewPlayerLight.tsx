@@ -1,4 +1,5 @@
 import Box from "@mui/material/Box";
+import CircularProgress from "@mui/material/CircularProgress";
 import Divider from "@mui/material/Divider";
 import Stack from "@mui/material/Stack";
 import Typography from "@mui/material/Typography";
@@ -93,7 +94,29 @@ export const TradingViewPlayerLight: FC<TradingViewPlayerLightProps> = (props) =
           <CardList data={data.cards} />
         </Stack>
       </Box>
-      <TVChartLight sx={{ height: "75vh", border: "1px solid black" }} chartRef={chartRef} />
+      <Box sx={{ position: "relative" }}>
+        {!ready.value && (
+          <Stack
+            sx={{
+              position: "absolute",
+              top: 0,
+              left: 0,
+              bottom: 0,
+              right: 0,
+              zIndex: 10,
+            }}
+            alignItems={"center"}
+            justifyContent={"center"}
+          >
+            <Box
+              sx={{ position: "absolute", height: "100%", width: "100%", background: "white", opacity: 0.5 }}
+            />
+            <CircularProgress size={50} />
+          </Stack>
+        )}
+
+        <TVChartLight sx={{ height: "75vh", border: "1px solid black" }} chartRef={chartRef} />
+      </Box>
     </Stack>
   );
 };
