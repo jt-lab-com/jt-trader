@@ -5,6 +5,8 @@ import { intervalMap } from "../const/interval-map";
 import { emitSocketEvent, subscribe } from "./socket";
 
 export class HistoryBarsLoader {
+  private cache: Record<string, CandleStick[]> = {};
+
   async getBars(
     symbol: string,
     timeframe: string,
@@ -13,6 +15,13 @@ export class HistoryBarsLoader {
     limit?: number
   ): Promise<CandleStick[]> {
     if (startTime > endTime) return [];
+
+    const cacheKey = `${symbol}_${timeframe}_${startTime}_${endTime}_${limit}`;
+
+    if (this.cache[cacheKey]) {
+      return this.cache[cacheKey];
+    }
+
     const formattedSymbol = symbol.replace("/", "").toUpperCase();
     const interval = intervalMap[timeframe];
     const startDate = new Date(startTime);
@@ -24,6 +33,10 @@ export class HistoryBarsLoader {
         if (error || !data) return [];
 
         const bars = await this.unpack(data.data, data.filename);
+
+        if (bars) {
+          this.cache[cacheKey] = bars;
+        }
 
         return bars ?? [];
       }
@@ -66,6 +79,8 @@ export class HistoryBarsLoader {
       if (limit) {
         result = result.slice(0, limit);
       }
+
+      this.cache[cacheKey] = result;
 
       return result;
     } catch (e) {
