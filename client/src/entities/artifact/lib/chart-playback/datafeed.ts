@@ -32,11 +32,6 @@ const resolutionMsMap: Record<string, number> = {
   ["1D"]: 1000 * 60 * 60 * 24,
 };
 
-interface ChartPlaybackParams {
-  chart: IChartApi;
-  s3Host: string;
-}
-
 interface LoadChartParams extends PlaybackChartSymbolData {
   defaultSpeed?: ChartPlayerSpeed;
 }
@@ -53,9 +48,9 @@ export class ChartPlaybackDatafeed {
   private renderedPriceLinesMap: Record<UserPriceLineId, IPriceLine> = {};
   private player: ChartPlayer | null = null;
 
-  constructor(params: ChartPlaybackParams) {
-    this.chart = params.chart;
-    this.barsLoader = new HistoryBarsLoader(params.s3Host);
+  constructor(chart: IChartApi) {
+    this.chart = chart;
+    this.barsLoader = new HistoryBarsLoader();
 
     chartEvents.on(Events.Play, () => {
       this.player?.play();

@@ -1,19 +1,10 @@
 import { CandleStick, WS_CLIENT_EVENTS, WS_SERVER_EVENTS } from "@packages/types";
-import axios, { AxiosInstance } from "axios";
 import JSZip from "jszip";
 import { nanoid } from "nanoid";
 import { intervalMap } from "../const/interval-map";
 import { emitSocketEvent, subscribe } from "./socket";
 
 export class HistoryBarsLoader {
-  private readonly axios: AxiosInstance;
-
-  constructor(s3Host: string) {
-    this.axios = axios.create({
-      baseURL: s3Host,
-    });
-  }
-
   async getBars(
     symbol: string,
     timeframe: string,
@@ -86,44 +77,25 @@ export class HistoryBarsLoader {
 
   private async downloadZip(symbol: string, timeframe: string, month: Date): Promise<DownloadZipResult> {
     const filename = `${symbol}-${timeframe}-${month.toISOString().slice(0, 7)}`;
-    const s3Filepath = `/rates/${symbol}/${timeframe}/${filename}.zip`;
-
-    let result: DownloadZipResultData | null = null;
 
     try {
-      const response = await this.axios.get(s3Filepath, { responseType: "arraybuffer" });
-      result = {
-        filename: `${filename}.csv`,
-        data: response.data,
-      };
+      const response = await this.downloadFromEngineServer(symbol, timeframe, month);
+      if (response) {
+        return {
+          error: false,
+          data: {
+            filename: `${filename}.csv`,
+            data: response,
+          },
+        };
+      }
     } catch (e) {
       console.error(e);
     }
 
-    if (!result) {
-      try {
-        const response = await this.downloadFromEngineServer(symbol, timeframe, month);
-        if (response) {
-          result = {
-            filename: `${filename}.csv`,
-            data: response,
-          };
-        }
-      } catch (e) {
-        console.error(e);
-      }
-    }
-
-    if (!result) {
-      return {
-        error: true,
-        data: null,
-      };
-    }
-
     return {
-      error: false,
-      data: result,
+      error: true,
+      data: null,
     };
   }
 

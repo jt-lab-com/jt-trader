@@ -3,7 +3,6 @@ import TextField from "@mui/material/TextField";
 import { ChangeEvent, FC, useState } from "react";
 import { useParams } from "react-router-dom";
 import { Artifact, ChartPlayback, useArtifact } from "@/entities/artifact";
-import { useConfig } from "@/entities/config";
 import { Page } from "@/shared/ui/page";
 
 interface PlaybackPageProps {
@@ -14,17 +13,11 @@ const PlaybackPage: FC<PlaybackPageProps> = (props) => {
   const { title } = props;
 
   const { artifactsId } = useParams();
-  const { s3Host } = useConfig();
   const { artifact, isLoading } = useArtifact({ artifactsId });
 
   const [mockArtifact, setMockArtifact] = useState<Artifact | null>(null);
   const [fieldValue, setFieldValue] = useState("");
   const [error, setError] = useState("");
-
-  if (!s3Host) {
-    console.error("s3Host is not provided");
-    return null;
-  }
 
   const handleInputChange = (e: ChangeEvent<HTMLInputElement>) => {
     setError("");
@@ -61,9 +54,7 @@ const PlaybackPage: FC<PlaybackPageProps> = (props) => {
         </Box>
       )}
 
-      {(!!artifact || !!mockArtifact) && (
-        <ChartPlayback s3Host={s3Host} artifact={mockArtifact ?? artifact} />
-      )}
+      {(!!artifact || !!mockArtifact) && <ChartPlayback artifact={mockArtifact ?? artifact} />}
     </Page>
   );
 };

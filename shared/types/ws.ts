@@ -244,7 +244,6 @@ export enum ClientNotificationType {
 
 interface EngineConfigResponsePayload {
   version: string;
-  s3Host: string;
   testerDefaults: TesterDefaultArgs;
 }
 

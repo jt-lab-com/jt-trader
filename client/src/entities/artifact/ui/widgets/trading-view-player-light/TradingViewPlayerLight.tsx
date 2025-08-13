@@ -16,11 +16,10 @@ import { SpeedSelector } from "./SpeedSelector";
 
 interface TradingViewPlayerLightProps {
   data: PlaybackChartSymbolData;
-  s3Host: string;
 }
 
 export const TradingViewPlayerLight: FC<TradingViewPlayerLightProps> = (props) => {
-  const { data, s3Host } = props;
+  const { data } = props;
   const { cards } = data;
   const chartRef = useRef<IChartApi | null>(null);
   const datafeedRef = useRef<ChartPlaybackDatafeed | null>(null);
@@ -40,7 +39,7 @@ export const TradingViewPlayerLight: FC<TradingViewPlayerLightProps> = (props) =
 
   useEffect(() => {
     if (!chartRef.current || datafeedRef.current) return;
-    datafeedRef.current = new ChartPlaybackDatafeed({ chart: chartRef.current, s3Host });
+    datafeedRef.current = new ChartPlaybackDatafeed(chartRef.current);
     datafeedRef.current.loadChart({ ...data, defaultSpeed: chartSpeed }).catch((e) => {
       console.error(e);
     });
