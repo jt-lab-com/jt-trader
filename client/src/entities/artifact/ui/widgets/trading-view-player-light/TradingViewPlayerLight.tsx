@@ -20,16 +20,18 @@ interface TradingViewPlayerLightProps {
 
 export const TradingViewPlayerLight: FC<TradingViewPlayerLightProps> = (props) => {
   const { data } = props;
-  const { cards } = data;
   const chartRef = useRef<IChartApi | null>(null);
   const datafeedRef = useRef<ChartPlaybackDatafeed | null>(null);
   const playing = useBoolean();
+  const isEnd = useBoolean();
+  const ready = useBoolean();
 
   const [chartSpeed, setChartSpeed] = useState(ChartPlayerSpeed.x1);
 
   useEffect(() => {
     const unsub = chartEvents.on(Events.End, () => {
       playing.onFalse();
+      isEnd.onTrue();
     });
 
     return () => {
@@ -40,9 +42,12 @@ export const TradingViewPlayerLight: FC<TradingViewPlayerLightProps> = (props) =
   useEffect(() => {
     if (!chartRef.current || datafeedRef.current) return;
     datafeedRef.current = new ChartPlaybackDatafeed(chartRef.current);
-    datafeedRef.current.loadChart({ ...data, defaultSpeed: chartSpeed }).catch((e) => {
-      console.error(e);
-    });
+    datafeedRef.current
+      .loadChart({ ...data, defaultSpeed: chartSpeed })
+      .then(ready.onTrue)
+      .catch((e) => {
+        console.error(e);
+      });
   }, [chartRef.current]);
 
   const handleSpeedChange = (speed: ChartPlayerSpeed) => {
@@ -51,6 +56,17 @@ export const TradingViewPlayerLight: FC<TradingViewPlayerLightProps> = (props) =
   };
 
   const handlePlayClicked = () => {
+    if (isEnd.value) {
+      ready.onFalse();
+      datafeedRef.current?.loadChart({ ...data, defaultSpeed: chartSpeed }).then(() => {
+        playing.onTrue();
+        isEnd.onFalse();
+        ready.onTrue();
+        chartEvents.emit(Events.Play);
+      });
+      return;
+    }
+
     playing.onToggle();
     chartEvents.emit(playing.value ? Events.Pause : Events.Play);
   };
@@ -64,12 +80,17 @@ export const TradingViewPlayerLight: FC<TradingViewPlayerLightProps> = (props) =
               {data.symbol} | {data.interval}
             </Typography>
             <Stack direction={"row"} gap={3} alignItems={"center"}>
-              <PlayButton isPlaying={playing.value} onClick={handlePlayClicked} />
-              <SpeedSelector chartSpeed={chartSpeed} onChange={handleSpeedChange} />
+              <PlayButton
+                isPlaying={playing.value}
+                isEnd={isEnd.value}
+                onClick={handlePlayClicked}
+                disabled={!ready.value}
+              />
+              <SpeedSelector chartSpeed={chartSpeed} onChange={handleSpeedChange} disabled={!ready.value} />
             </Stack>
           </Box>
           <Divider flexItem orientation={"vertical"} />
-          <CardList data={cards} />
+          <CardList data={data.cards} />
         </Stack>
       </Box>
       <TVChartLight sx={{ height: "75vh", border: "1px solid black" }} chartRef={chartRef} />

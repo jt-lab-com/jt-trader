@@ -87,18 +87,15 @@ export class ChartPlaybackDatafeed {
     if (priceLines) priceLinesMap = this.groupDrawablesByTime(priceLines, interval);
     if (cards) cardsMap = this.groupDrawablesByTime(cards, interval);
 
+    if (this.candleStickSeries) this.chart.removeSeries(this.candleStickSeries);
+
+    this.candleStickSeries = this.chart.addSeries(CandlestickSeries);
+    this.seriesMarkers = createSeriesMarkers(this.candleStickSeries, []);
+    this.seriesMarkers.setMarkers([]);
+
     const history = await this.loadHistory(symbol, interval, startTime);
 
-    if (!this.candleStickSeries) {
-      this.candleStickSeries = this.chart.addSeries(CandlestickSeries);
-    }
-
-    if (!this.seriesMarkers) {
-      this.seriesMarkers = createSeriesMarkers(this.candleStickSeries, []);
-    }
-
     this.candleStickSeries.setData(history);
-    this.seriesMarkers?.setMarkers([]);
 
     if (visibleRange)
       this.chart.timeScale().setVisibleRange({

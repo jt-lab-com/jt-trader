@@ -30,7 +30,7 @@ const PlaybackPage: FC<PlaybackPageProps> = (props) => {
         symbol: "mock",
         // eslint-disable-next-line @typescript-eslint/ban-ts-comment
         // @ts-expect-error
-        blocks: [{ type: "chart_playback", isVisible: true, data: { symbols: [data] } }],
+        blocks: [{ type: "chart_playback", isVisible: true, data }],
       });
     } catch (e) {
       setError("Invalid JSON");
