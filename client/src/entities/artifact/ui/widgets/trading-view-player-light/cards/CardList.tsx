@@ -1,7 +1,7 @@
 import Stack from "@mui/material/Stack";
 import { FC, useMemo } from "react";
 import { PlaybackChartCard } from "../../../../model/types";
-import { Card } from "./Card";
+import { Card, CardProps } from "./Card";
 
 interface CardListProps {
   data?: PlaybackChartCard[];
@@ -23,15 +23,16 @@ export const CardList: FC<CardListProps> = (props) => {
 
   return (
     <Stack direction={"row"} gap={3} flexWrap={"wrap"}>
-      {cards.map((card, i) => (
-        <Card
-          key={`${card.id}_${i}`}
-          cardId={card.id}
-          type={card.type}
-          title={card.title}
-          initialValue={card.value}
-        />
-      ))}
+      {cards.map((card, i) => {
+        const props = {
+          cardId: card.id,
+          type: card.type,
+          title: card.title,
+          options: card.options,
+          initialValue: card.value,
+        } as CardProps;
+        return <Card key={`${card.id}_${i}`} {...props} />;
+      })}
     </Stack>
   );
 };

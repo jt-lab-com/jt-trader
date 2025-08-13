@@ -64,21 +64,41 @@ interface PlaybackChartBaseCard {
 interface PlaybackChartTextCard extends PlaybackChartBaseCard {
   type: CardType.Text;
   value: string;
+  options?: TextOptions;
 }
+
+export interface TextOptions {}
 
 interface PaybackChartFormulaCard extends PlaybackChartBaseCard {
   type: CardType.Formula;
   value: string;
+  options?: FormulaOptions;
+}
+
+export interface FormulaOptions {
+  precision?: number;
+  prefix?: string;
+  suffix?: string;
 }
 
 interface PlaybackChartDateCard extends PlaybackChartBaseCard {
   type: CardType.Date;
   value: number | string;
+  options?: DateOptions;
+}
+
+export interface DateOptions {
+  format?: string;
 }
 
 interface PlaybackChartCurrencyCard extends PlaybackChartBaseCard {
   type: CardType.Currency;
   value: number;
+  options?: CurrencyOptions;
+}
+
+export interface CurrencyOptions {
+  currency?: string;
 }
 
 export enum CardType {

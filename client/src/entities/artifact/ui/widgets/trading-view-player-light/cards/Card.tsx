@@ -4,63 +4,101 @@ import Typography from "@mui/material/Typography";
 import { CandleStick } from "@packages/types";
 import dayjs from "dayjs";
 import { Expression, Parser } from "expr-eval";
-import { FC, useEffect, useRef, useState } from "react";
+import { FC, ReactNode, useEffect, useRef, useState } from "react";
 import { useThrottle } from "@/shared/lib/hooks/useThrottle";
 import { fCurrency } from "@/shared/lib/utils/format-number";
 import { chartEvents, Events } from "../../../../lib/chart-playback/events";
-import { CardType } from "../../../../model/types/chart-playback";
+import {
+  CardType,
+  CurrencyOptions,
+  DateOptions,
+  FormulaOptions,
+  TextOptions,
+} from "../../../../model/types/chart-playback";
 
 const parser = new Parser();
 
-interface CardProps {
-  type: CardType;
+type CardConfigMap = {
+  [CardType.Formula]: {
+    initialValue?: string;
+    options?: FormulaOptions;
+  };
+  [CardType.Date]: {
+    initialValue?: string | number;
+    options?: DateOptions;
+  };
+  [CardType.Currency]: {
+    initialValue?: number;
+    options?: CurrencyOptions;
+  };
+  [CardType.Text]: {
+    initialValue?: string;
+    options?: TextOptions;
+  };
+};
+
+export type CardProps<T extends CardType = CardType> = {
+  type: T;
   title: string;
   cardId?: string;
-  initialValue?: string | number;
+  initialValue: string | number;
+} & CardConfigMap[T];
+
+export const Card = <T extends CardType>(props: CardProps<T>) => {
+  if (isFormulaCard(props)) {
+    return <FormulaCard {...props} />;
+  }
+  if (isCurrencyCard(props)) {
+    return <CurrencyCard {...props} />;
+  }
+  if (isDateCard(props)) {
+    return <DateCard {...props} />;
+  }
+  if (isTextCard(props)) {
+    return <TextCard {...props} />;
+  }
+};
+
+interface BaseCardProps {
+  title: string;
+  cardId?: string;
+  children: ReactNode;
 }
 
-export const Card: FC<CardProps> = (props) => {
-  const { cardId, type, title } = props;
-  let { initialValue } = props;
+const BaseCard: FC<BaseCardProps> = (props) => {
+  const { title, children } = props;
 
-  let initialExpression: Expression | null = null;
-  if (type === CardType.Formula && typeof initialValue === "string") {
-    initialExpression = parser.parse(initialValue);
-  }
-  if (type === CardType.Date && initialValue) {
-    initialValue = dayjs(initialValue).format("MM.DD.YYYY HH:mm");
-  }
-  if (type === CardType.Currency && initialValue) {
-    initialValue = fCurrency(initialValue);
-  }
+  return (
+    <MUICard>
+      <CardContent>
+        <Typography variant={"subtitle2"}>{title}</Typography>
+        <Typography variant={"h5"}>{children}</Typography>
+      </CardContent>
+    </MUICard>
+  );
+};
 
-  const exprRef = useRef<Expression | null>(initialExpression);
+interface FormulaCardProps extends Omit<BaseCardProps, "children"> {
+  options?: FormulaOptions;
+  initialValue?: string;
+}
+
+const FormulaCard: FC<FormulaCardProps> = (props) => {
+  const { initialValue, cardId, options } = props;
+
+  const exprRef = useRef<Expression | null>(null);
   const [value, setValue] = useState(initialValue);
   const throttledValue = useThrottle(value, 300);
 
   useEffect(() => {
     const subscribers = [
       chartEvents.on(Events.Tick, (candle: CandleStick) => {
-        if (type !== CardType.Formula) return;
-        setValue(fCurrency(exprRef.current?.evaluate({ price: candle.close })));
+        setValue(exprRef.current?.evaluate({ price: candle.close }));
       }),
 
       chartEvents.on(Events.CardValueChange, (eventCardId: string, value: string) => {
         if (cardId !== eventCardId) return;
-
-        switch (type) {
-          case CardType.Formula:
-            exprRef.current = parser.parse(value);
-            break;
-          case CardType.Currency:
-            setValue(fCurrency(value));
-            break;
-          case CardType.Date:
-            setValue(dayjs(value).format("MM.DD.YYYY HH:mm"));
-            break;
-          case CardType.Text:
-            setValue(value);
-        }
+        exprRef.current = parser.parse(value);
       }),
     ];
 
@@ -70,11 +108,104 @@ export const Card: FC<CardProps> = (props) => {
   }, []);
 
   return (
-    <MUICard sx={{ height: 100, width: 250 }}>
-      <CardContent>
-        <Typography variant={"subtitle2"}>{title}</Typography>
-        <Typography variant={"h5"}>{throttledValue}</Typography>
-      </CardContent>
-    </MUICard>
+    <BaseCard {...props}>
+      {!isNaN(Number(throttledValue)) && options?.prefix}
+      {isNaN(Number(throttledValue)) ? (
+        <Typography variant={"h5"} sx={{ opacity: 0.3, fontWeight: 500 }}>
+          {throttledValue}
+        </Typography>
+      ) : (
+        Number(`${throttledValue}`).toFixed(options?.precision ?? 2)
+      )}
+      {!isNaN(Number(throttledValue)) && options?.suffix}
+    </BaseCard>
   );
 };
+
+interface CurrencyCardProps extends Omit<BaseCardProps, "children"> {
+  options?: CurrencyOptions;
+  initialValue?: number;
+}
+
+const CurrencyCard: FC<CurrencyCardProps> = (props) => {
+  const { options, cardId, initialValue } = props;
+
+  const [value, setValue] = useState(initialValue ? fCurrency(initialValue, options?.currency) : "");
+
+  useEffect(() => {
+    const unsub = chartEvents.on(Events.CardValueChange, (eventCardId: string, value: string) => {
+      if (cardId !== eventCardId) return;
+      setValue(fCurrency(value, options?.currency));
+    });
+
+    return () => {
+      unsub();
+    };
+  }, []);
+
+  return <BaseCard {...props}>{value}</BaseCard>;
+};
+
+interface DateCardProps extends Omit<BaseCardProps, "children"> {
+  options?: DateOptions;
+  initialValue?: string | number;
+}
+
+const defaultDateFormat = "MM.DD.YYYY HH:mm";
+const DateCard: FC<DateCardProps> = (props) => {
+  const { cardId, initialValue, options } = props;
+  const [value, setValue] = useState(dayjs(initialValue).format(options?.format ?? defaultDateFormat));
+
+  useEffect(() => {
+    const unsub = chartEvents.on(Events.CardValueChange, (eventCardId: string, value: string) => {
+      if (cardId !== eventCardId) return;
+      setValue(dayjs(value).format(options?.format ?? defaultDateFormat));
+    });
+
+    return () => {
+      unsub();
+    };
+  }, []);
+
+  return <BaseCard {...props}>{value}</BaseCard>;
+};
+
+interface TextCardProps extends Omit<BaseCardProps, "children"> {
+  options?: TextOptions;
+  initialValue?: string;
+}
+
+const TextCard: FC<TextCardProps> = (props) => {
+  const { cardId, initialValue } = props;
+
+  const [value, setValue] = useState(initialValue);
+
+  useEffect(() => {
+    const unsub = chartEvents.on(Events.CardValueChange, (eventCardId: string, value: string) => {
+      if (cardId !== eventCardId) return;
+      setValue(value);
+    });
+
+    return () => {
+      unsub();
+    };
+  }, []);
+
+  return <BaseCard {...props}>{value}</BaseCard>;
+};
+
+function isFormulaCard(p: CardProps): p is CardProps<CardType.Formula> {
+  return p.type === CardType.Formula;
+}
+
+function isDateCard(p: CardProps): p is CardProps<CardType.Date> {
+  return p.type === CardType.Date;
+}
+
+function isCurrencyCard(p: CardProps): p is CardProps<CardType.Currency> {
+  return p.type === CardType.Currency;
+}
+
+function isTextCard(p: CardProps): p is CardProps<CardType.Text> {
+  return p.type === CardType.Text;
+}
