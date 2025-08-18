@@ -144,6 +144,8 @@ export class ChartPlaybackDatafeed {
             this.candleStickSeries.removePriceLine(this.renderedPriceLinesMap[lineData.id]);
           }
 
+          if (!lineData.price) continue;
+
           const priceLine = this.candleStickSeries.createPriceLine(lineData);
 
           if (lineData.id) {
