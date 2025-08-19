@@ -76,7 +76,7 @@ export class TesterSyncSDK {
       if (!this.processUpdates()) {
         break;
       }
-      if (i == 3) {
+      if (i > 2) {
         throw new Error('Loop in onOrderChange');
       }
     }
@@ -147,9 +147,11 @@ export class TesterSyncSDK {
   }
 
   cancelOrder(orderId: string) {
+    //TODO change orders to dictionary to speed up search
+    //TODO cancelOrder should work with client orderId
     const order = this.orderService
       .getOrders()
-      .find((item) => item.id === orderId.toString() && item.status === 'open');
+      .find((item) => item.id === orderId.toString() && (item.status === 'open' || item.status === 'untriggered'));
     if (!order) return undefined;
 
     return this.orderService.update(orderId, { status: 'canceled' });

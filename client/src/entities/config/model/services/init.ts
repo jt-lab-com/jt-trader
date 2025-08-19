@@ -21,7 +21,6 @@ export const initConfig = createAsyncThunk<void, void, ThunkConfig<void>>(
     subscribe(WS_SERVER_EVENTS.ENGINE_CONFIG_RESPONSE, (payload) => {
       console.log(`Engine version: ${payload.version}`);
       dispatch(configActions.setEngineVersion(payload.version));
-      dispatch(configActions.setS3Host(payload.s3Host));
       dispatch(configActions.setTesterDefaults(payload.testerDefaults));
     });
 

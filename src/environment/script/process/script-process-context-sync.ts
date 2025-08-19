@@ -24,6 +24,20 @@ export class ScriptProcessContextSync extends ScriptProcessContextBase {
     };
   }
 
+  public systemUsage() {
+   // const previousUsage = process.cpuUsage();
+   // const startDate = Date.now();
+   // while (Date.now() - startDate < 50);
+  //  const usage = process.cpuUsage(previousUsage);
+   // const result = (100 * (usage.user + usage.system)) / 50000;
+
+    return {
+      pid: process.pid,
+      cpu: 100,// Math.round(result),
+      memory: Math.round(process.memoryUsage()?.heapUsed / (1024 * 1024)),
+    };
+  }
+
   public subscribeDataFeeds() {
     this._call('watchEndOfTick', [
       (data) => {
