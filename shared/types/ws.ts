@@ -1,4 +1,4 @@
-import type { Exchange } from './exchange';
+import { Exchange, MarketType } from './exchange';
 import { ExchangeField } from './exchange';
 import { Ticker } from 'ccxt';
 import { ScenarioSet } from '../../client/src/entities/scenario/model/types';
@@ -94,7 +94,7 @@ export type WS_CLIENT_EVENT_PAYLOAD = {
 
   [WS_CLIENT_EVENTS.EXCHANGE_CONFIG_REQUEST]: undefined;
 
-  [WS_CLIENT_EVENTS.EXCHANGE_MARKETS_REQUEST]: string;
+  [WS_CLIENT_EVENTS.EXCHANGE_MARKETS_REQUEST]: ExchangeMarketsRequestParams;
 
   [WS_CLIENT_EVENTS.LOGS_LIST_REQUEST]: string;
 
@@ -263,7 +263,8 @@ export interface TesterDefaultArgs {
 }
 
 export interface ExchangeConfigResponsePayload {
-  exchanges: Exchange[];
+  main: Exchange[];
+  additional?: Exchange[];
 }
 
 export interface PullUserSourceCodeResponsePayload {
@@ -445,6 +446,7 @@ export interface Job {
   strategy: Strategy;
   runtimeType: JobRuntimeType;
   exchange: string;
+  marketType?: MarketType;
   artifacts: string;
   args: StrategyArg[];
   createdAt: string;
@@ -521,11 +523,17 @@ export interface SaveJobParams {
   name: string;
   strategy: Strategy;
   exchange: string;
+  marketType: MarketType;
   args: StrategyArg[];
   runtimeType: 'market' | 'system';
 }
 
 export type CopyJobParams = Omit<SaveJobParams, 'id'>;
+
+export interface ExchangeMarketsRequestParams {
+  exchange: string;
+  marketType: MarketType;
+}
 
 export interface HistoricalTesterBarsRequestParams {
   requestId?: string;
@@ -572,6 +580,7 @@ export interface ReportActionButtonResponsePayload {
 
 export interface ExchangeMarketsResponsePayload {
   exchange: string;
+  marketType: MarketType;
   data: ExchangeMarkets[];
 }
 

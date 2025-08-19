@@ -38,7 +38,9 @@ interface EditorModalProps {
 export const EditorModal: FC<EditorModalProps> = (props) => {
   const { open, editMode, job, onClose, onSave } = props;
   const { getStrategyDefinedArgs, fetchStrategies } = useStrategy();
-  const { exchangeList } = useConfig();
+  const {
+    exchanges: { main: exchangeList },
+  } = useConfig();
 
   const methods = useForm<JobSchema>({
     resolver: yupResolver(jobSchema),
@@ -48,7 +50,8 @@ export const EditorModal: FC<EditorModalProps> = (props) => {
   const { handleSubmit, setValue, control, clearErrors, reset } = methods;
   const selectedStrategy = useWatch({ name: "selectedStrategy", control });
   const exchange = useWatch({ name: "exchange", control });
-  const markets = useMarkets(exchange);
+  const marketType = useWatch({ name: "marketType", control });
+  const markets = useMarkets(exchange, marketType);
 
   const definedArgs = selectedStrategy
     ? getStrategyDefinedArgs(selectedStrategy.id, selectedStrategy.name, selectedStrategy.type)
@@ -120,7 +123,8 @@ export const EditorModal: FC<EditorModalProps> = (props) => {
 
   const onSubmit = handleSubmit(
     (data: JobSchema) => {
-      const { args, runtimeType, jobName, prefix, id, exchange, symbols, selectedStrategy } = data;
+      const { args, runtimeType, jobName, prefix, id, exchange, symbols, selectedStrategy, marketType } =
+        data;
 
       args?.push({ key: "symbols", value: symbols?.join(",") });
 
@@ -130,6 +134,7 @@ export const EditorModal: FC<EditorModalProps> = (props) => {
         name: jobName,
         strategy: selectedStrategy,
         exchange,
+        marketType,
         args: args ?? [],
         runtimeType: runtimeType as JobRuntimeType,
       });
@@ -185,7 +190,7 @@ export const EditorModal: FC<EditorModalProps> = (props) => {
                   size={"small"}
                 />
               </Grid>
-              <Grid item xs={4}>
+              <Grid item xs={3}>
                 <RHFSelect name={"exchange"} label={"Exchange"} size={"small"} variant={"outlined"}>
                   {exchangeOptions.map((exchange) => (
                     <MenuItem key={exchange.code} disabled={!exchange.connected} value={exchange.code}>
@@ -194,10 +199,16 @@ export const EditorModal: FC<EditorModalProps> = (props) => {
                   ))}
                 </RHFSelect>
               </Grid>
-              <Grid item xs={4}>
+              <Grid item xs={3}>
+                <RHFSelect name={"marketType"} label={"Market type"} size={"small"} variant={"outlined"}>
+                  <MenuItem value={"swap"}>swap</MenuItem>
+                  <MenuItem value={"spot"}>spot</MenuItem>
+                </RHFSelect>
+              </Grid>
+              <Grid item xs={3}>
                 <StrategiesSelect name={"selectedStrategy"} />
               </Grid>
-              <Grid item xs={4}>
+              <Grid item xs={3}>
                 <RHFSelect name={"runtimeType"} label={"Runtime"} size={"small"} variant={"outlined"}>
                   <MenuItem value={"market"}>market</MenuItem>
                   <MenuItem value={"system"}>system</MenuItem>

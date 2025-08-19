@@ -396,6 +396,7 @@ export class EventsGateway implements OnGatewayDisconnect, OnGatewayConnection {
             data.args,
             data.runtimeType,
             data.exchange,
+            data.marketType,
           );
         } else {
           await this.scriptService.addRuntime(
@@ -406,6 +407,7 @@ export class EventsGateway implements OnGatewayDisconnect, OnGatewayConnection {
             data.args,
             data.runtimeType,
             data.exchange,
+            data.marketType,
           );
         }
         return await this.processMessage(client, WS_CLIENT_EVENTS.BACKGROUND_JOBS_LIST_REQUEST, null);
@@ -486,7 +488,7 @@ export class EventsGateway implements OnGatewayDisconnect, OnGatewayConnection {
       case WS_CLIENT_EVENTS.RUNTIME_HISTORICAL_BARS_REQUEST: {
         const data = payload as WS_CLIENT_EVENT_PAYLOAD[WS_CLIENT_EVENTS.RUNTIME_HISTORICAL_BARS_REQUEST];
         try {
-          const exchange = this.ccxtService.getSDK(data.exchange, { apiKey: '', secret: '', password: '' });
+          const exchange = this.ccxtService.getSDK(data.exchange, 'spot', { apiKey: '', secret: '', password: '' });
           const ohlcv = await exchange.fetchOHLCV(data.symbol, data.timeframe.toString(), data.startTime, data.limit);
           const bars = ohlcv.map(([time, open, high, low, close, volume]) => ({
             time,
@@ -565,9 +567,7 @@ export class EventsGateway implements OnGatewayDisconnect, OnGatewayConnection {
       case WS_CLIENT_EVENTS.EXCHANGE_CONFIG_REQUEST: {
         return {
           event: WS_SERVER_EVENTS.EXCHANGE_CONFIG_RESPONSE,
-          payload: {
-            exchanges: await this.exchangeConnectorService.getExchangeList(client.user.id),
-          },
+          payload: await this.exchangeConnectorService.getExchangeList(client.user.id),
         };
       }
       case WS_CLIENT_EVENTS.EXCHANGE_CONFIG_SAVE: {
@@ -576,7 +576,7 @@ export class EventsGateway implements OnGatewayDisconnect, OnGatewayConnection {
         return this.processMessage(client, WS_CLIENT_EVENTS.EXCHANGE_CONFIG_REQUEST);
       }
       case WS_CLIENT_EVENTS.PULL_USER_SOURCE_CODE_REQUEST: {
-        let payload = { error: true, message: 'Update failed' };
+        const payload = { error: true, message: 'Update failed' };
         try {
           execSync('cd ./jtl-infra-public; git reset HEAD^ --hard; git pull;');
           payload.error = false;
@@ -660,13 +660,14 @@ export class EventsGateway implements OnGatewayDisconnect, OnGatewayConnection {
       }
 
       case WS_CLIENT_EVENTS.EXCHANGE_MARKETS_REQUEST: {
-        const exchange = payload as WS_CLIENT_EVENT_PAYLOAD[WS_CLIENT_EVENTS.EXCHANGE_MARKETS_REQUEST];
-        const data = await this.ccxtService.getExchangeMarkets(exchange);
+        const data = payload as WS_CLIENT_EVENT_PAYLOAD[WS_CLIENT_EVENTS.EXCHANGE_MARKETS_REQUEST];
+        const markets = await this.ccxtService.getExchangeMarkets(data.exchange, data.marketType);
         return {
           event: WS_SERVER_EVENTS.EXCHANGE_MARKETS_RESPONSE,
           payload: {
-            exchange,
-            data,
+            exchange: data.exchange,
+            marketType: data.marketType,
+            data: markets,
           },
         };
       }

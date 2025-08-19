@@ -5,7 +5,7 @@ import CardContent from "@mui/material/CardContent";
 import Container from "@mui/material/Container";
 import Stack from "@mui/material/Stack";
 import React, { FC } from "react";
-import { ControlButtons } from "@/features/config";
+import { AddAdditionalExchange, ControlButtons } from "@/features/config";
 import { InvalidateCacheButton, RebootButton } from "@/features/server";
 import { ConfigTable, useConfig } from "@/entities/config";
 import { Iconify } from "@/shared/ui/iconify";
@@ -42,6 +42,7 @@ const ConfigPage: FC<ConfigPageProps> = (props) => {
                 >
                   System logs
                 </Button>
+                <AddAdditionalExchange />
               </Stack>
               <Stack direction={"row"} gap={1}>
                 <Typography variant={"body2"} color={"text.secondary"}>

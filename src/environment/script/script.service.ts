@@ -8,12 +8,13 @@ import { StoreBundleResponse } from '../../common/api/types';
 import { ExceptionReasonType } from '../../exception/types';
 import { CacheService } from '../../common/cache/cache.service';
 import { EventEmitter2 } from '@nestjs/event-emitter';
+import { MarketType } from 'ccxt';
 
-const ENABLED_RUNTIME_PREFIX: string = 'ENABLED_RUNTIME_PREFIX::';
+const ENABLED_RUNTIME_PREFIX = 'ENABLED_RUNTIME_PREFIX::';
 
 @Injectable()
 export class ScriptService {
-  private runIsLocked: boolean = false;
+  private runIsLocked = false;
 
   constructor(
     private readonly factory: ScriptProcessFactory,
@@ -46,7 +47,7 @@ export class ScriptService {
     }
   }
 
-  async stop(id: number, softMode: boolean = false) {
+  async stop(id: number, softMode = false) {
     await this.factory.stop(id);
     if (softMode) {
       await this.markProcess(id, false);
@@ -54,7 +55,7 @@ export class ScriptService {
     this.eventEmitter.emit('system.update-report');
   }
 
-  async stopAll(remove: boolean = true, softMode: boolean = false) {
+  async stopAll(remove = true, softMode = false) {
     const keys = await this.factory.stopAll(remove);
     await Promise.all(
       keys.map(async (key) => {
@@ -68,14 +69,14 @@ export class ScriptService {
     const keys = await this.cacheService.keys(ENABLED_RUNTIME_PREFIX);
     if (!keys || !keys.length) return;
 
-    for (let key of keys) {
+    for (const key of keys) {
       const [id] = key.split('::').slice(-1);
       await this.run(parseInt(id));
     }
   }
 
   private async markProcess(id: number, isRunning: boolean) {
-    const key: string = `${ENABLED_RUNTIME_PREFIX}${id}`;
+    const key = `${ENABLED_RUNTIME_PREFIX}${id}`;
     if (isRunning) {
       await this.cacheService.set(key, '1');
     } else {
@@ -111,6 +112,7 @@ export class ScriptService {
     args: { key: string; value: string | number }[],
     runtimeType: 'market' | 'system',
     exchange: string,
+    marketType: MarketType,
   ): Promise<number> => {
     return await this.storage.saveRuntime({
       accountId,
@@ -123,6 +125,7 @@ export class ScriptService {
       strategyPath: strategy.path,
       args,
       runtimeType,
+      marketType,
     });
   };
 
@@ -135,6 +138,7 @@ export class ScriptService {
     args: { key: string; value: string | number }[],
     runtimeType: 'market' | 'system',
     exchange: string,
+    marketType: MarketType,
   ): Promise<void> => {
     await this.storage.saveRuntime({
       accountId,
@@ -148,6 +152,7 @@ export class ScriptService {
       strategyPath: strategy.path,
       args,
       runtimeType,
+      marketType,
     });
 
     if (this.factory.check(id)) {

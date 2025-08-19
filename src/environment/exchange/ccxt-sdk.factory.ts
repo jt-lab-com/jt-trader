@@ -20,9 +20,9 @@ export class ExchangeSdkFactory {
 
     class ExtendedExchange extends ccxt.pro[exchangeName] {
       private _lastWebSocketCall: number;
-      private _isFailed: boolean = false;
-      private _retriesCounter: number = 0;
-      private _callTicker: number = 0;
+      private _isFailed = false;
+      private _retriesCounter = 0;
+      private _callTicker = 0;
       private _lastError: Error = undefined;
       private _exchangeName = exchangeName;
       private _isMock: () => boolean = () => isMock;

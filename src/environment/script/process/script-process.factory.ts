@@ -63,7 +63,7 @@ export class ScriptProcessFactory {
     const enabledProcessesLimit: number = parseInt(
       await this.accountService.getParam(accountId, ACCOUNT_LIMIT_RUNTIMES),
     );
-    let counter: number = 0;
+    let counter = 0;
     this.processes.forEach((item) => {
       counter += item.meta.isEnabled ? 1 : 0;
     });

@@ -1,30 +1,21 @@
 import { Injectable } from '@nestjs/common';
-import { ConfigService } from '../../config/config.service';
+import { ConfigParamType, ConfigService } from '../../config/config.service';
 import { EXCHANGE_LIST } from './const';
 import { Exchange, ExchangeField, SaveExchangeConfigParams } from '@packages/types';
 import { ExchangeKeysType } from '../../../common/interface/exchange-sdk.interface';
+import * as ccxt from 'ccxt';
+
 @Injectable()
 export class ExchangeConnectorService {
   constructor(private readonly configService: ConfigService) {}
 
-  async getExchangeList(accountId: string): Promise<Array<Exchange & { connected: boolean }>> {
+  async getExchangeList(accountId: string): Promise<{
+    main: Array<Exchange & { connected: boolean }>;
+    additional?: Array<Exchange & { connected: boolean }>;
+  }> {
     const configParams = await this.configService.getParamsList(accountId);
 
-    const getFieldValue = (field: ExchangeField) => {
-      let value: string | boolean = configParams.find(({ name }) => name === field.name)?.value ?? '';
-
-      if (value && field.type === 'string') {
-        value = `${value.slice(0, 3)}${new Array(5).fill('•').join('')}${value.slice(-3)}`;
-      }
-
-      if (field.type === 'boolean') {
-        value = value === 'true';
-      }
-
-      return value;
-    };
-
-    return EXCHANGE_LIST.map((exchange) => {
+    const mainExchangeList = EXCHANGE_LIST.map((exchange) => {
       const connected = exchange.fields.every((field) => {
         if (field.type !== 'string') return true;
         return !!configParams.find(({ name, value }) => name === field.name && !!value);
@@ -36,11 +27,71 @@ export class ExchangeConnectorService {
         fields: exchange.fields.map((field) => {
           return {
             ...field,
-            value: getFieldValue(field),
+            value: this.getUserExchangeFieldValue(field, configParams),
           };
         }),
       };
     });
+
+    if (process.env.NODE_ENV === 'development') {
+      const additionalExchanges = this.getAdditionalExchanges(configParams);
+      const connectedAdditionalExchanges = additionalExchanges.filter((exchange) => exchange.connected);
+      const availableAdditionalExchanges = additionalExchanges.filter((exchange) => !exchange.connected);
+
+      return {
+        main: [...mainExchangeList, ...connectedAdditionalExchanges],
+        additional: availableAdditionalExchanges,
+      };
+    }
+
+    return { main: mainExchangeList };
+  }
+
+  private getAdditionalExchanges(configParams: ConfigParamType[]): Array<Exchange & { connected: boolean }> {
+    // @ts-ignore
+    return ccxt.pro.exchanges
+      .filter((exchangeName: string) => !EXCHANGE_LIST.find(({ code }) => exchangeName === code))
+      .map((exchangeName: string): Exchange & { connected: boolean } => {
+        const requiredCredentials = new ccxt.pro[exchangeName]().describe()?.requiredCredentials;
+        const exchangeFields = Object.keys(requiredCredentials)
+          .filter((key) => requiredCredentials[key])
+          .map((key) => ({
+            name: `${exchangeName}_${key.replace(/([a-z0-9])([A-Z])/g, '$1_$2').toLowerCase()}`,
+            label: key,
+            type: 'string' as const,
+            value: '',
+          }));
+        const connected = exchangeFields.every((field) => {
+          if (field.type !== 'string') return true;
+          return !!configParams.find(({ name, value }) => name === field.name && !!value);
+        });
+
+        return {
+          code: exchangeName,
+          name: exchangeName,
+          connected,
+          sandbox: false,
+          disabled: false,
+          fields: exchangeFields.map((field) => ({
+            ...field,
+            value: this.getUserExchangeFieldValue(field, configParams),
+          })),
+        };
+      });
+  }
+
+  private getUserExchangeFieldValue(field: ExchangeField, configParams: ConfigParamType[]) {
+    let value: string | boolean = configParams.find(({ name }) => name === field.name)?.value ?? '';
+
+    if (value && field.type === 'string') {
+      value = `${value.slice(0, 3)}${new Array(5).fill('•').join('')}${value.slice(-3)}`;
+    }
+
+    if (field.type === 'boolean') {
+      value = value === 'true';
+    }
+
+    return value;
   }
 
   async updateExchangeConfig(accountId: string, fields: SaveExchangeConfigParams) {
@@ -50,7 +101,24 @@ export class ExchangeConnectorService {
   async getExchangeConfig(accountId: string, code: string): Promise<ExchangeKeysType> {
     const exchange = EXCHANGE_LIST.find((exchange) => exchange.code === code);
 
-    if (!exchange) return null;
+    if (!exchange && process.env.NODE_ENV !== 'development') return null;
+
+    if (!exchange) {
+      const requiredCredentials = new ccxt.pro[code]()?.describe()?.requiredCredentials;
+      const exchangeFields = Object.keys(requiredCredentials)
+        .filter((key) => requiredCredentials[key])
+        .map((key) => `${code}_${key.replace(/([a-z0-9])([A-Z])/g, '$1_$2').toLowerCase()}`);
+
+      const keys = {};
+
+      for (const fieldName of exchangeFields) {
+        const param = await this.configService.getParam(accountId, fieldName);
+        const key = param.name.replace(`${code}_`, '').replace(/_([a-z])/g, (_, letter) => letter.toUpperCase());
+        keys[key] = param.value;
+      }
+
+      return keys as ExchangeKeysType;
+    }
 
     let apiKey = '';
     let secret = '';

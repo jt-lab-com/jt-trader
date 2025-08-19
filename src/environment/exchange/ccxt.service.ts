@@ -7,6 +7,7 @@ import { ExchangeSdkFactory } from './ccxt-sdk.factory';
 import { InjectPinoLogger, PinoLogger } from 'nestjs-pino';
 import { CacheService } from '../../common/cache/cache.service';
 import { BINANCE_USDM_HARDCODED_LEVERAGES } from './exchange-connector/const';
+import { MarketType } from '@packages/types';
 
 @Injectable()
 export class CCXTService implements ExchangeSDKInterface {
@@ -24,48 +25,53 @@ export class CCXTService implements ExchangeSDKInterface {
     }
   }
 
-  public getSDK(name: string, keys: ExchangeKeysType): Exchange {
+  public getSDK(name: string, marketType: MarketType, keys: ExchangeKeysType): Exchange {
     let formattedName = name.replace('-testnet', '');
     const isMock: boolean = formattedName.endsWith('-mock');
     if (isMock) {
       formattedName = formattedName.replace('-mock', '');
     }
 
-    const key: string = [formattedName, keys.apiKey].join('::');
+    const key: string = [formattedName, marketType, keys.apiKey].join('::');
     let exchange: Exchange = this.sdk.get(key);
     if (!exchange) {
       exchange = this.sdkFactory.build(formattedName, isMock, {
-        defaultType: 'swap',
+        options: {
+          defaultType: marketType,
+        },
+        defaultType: marketType,
         agent: this.agent,
         ...keys,
       });
       if (keys.sandboxMode === true) {
         exchange.setSandboxMode(true);
       }
-      exchange.options['adjustForTimeDifference'] = true;
-      exchange.options['defaultType'] = 'swap';
-      exchange.options['marginMode'] = 'cross'; // or 'cross' or 'isolated'
-      exchange.options['defaultMarginMode'] = 'cross'; // 'cross' or 'isolated'
-
+      // exchange.options['adjustForTimeDifference'] = true;
+      exchange.options['defaultType'] = marketType;
+      // exchange.options['marginMode'] = 'cross'; // or 'cross' or 'isolated'
+      // exchange.options['defaultMarginMode'] = 'cross'; // 'cross' or 'isolated'
 
       this.sdk.set(key, exchange);
     }
     return exchange as Exchange;
   }
 
-  public async getExchangeMarkets(name: string): Promise<any[]> {
-    const key = `EXCHANGE_MARKETS_${name}`;
+  public async getExchangeMarkets(name: string, marketType: MarketType): Promise<any[]> {
+    const key = `EXCHANGE_MARKETS_${name}_${marketType}`;
 
     const data = await this.cacheService.get(key);
+
     if (!data) {
-      const sdk = this.getSDK(name, { apiKey: '', secret: '' });
-      await sdk.loadMarkets(false);
+      const sdk = this.getSDK(name, marketType, { apiKey: '', secret: '' });
+      await sdk.loadMarkets(true);
       const tickers = await sdk.fetchTickers();
       const markets = Object.values(sdk.markets);
       const values = [];
+
       for (let i = 0; i < markets.length; i++) {
         const market = markets[i];
-        if (market.swap !== true || market.linear !== true) continue;
+        if (!market[marketType]) continue;
+        if (marketType === 'swap' && !market.linear) continue;
 
         const mergedData = { ...market, ...tickers[market.symbol] };
         if (name === 'binanceusdm') {

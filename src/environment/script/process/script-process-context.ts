@@ -21,15 +21,15 @@ export class ScriptProcessContext extends ScriptProcessContextBase {
   }
 
   updateArgs = async (instance: BaseScriptInterface) => {
-    const { symbols, connectionName, interval } = instance;
-    this.args = { symbols, connectionName, interval };
+    const { symbols, connectionName, interval, marketType = 'swap' } = instance;
+    this.args = { symbols, connectionName, interval, marketType };
     if (this.isTester()) {
       this.keys = { apiKey: 'xxxxx', secret: 'yyyyy' };
     } else {
       this.keys = await this.keysStorage.selectKeys(connectionName, this.accountId);
     }
 
-    const sdk = this.exchange.getSDK(this.args.connectionName, this.keys);
+    const sdk = this.exchange.getSDK(this.args.connectionName, this.args.marketType, this.keys);
     await sdk.loadMarkets(false);
 
     await this.loadTickers();
@@ -128,8 +128,8 @@ export class ScriptProcessContext extends ScriptProcessContextBase {
   }
 
   protected async _call<T>(method: string, args: any[]): Promise<T> {
-    const { connectionName } = this.args;
-    const sdk: Exchange = this.exchange.getSDK(connectionName, this.keys);
+    const { connectionName, marketType } = this.args;
+    const sdk: Exchange = this.exchange.getSDK(connectionName, marketType, this.keys);
     const internalMethod = method === 'getHistory' ? 'fetchOHLCV' : method;
 
     try {
@@ -212,7 +212,7 @@ export class ScriptProcessContext extends ScriptProcessContextBase {
 
   public symbolInfo(symbol) {
     if (this.isTester()) return this.getSymbolInfo(symbol);
-    const sdk = this.exchange.getSDK(this.args.connectionName, this.keys);
+    const sdk = this.exchange.getSDK(this.args.connectionName, this.args.marketType, this.keys);
     return { ...sdk.market(symbol) };
   }
 
@@ -257,8 +257,8 @@ export class ScriptProcessContext extends ScriptProcessContextBase {
   }
 
   public async loadTickers() {
-    const { connectionName, symbols } = this.args;
-    const sdk: Exchange = this.exchange.getSDK(connectionName, this.keys);
+    const { connectionName, symbols, marketType } = this.args;
+    const sdk: Exchange = this.exchange.getSDK(connectionName, marketType, this.keys);
     const assets = sdk.markets;
 
     for (const symbol of symbols) {

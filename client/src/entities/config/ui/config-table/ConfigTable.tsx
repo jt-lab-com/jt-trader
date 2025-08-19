@@ -15,7 +15,7 @@ interface ConfigTableProps {
 
 export const ConfigTable: FC<ConfigTableProps> = (props) => {
   const { renderControls } = props;
-  const { exchangeList } = useConfig();
+  const { exchanges } = useConfig();
   const theme = useTheme();
 
   const renderRow = (exchange: Exchange) => {
@@ -44,7 +44,7 @@ export const ConfigTable: FC<ConfigTableProps> = (props) => {
           <TableCell width={100} />
         </TableRow>
       </TableHead>
-      <TableBody>{exchangeList.map(renderRow)}</TableBody>
+      <TableBody>{exchanges.main?.map(renderRow)}</TableBody>
     </Table>
   );
 };

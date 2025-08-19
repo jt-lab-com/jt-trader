@@ -200,7 +200,7 @@ export const EXCHANGE_LIST: Exchange[] = [
   OKX,
   GATE_IO,
   GATE_IO_MOCK,
-  BYBIT,
+  // BYBIT,
 ];
 
 export const BINANCE_USDM_HARDCODED_LEVERAGES = {

@@ -40,13 +40,13 @@ export class DataFeedFactory {
     let dataFlow = this.dataFlow;
     // если биржа mock и приватный метод пользователя
     if (isMock && ['watchOrderBook', 'watchTicker'].indexOf(method) === -1) {
-      dataFlow = "subscriber";
+      dataFlow = 'subscriber';
     }
 
     let dataFeed: DataFeed<DataFeedType> = this.dataFeeds.get(key);
     if (!dataFeed) {
       dataFeed = new DataFeed<DataFeedType>(
-        this.sdk.getSDK(exchange, { apiKey, secret, password, sandboxMode }),
+        this.sdk.getSDK(exchange, 'swap', { apiKey, secret, password, sandboxMode }),
         [method, symbol, ...rest],
         this.logger,
         dataFlow,
@@ -62,7 +62,7 @@ export class DataFeedFactory {
       return this.subscribeTickerNative(exchange, symbol, subscriber);
     }
 
-    const key: string = `${exchange.toUpperCase()}::TICKER::${symbol.toUpperCase()}`;
+    const key = `${exchange.toUpperCase()}::TICKER::${symbol.toUpperCase()}`;
     const id = this.cacheService.subscribe(key, (data) => {
       subscriber(JSON.parse(data));
     });
@@ -95,7 +95,7 @@ export class DataFeedFactory {
       return this.subscribeOrdersBookNative(exchange, symbol, subscriber);
     }
 
-    const key: string = `${exchange.toUpperCase()}::ORDERS-BOOK::${symbol.toUpperCase()}`;
+    const key = `${exchange.toUpperCase()}::ORDERS-BOOK::${symbol.toUpperCase()}`;
     const id = this.cacheService.subscribe(key, (data) => {
       subscriber(JSON.parse(data));
     });
@@ -235,7 +235,7 @@ export class DataFeedFactory {
         return;
       }
 
-      let condition = dataFeed.isStopped && (!isFailed || nextRetryTms <= now);
+      const condition = dataFeed.isStopped && (!isFailed || nextRetryTms <= now);
       // if (!isFailed && ['watchOrderBook', 'watchTicker'].indexOf(method) > -1) {
       //   dataFeed.isStopped = lastReceiveTms > 0 && now - lastReceiveTms > MAX_RECEIVED_TIMEOUT; // перезапуск если давно не обновлялись данные
       // }

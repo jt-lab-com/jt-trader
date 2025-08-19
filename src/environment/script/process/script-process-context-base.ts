@@ -152,8 +152,8 @@ export class ScriptProcessContextBase {
   }
 
   protected _call(method: string, args: any[]) {
-    const { connectionName } = this.args;
-    const sdk: Exchange = this.exchange.getSDK(connectionName, this.keys);
+    const { connectionName, marketType } = this.args;
+    const sdk: Exchange = this.exchange.getSDK(connectionName, marketType, this.keys);
     const internalMethod = method === 'getHistory' ? 'fetchOHLCV' : method;
 
     try {
@@ -235,13 +235,13 @@ export class ScriptProcessContextBase {
   public ccxt() {
     if (!this._hasDeveloperAccess()) throw new Error('Invalid method ccxt().');
 
-    return this.exchange.getSDK(this.args.connectionName, this.keys);
+    return this.exchange.getSDK(this.args.connectionName, this.args.marketType, this.keys);
   }
 
   protected _sdkObject() {
     if (!this._hasDeveloperAccess()) throw new Error('Invalid method sdkGetProp() / sdkSetProp() / sdkCall().');
 
-    return this.exchange.getSDK(this.args.connectionName, this.keys);
+    return this.exchange.getSDK(this.args.connectionName, this.args.marketType, this.keys);
   }
 
   public sdkCall(method: string, args: any[]) {

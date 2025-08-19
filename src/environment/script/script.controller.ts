@@ -58,11 +58,12 @@ export class ScriptController {
           })) ?? [],
         'market',
         exchangeCode,
+        'swap',
       );
 
       return { runtimeId };
     } catch (e) {
-      this.logger.error({ stack: e.stack?.split("\n"), message: e.message }, 'Runtime remote create error');
+      this.logger.error({ stack: e.stack?.split('\n'), message: e.message }, 'Runtime remote create error');
       throw forbiddenError;
     }
   }

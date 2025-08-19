@@ -9,6 +9,7 @@ import { Strategy as ServerResponseStrategy, StrategyDefinedArg } from '@package
 import { parseDefinedArgs } from '../utils/parse-defined-args';
 import { InjectPinoLogger, PinoLogger } from 'nestjs-pino';
 import { PrismaService } from '../../../common/prisma/prisma.service';
+import { MarketType } from 'ccxt';
 
 type Runtime = {
   id?: number;
@@ -21,6 +22,7 @@ type Runtime = {
   strategy: StrategyItem;
   artifacts: string;
   exchange: string;
+  marketType: MarketType;
   args: KeyValueType[] | string;
   createdAt?: Date;
   updatedAt?: Date;
@@ -37,6 +39,7 @@ export type StrategyTypeDTO = {
   strategyType: StrategyItemType;
   strategyPath?: string;
   exchange?: string;
+  marketType?: MarketType;
   runtimeType: 'market' | 'system';
   args: KeyValueType[] | string;
 };
@@ -83,7 +86,7 @@ export class ScriptStorageService {
         definedArgs = parseDefinedArgs(content, file.filename.endsWith('.ts'));
       } catch (e) {
         this.logger.warn(
-          { message: e.message, stack: e.stack?.split("\n") },
+          { message: e.message, stack: e.stack?.split('\n') },
           `an error occurred while parsing definedArgs (${file.filename})`,
         );
       }
@@ -131,7 +134,9 @@ export class ScriptStorageService {
 
   saveRuntime = async (raw: StrategyTypeDTO): Promise<number> => {
     let item: PrismaRuntime;
-    const args: KeyValueType[] = Array.isArray(raw.args) ? [...raw.args.filter(({ key }) => key !== 'exchange')] : [];
+    const args: KeyValueType[] = Array.isArray(raw.args)
+      ? [...raw.args.filter(({ key }) => key !== 'exchange' && key !== 'marketType')]
+      : [];
 
     if (!raw.prefix) {
       raw.prefix = nanoid(6);
@@ -139,6 +144,10 @@ export class ScriptStorageService {
     if (raw.exchange) {
       args.push({ key: 'exchange', value: raw.exchange });
       delete raw['exchange'];
+    }
+    if (raw.marketType) {
+      args.push({ key: 'marketType', value: raw.marketType });
+      delete raw['marketType'];
     }
 
     if (!raw.id) {
@@ -237,6 +246,7 @@ export class ScriptStorageService {
         path: runtime.strategyPath,
       },
       exchange: args.find(({ key }) => key === 'exchange')?.value.toString(),
+      marketType: (args.find(({ key }) => key === 'marketType')?.value.toString() ?? 'swap') as MarketType,
       args: args.filter(({ key }) => key !== 'exchange'),
       artifacts: ScriptArtifactsService.createArtifactsKey([runtime.id, 'runtime']),
     };

@@ -19,7 +19,7 @@ async function bootstrap() {
   const logger = app.get(Logger);
   const scriptService = app.get(ScriptService);
   const cacheService = app.get(CacheService);
-  const exchangeSdk = app.get(CCXTService).getSDK('', { apiKey: '', password: '', secret: '' });
+  const exchangeSdk = app.get(CCXTService).getSDK('', 'spot', { apiKey: '', password: '', secret: '' });
   const processFactory = app.get(ScriptProcessFactory);
   const handler = app.get(MainProcessExceptionHandler);
 
@@ -44,7 +44,7 @@ async function bootstrap() {
   const dateEnd = new Date(end);
   const dateEndShifted = new Date(dateEnd.setMonth(dateEnd.getMonth() + 1));
   let _lastTick: number;
-  let caughtException: boolean = false;
+  const caughtException = false;
   const lastTick = () => _lastTick;
   const setLastTick = (value) => {
     _lastTick = value;
