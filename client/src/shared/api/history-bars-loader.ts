@@ -1,18 +1,11 @@
 import { CandleStick, WS_CLIENT_EVENTS, WS_SERVER_EVENTS } from "@packages/types";
-import axios, { AxiosInstance } from "axios";
 import JSZip from "jszip";
 import { nanoid } from "nanoid";
 import { intervalMap } from "../const/interval-map";
 import { emitSocketEvent, subscribe } from "./socket";
 
 export class HistoryBarsLoader {
-  private readonly axios: AxiosInstance;
-
-  constructor(s3Host: string) {
-    this.axios = axios.create({
-      baseURL: s3Host,
-    });
-  }
+  private cache: Record<string, CandleStick[]> = {};
 
   async getBars(
     symbol: string,
@@ -22,6 +15,13 @@ export class HistoryBarsLoader {
     limit?: number
   ): Promise<CandleStick[]> {
     if (startTime > endTime) return [];
+
+    const cacheKey = `${symbol}_${timeframe}_${startTime}_${endTime}_${limit}`;
+
+    if (this.cache[cacheKey]) {
+      return this.cache[cacheKey];
+    }
+
     const formattedSymbol = symbol.replace("/", "").toUpperCase();
     const interval = intervalMap[timeframe];
     const startDate = new Date(startTime);
@@ -33,6 +33,10 @@ export class HistoryBarsLoader {
         if (error || !data) return [];
 
         const bars = await this.unpack(data.data, data.filename);
+
+        if (bars) {
+          this.cache[cacheKey] = bars;
+        }
 
         return bars ?? [];
       }
@@ -76,6 +80,8 @@ export class HistoryBarsLoader {
         result = result.slice(0, limit);
       }
 
+      this.cache[cacheKey] = result;
+
       return result;
     } catch (e) {
       console.error(e);
@@ -86,44 +92,25 @@ export class HistoryBarsLoader {
 
   private async downloadZip(symbol: string, timeframe: string, month: Date): Promise<DownloadZipResult> {
     const filename = `${symbol}-${timeframe}-${month.toISOString().slice(0, 7)}`;
-    const s3Filepath = `/rates/${symbol}/${timeframe}/${filename}.zip`;
-
-    let result: DownloadZipResultData | null = null;
 
     try {
-      const response = await this.axios.get(s3Filepath, { responseType: "arraybuffer" });
-      result = {
-        filename: `${filename}.csv`,
-        data: response.data,
-      };
+      const response = await this.downloadFromEngineServer(symbol, timeframe, month);
+      if (response) {
+        return {
+          error: false,
+          data: {
+            filename: `${filename}.csv`,
+            data: response,
+          },
+        };
+      }
     } catch (e) {
       console.error(e);
     }
 
-    if (!result) {
-      try {
-        const response = await this.downloadFromEngineServer(symbol, timeframe, month);
-        if (response) {
-          result = {
-            filename: `${filename}.csv`,
-            data: response,
-          };
-        }
-      } catch (e) {
-        console.error(e);
-      }
-    }
-
-    if (!result) {
-      return {
-        error: true,
-        data: null,
-      };
-    }
-
     return {
-      error: false,
-      data: result,
+      error: true,
+      data: null,
     };
   }
 

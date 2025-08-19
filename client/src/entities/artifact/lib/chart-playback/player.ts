@@ -1,6 +1,6 @@
 import { CandleStick } from "@packages/types";
 import { delay } from "@/shared/lib/delay";
-import { chartEvents } from "./events";
+import { chartEvents, Events } from "./events";
 
 interface ChartPlayerConstructorParams {
   candles: CandleStick[];
@@ -142,7 +142,7 @@ export class ChartPlayer {
       }
     }
 
-    chartEvents.emit("end");
+    chartEvents.emit(Events.End);
     this.pause();
   }
 

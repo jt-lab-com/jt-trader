@@ -1,6 +1,6 @@
 type InputValue = number | string;
 
-export const fCurrency = (value: InputValue, currency: string = "USD") => {
+export const fCurrency = (value: InputValue, currency: string = "USD", precision = 2) => {
   if (!value) return "";
 
   const number = Number(value);
@@ -9,7 +9,7 @@ export const fCurrency = (value: InputValue, currency: string = "USD") => {
     style: "currency",
     currency,
     minimumFractionDigits: 0,
-    maximumFractionDigits: 2,
+    maximumFractionDigits: precision,
   }).format(number);
 };
 

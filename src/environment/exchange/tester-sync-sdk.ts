@@ -76,7 +76,7 @@ export class TesterSyncSDK {
       if (!this.processUpdates()) {
         break;
       }
-      if (i >= 3) {
+      if (i > 2) {
         throw new Error('Loop in onOrderChange');
       }
     }
