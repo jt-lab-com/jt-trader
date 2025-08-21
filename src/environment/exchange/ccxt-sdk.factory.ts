@@ -20,9 +20,9 @@ export class ExchangeSdkFactory {
 
     class ExtendedExchange extends ccxt.pro[exchangeName] {
       private _lastWebSocketCall: number;
-      private _isFailed: boolean = false;
-      private _retriesCounter: number = 0;
-      private _callTicker: number = 0;
+      private _isFailed = false;
+      private _retriesCounter = 0;
+      private _callTicker = 0;
       private _lastError: Error = undefined;
       private _exchangeName = exchangeName;
       private _isMock: () => boolean = () => isMock;
@@ -104,10 +104,10 @@ export class ExchangeSdkFactory {
         }
       }
 
-      _mockedWatch() {
+      _mockedWatch(callback?: () => unknown) {
         return new Promise((resolve) => {
           setTimeout(() => {
-            resolve([]);
+            resolve(callback?.() ?? []);
           }, 1000);
         });
       }
@@ -126,10 +126,9 @@ export class ExchangeSdkFactory {
         return this._superWsMethodCall('watchOrderBook', ...args);
       }
 
-      // TODO: mock implement
       watchOrders(...args) {
         if (this._isMock()) {
-          return this._mockedWatch();
+          return this._mockedWatch(() => orderService.checkUpdates());
         }
 
         return this._superWsMethodCall('watchOrders', ...args);

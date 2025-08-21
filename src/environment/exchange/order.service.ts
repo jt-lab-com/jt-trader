@@ -6,6 +6,8 @@ import { InjectPinoLogger, PinoLogger } from 'nestjs-pino';
 import { SystemParamsInterface } from '../script/scenario/script-scenario.service';
 import { OrderServiceInterface } from './interface/order-service.interface';
 
+export const ORDER_ID_SEPARATOR = '::';
+
 @Injectable()
 export class OrderService implements OrderServiceInterface {
   private orders: OrderInterface[];
@@ -118,7 +120,7 @@ export class OrderService implements OrderServiceInterface {
 
     const fee = order.type === 'limit' ? this.makerFee : this.takerFee;
     const currentOrder: OrderInterface = {
-      id: `${this.orders.length + 1}`,
+      id: `${this.orders.length + 1}${ORDER_ID_SEPARATOR}${order.symbol}`,
       clientOrderId: order.clientOrderId,
       datetime: new Date(this.getCurrentTime()).toISOString(),
       symbol: order.symbol,
@@ -182,7 +184,6 @@ export class OrderService implements OrderServiceInterface {
 
   public trigger = (symbol: string): void => {
     const kLine = this.kline;
-    const currentTime = this.currentTime;
 
     // обновляем unrealizedPnl и балансы
     const [initialMarginAll, unrealizedPnlAll] = this.positions.reduce(
@@ -212,7 +213,7 @@ export class OrderService implements OrderServiceInterface {
         )
         .map((order) => {
           if (kLine.high >= order.price && kLine.low <= order.price) {
-            this.execute({ ...order, timestamp: currentTime.getTime() });
+            this.execute({ ...order, timestamp: this.getCurrentTime() });
             executed = true;
           }
         });
@@ -350,7 +351,7 @@ export class OrderService implements OrderServiceInterface {
   };
 
   public getCurrentTime = (): number => {
-    return this.currentTime.getTime();
+    return this.currentTime?.getTime() ?? Date.now();
   };
 
   public getPricePrecision = (): number => {

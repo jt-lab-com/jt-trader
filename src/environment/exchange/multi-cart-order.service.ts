@@ -1,11 +1,9 @@
-import { OrderService } from './order.service';
+import { OrderService, ORDER_ID_SEPARATOR } from './order.service';
 import { OrderInterface } from './interface/order.interface';
 import { PinoLogger } from 'nestjs-pino';
 import { KLineInterface } from './interface/kline.interface';
 import { OrderServiceInterface } from './interface/order-service.interface';
 import { SystemParamsInterface } from '../script/scenario/script-scenario.service';
-
-const ORDER_ID_SEPARATOR = '::';
 
 export class MultiCartOrderService implements OrderServiceInterface {
   private carts: Map<string, OrderService>;
@@ -29,14 +27,13 @@ export class MultiCartOrderService implements OrderServiceInterface {
 
   public create(order: OrderInterface): OrderInterface {
     const cart = this.selectCart(order.symbol);
-    const result = cart.create(order);
-    return { ...result, id: `${result.id}${ORDER_ID_SEPARATOR}${order.symbol}` };
+    return cart.create(order);
   }
 
   public update(orderId: string, values: OrderInterface): OrderInterface {
-    const [id, symbol] = orderId.split(ORDER_ID_SEPARATOR);
+    const [_, symbol] = orderId.split(ORDER_ID_SEPARATOR);
     const cart = this.selectCart(symbol);
-    return cart.update(id, values);
+    return cart.update(orderId, values);
   }
 
   public setNewCandle(kline: KLineInterface): void {
