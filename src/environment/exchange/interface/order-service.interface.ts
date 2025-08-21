@@ -23,6 +23,12 @@ export interface OrderServiceInterface {
 
   getOrders(): OrderInterface[];
 
+  getOpenedOrders(): OrderInterface[];
+
+  getClosedOrders(): OrderInterface[];
+
+  getOrder(id: string): OrderInterface;
+
   enableHedgeMode(): void;
 
   getCurrentTime(): number;
