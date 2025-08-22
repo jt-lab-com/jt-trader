@@ -48,15 +48,14 @@ export class OrderService implements OrderServiceInterface {
 
   private updateTriggerPriceLimits = (newPrice: number = undefined): void => {
     if (!newPrice) {
-      const { min, max } = Object.values(this.openedOrdersMap).reduce(
-        (acc, order) => {
-          let { max, min } = acc;
-          max = max === 0 || order.price < max ? order.price : max;
-          min = min === 0 || order.price > min ? order.price : min;
-          return { max, min };
-        },
-        { max: 0, min: 0 },
-      );
+      let min = 0;
+      let max = 0;
+
+      for (const orderId in this.openedOrdersMap) {
+        const order = this.openedOrdersMap[orderId];
+        max = max === 0 || order.price < max ? order.price : max;
+        min = min === 0 || order.price > min ? order.price : min;
+      }
 
       this.triggerPriceMax = max;
       this.triggerPriceMin = min;
@@ -174,7 +173,7 @@ export class OrderService implements OrderServiceInterface {
 
     const updatedOrder = { ...order, ...values };
 
-    if (['closed', 'canceled'].includes(order.status)) {
+    if (['closed', 'canceled'].includes(updatedOrder.status)) {
       this.closedOrdersMap[orderId] = updatedOrder;
       delete this.openedOrdersMap[orderId];
     } else {
