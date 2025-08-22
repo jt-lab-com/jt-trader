@@ -345,7 +345,14 @@ export class OrderService implements OrderServiceInterface {
   };
 
   public getPositions = (): object[] => {
-    return this.positions.map((position) => ({ ...position }));
+    const positions = [];
+
+    for (const pos of this.positions) {
+      if (!pos) continue;
+      positions.push({ ...pos });
+    }
+
+    return positions;
   };
 
   public getOrders = (): OrderInterface[] => {
