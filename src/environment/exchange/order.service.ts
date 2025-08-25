@@ -338,7 +338,8 @@ export class OrderService implements OrderServiceInterface {
   };
 
   public getPositions = (): object[] => {
-    return this.positions.map((position) => ({ ...position }));
+    //return this.positions.map((position) => ({ ...position }));
+    return this.positions;
   };
 
   public getOrders = (): OrderInterface[] => {
