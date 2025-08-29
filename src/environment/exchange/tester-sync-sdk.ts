@@ -39,12 +39,12 @@ export class TesterSyncSDK {
   }
 
   protected processUpdates(): Promise<boolean> | boolean {
-    let isProcessed: boolean = false;
+    let isProcessed = false;
 
-    const updates = this.orderService.checkUpdates();
+    const updates = this.orderService.checkOrdersUpdates();
     if (updates) {
       isProcessed = true;
-      for (let data of updates) {
+      for (const data of updates) {
         this.events.emit(ORDER_UPDATE_EVENT, [data]);
       }
     }
@@ -138,21 +138,15 @@ export class TesterSyncSDK {
   }
 
   editOrder(orderId, symbol, type, side, amount, price, params) {
-    const order = this.orderService
-      .getOrders()
-      .find((item) => item.id === orderId.toString() && item.status === 'open');
-    if (!order) return undefined;
+    const order = this.orderService.getOrder(orderId);
+    if (order.status !== 'open') return;
 
     return this.orderService.update(orderId, { symbol, type, side, amount, price, ...params });
   }
 
   cancelOrder(orderId: string) {
-    //TODO change orders to dictionary to speed up search
-    //TODO cancelOrder should work with client orderId
-    const order = this.orderService
-      .getOrders()
-      .find((item) => item.id === orderId.toString() && (item.status === 'open' || item.status === 'untriggered'));
-    if (!order) return undefined;
+    const order = this.orderService.getOrder(orderId);
+    if (order.status !== 'open' && order.status !== 'untriggered') return;
 
     return this.orderService.update(orderId, { status: 'canceled' });
   }
@@ -195,11 +189,11 @@ export class TesterSyncSDK {
   }
 
   fetchOpenOrders(): any {
-    return this.orderService.getOrders().filter(({ status }) => status === 'open');
+    return this.orderService.getOpenOrders();
   }
 
   fetchClosedOrders(): any {
-    return this.orderService.getOrders().filter(({ status }) => status === 'closed');
+    return this.orderService.getClosedOrders();
   }
 
   setLeverage(leverage: number, symbol: string): any {

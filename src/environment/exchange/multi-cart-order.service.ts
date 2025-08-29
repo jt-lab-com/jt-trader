@@ -1,11 +1,10 @@
-import { OrderService } from './order.service';
+import { OrderService, ORDER_ID_SEPARATOR } from './order.service';
 import { OrderInterface } from './interface/order.interface';
 import { PinoLogger } from 'nestjs-pino';
 import { KLineInterface } from './interface/kline.interface';
 import { OrderServiceInterface } from './interface/order-service.interface';
 import { SystemParamsInterface } from '../script/scenario/script-scenario.service';
-
-const ORDER_ID_SEPARATOR = '::';
+import { PositionInterface } from './interface/position.interface';
 
 export class MultiCartOrderService implements OrderServiceInterface {
   private carts: Map<string, OrderService>;
@@ -29,14 +28,13 @@ export class MultiCartOrderService implements OrderServiceInterface {
 
   public create(order: OrderInterface): OrderInterface {
     const cart = this.selectCart(order.symbol);
-    const result = cart.create(order);
-    return { ...result, id: `${result.id}${ORDER_ID_SEPARATOR}${order.symbol}` };
+    return cart.create(order);
   }
 
   public update(orderId: string, values: OrderInterface): OrderInterface {
-    const [id, symbol] = orderId.split(ORDER_ID_SEPARATOR);
+    const [_, symbol] = orderId.split(ORDER_ID_SEPARATOR);
     const cart = this.selectCart(symbol);
-    return cart.update(id, values);
+    return cart.update(orderId, values);
   }
 
   public setNewCandle(kline: KLineInterface): void {
@@ -50,11 +48,23 @@ export class MultiCartOrderService implements OrderServiceInterface {
     return cart.trigger(symbol);
   };
 
-  public checkUpdates(): OrderInterface[] | undefined {
+  public checkOrdersUpdates(): OrderInterface[] | undefined {
     const updates: OrderInterface[] = [];
-    for (const [symbol, cart] of this.carts.entries()) {
-      const items = cart.checkUpdates();
+    for (const [_, cart] of this.carts.entries()) {
+      const items = cart.checkOrdersUpdates();
       if (items && items.length > 0) {
+        updates.push(...items);
+      }
+    }
+
+    return updates.length > 0 ? updates : undefined;
+  }
+
+  public checkPositionsUpdates(): PositionInterface[] | undefined {
+    const updates: PositionInterface[] = [];
+    for (const [_, cart] of this.carts.entries()) {
+      const items = cart.checkPositionsUpdates();
+      if (items?.length > 0) {
         updates.push(...items);
       }
     }
@@ -110,6 +120,30 @@ export class MultiCartOrderService implements OrderServiceInterface {
     }
 
     return set;
+  }
+
+  getOpenOrders(): OrderInterface[] {
+    const set: OrderInterface[] = [];
+    for (const [, cart] of this.carts.entries()) {
+      set.push(...cart.getOpenOrders());
+    }
+
+    return set;
+  }
+
+  getClosedOrders(): OrderInterface[] {
+    const set: OrderInterface[] = [];
+    for (const [, cart] of this.carts.entries()) {
+      set.push(...cart.getClosedOrders());
+    }
+
+    return set;
+  }
+
+  getOrder(orderId: string): OrderInterface {
+    const [_, symbol] = orderId.split(ORDER_ID_SEPARATOR);
+    const cart = this.selectCart(symbol);
+    return cart.getOrder(orderId);
   }
 
   getPositions(): object[] {
