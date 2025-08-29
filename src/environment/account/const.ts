@@ -16,6 +16,9 @@ export const DEFAULT_VALUES = {
   [ACCOUNT_LIMIT_TESTER_MAX_PROCESSES]: 5,
   [ACCOUNT_AVAILABLE_STORE_BUNDLES]: '[]',
   [ACCOUNT_DEVELOPER_ACCESS]: false,
+  [ACCOUNT_LIMIT_TESTER_MAX_MEMORY]: 1024,
+  [ACCOUNT_LIMIT_TESTER_EXEC_TIMEOUT]: 300, // sec
+  [ACCOUNT_LIMIT_REPORT_MAX_SIZE]: 1, // Mb
 };
 
 export const TESTER_DEFAULT_START = 'start';
@@ -30,8 +33,10 @@ export const TESTER_DEFAULT_SYMBOLS = 'symbols';
 export const TESTER_DEFAULT_EXCHANGE = 'exchange';
 export const TESTER_DEFAULT_BALANCE = 'balance';
 export const TESTER_SCENARIO_DEFAULTS = {
-  [TESTER_DEFAULT_START]: (new Date((new Date()).getFullYear() - 1, (new Date()).getMonth() - 1, 10)).toISOString().slice(0, 7),
-  [TESTER_DEFAULT_END]: (new Date((new Date()).getFullYear(), (new Date()).getMonth() - 1, 10)).toISOString().slice(0, 7),
+  [TESTER_DEFAULT_START]: new Date(new Date().getFullYear() - 1, new Date().getMonth() - 1, 10)
+    .toISOString()
+    .slice(0, 7),
+  [TESTER_DEFAULT_END]: new Date(new Date().getFullYear(), new Date().getMonth() - 1, 10).toISOString().slice(0, 7),
   [TESTER_DEFAULT_MARKET_ORDER_SPREAD]: 0.0001,
   [TESTER_DEFAULT_MAKER_FEE]: 0.0002,
   [TESTER_DEFAULT_TAKER_FEE]: 0.0004,
