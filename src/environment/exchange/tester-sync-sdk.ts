@@ -41,7 +41,7 @@ export class TesterSyncSDK {
   protected processUpdates(): Promise<boolean> | boolean {
     let isProcessed = false;
 
-    const updates = this.orderService.checkUpdates();
+    const updates = this.orderService.checkOrdersUpdates();
     if (updates) {
       isProcessed = true;
       for (const data of updates) {

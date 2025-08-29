@@ -1,6 +1,7 @@
 import { SystemParamsInterface } from '../../script/scenario/script-scenario.service';
 import { OrderInterface } from './order.interface';
 import { KLineInterface } from './kline.interface';
+import { PositionInterface } from './position.interface';
 
 export interface OrderServiceInterface {
   create(order: OrderInterface): OrderInterface;
@@ -11,7 +12,9 @@ export interface OrderServiceInterface {
 
   trigger(symbol: string): void;
 
-  checkUpdates(): OrderInterface[] | undefined;
+  checkOrdersUpdates(): OrderInterface[] | undefined;
+
+  checkPositionsUpdates(): PositionInterface[] | undefined;
 
   getBalance();
 

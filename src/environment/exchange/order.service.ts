@@ -13,7 +13,8 @@ export class OrderService implements OrderServiceInterface {
   private readonly openOrdersMap: Record<string, OrderInterface>;
   private readonly closedOrdersMap: Record<string, OrderInterface>;
   private readonly positions: PositionInterface[];
-  private updates: Set<OrderInterface>;
+  private orderUpdates: Set<OrderInterface>;
+  private positionUpdates: Set<PositionInterface>;
   private isHedgeMode: boolean;
   private currentTime: Date;
   private currentPrice: number;
@@ -33,7 +34,8 @@ export class OrderService implements OrderServiceInterface {
 
   constructor(@InjectPinoLogger(OrderService.name) private readonly logger: PinoLogger) {
     this.positions = [];
-    this.updates = new Set<OrderInterface>();
+    this.orderUpdates = new Set<OrderInterface>();
+    this.positionUpdates = new Set<PositionInterface>();
     this.isHedgeMode = true;
     this.balance = 0;
     this.marginBalance = 0;
@@ -156,7 +158,7 @@ export class OrderService implements OrderServiceInterface {
     };
 
     this.openOrdersMap[currentOrder.id] = currentOrder;
-    this.updates.add({ ...currentOrder });
+    this.orderUpdates.add({ ...currentOrder });
 
     if (currentOrder.type === 'market' && currentOrder.status === 'open') {
       this.execute(currentOrder);
@@ -180,7 +182,13 @@ export class OrderService implements OrderServiceInterface {
       this.openOrdersMap[orderId] = updatedOrder;
     }
 
-    this.updates.add({ ...updatedOrder, datetime: new Date(this.getCurrentTime()).toISOString() });
+    this.orderUpdates.add({ ...updatedOrder, datetime: new Date(this.getCurrentTime()).toISOString() });
+    if (updatedOrder.status === 'closed') {
+      for (const position of this.positions) {
+        this.positionUpdates.add({ ...position, datetime: new Date(this.getCurrentTime()).toISOString() });
+      }
+    }
+
     return { ...updatedOrder };
   }
 
@@ -229,11 +237,19 @@ export class OrderService implements OrderServiceInterface {
     }
   };
 
-  public checkUpdates(): OrderInterface[] | undefined {
-    if (this.updates.size === 0) return;
+  public checkOrdersUpdates(): OrderInterface[] | undefined {
+    if (this.orderUpdates.size === 0) return;
 
-    const values = [...this.updates.values()];
-    this.updates.clear();
+    const values = [...this.orderUpdates.values()];
+    this.orderUpdates.clear();
+    return values;
+  }
+
+  public checkPositionsUpdates(): PositionInterface[] | undefined {
+    if (this.positionUpdates.size === 0) return;
+
+    const values = [...this.positionUpdates.values()];
+    this.positionUpdates.clear();
     return values;
   }
 

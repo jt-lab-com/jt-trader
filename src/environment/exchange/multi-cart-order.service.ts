@@ -4,6 +4,7 @@ import { PinoLogger } from 'nestjs-pino';
 import { KLineInterface } from './interface/kline.interface';
 import { OrderServiceInterface } from './interface/order-service.interface';
 import { SystemParamsInterface } from '../script/scenario/script-scenario.service';
+import { PositionInterface } from './interface/position.interface';
 
 export class MultiCartOrderService implements OrderServiceInterface {
   private carts: Map<string, OrderService>;
@@ -47,11 +48,23 @@ export class MultiCartOrderService implements OrderServiceInterface {
     return cart.trigger(symbol);
   };
 
-  public checkUpdates(): OrderInterface[] | undefined {
+  public checkOrdersUpdates(): OrderInterface[] | undefined {
     const updates: OrderInterface[] = [];
-    for (const [symbol, cart] of this.carts.entries()) {
-      const items = cart.checkUpdates();
+    for (const [_, cart] of this.carts.entries()) {
+      const items = cart.checkOrdersUpdates();
       if (items && items.length > 0) {
+        updates.push(...items);
+      }
+    }
+
+    return updates.length > 0 ? updates : undefined;
+  }
+
+  public checkPositionsUpdates(): PositionInterface[] | undefined {
+    const updates: PositionInterface[] = [];
+    for (const [_, cart] of this.carts.entries()) {
+      const items = cart.checkPositionsUpdates();
+      if (items?.length > 0) {
         updates.push(...items);
       }
     }

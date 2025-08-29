@@ -104,11 +104,11 @@ export class ExchangeSdkFactory {
         }
       }
 
-      _mockedWatch(callback?: () => unknown) {
+      _mockedWatch(callback?: () => unknown, timeout = 1000) {
         return new Promise((resolve) => {
           setTimeout(() => {
-            resolve(callback?.() ?? []);
-          }, 1000);
+            resolve(callback?.());
+          }, timeout);
         });
       }
 
@@ -128,7 +128,7 @@ export class ExchangeSdkFactory {
 
       watchOrders(...args) {
         if (this._isMock()) {
-          return this._mockedWatch(() => orderService.checkUpdates());
+          return this._mockedWatch(() => orderService.checkOrdersUpdates());
         }
 
         return this._superWsMethodCall('watchOrders', ...args);
@@ -146,7 +146,7 @@ export class ExchangeSdkFactory {
       // TODO: mock implement
       watchPositions(...args) {
         if (this._isMock()) {
-          return this._mockedWatch();
+          return this._mockedWatch(() => orderService.checkPositionsUpdates());
         }
 
         return this._superWsMethodCall('watchPositions', ...args);

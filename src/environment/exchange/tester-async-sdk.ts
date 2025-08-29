@@ -16,7 +16,7 @@ export class TesterAsyncSDK extends TesterSyncSDK {
   protected processUpdates = async () => {
     let isProcessed = false;
 
-    const updates = this.orderService.checkUpdates();
+    const updates = this.orderService.checkOrdersUpdates();
     if (updates) {
       isProcessed = true;
       for (const data of updates) {
