@@ -1,7 +1,6 @@
 import { ORDER_UPDATE_EVENT, TesterSyncSDK, TICK_END_EVENT, TICK_EVENT } from './tester-sync-sdk';
 import { HistoryBarsService } from '../history-bars/history-bars.service';
 import { AsyncEventEmitter } from '../../common/async-event-emitter';
-import { OrderInterface } from './interface/order.interface';
 import { OrderServiceInterface } from './interface/order-service.interface';
 
 export class TesterAsyncSDK extends TesterSyncSDK {
@@ -15,12 +14,12 @@ export class TesterAsyncSDK extends TesterSyncSDK {
   }
 
   protected processUpdates = async () => {
-    let isProcessed: boolean = false;
+    let isProcessed = false;
 
-    const updates = this.orderService.checkUpdates();
+    const updates = this.orderService.checkOrdersUpdates();
     if (updates) {
       isProcessed = true;
-      for (let data of updates) {
+      for (const data of updates) {
         await this.events.emit(ORDER_UPDATE_EVENT, [data]);
       }
     }

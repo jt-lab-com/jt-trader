@@ -2,7 +2,7 @@ import * as parser from '@babel/parser';
 import traverse, { Node, NodePath } from '@babel/traverse';
 import generate from '@babel/generator';
 
-const reservedAsyncClassNames = ['ExtendedScript', 'Strategy', 'CandlesBuffer'];
+const reservedAsyncClassNames = ['BaseScript', 'Strategy', 'Script', 'CandlesBuffer'];
 const reservedAsyncMethods = ['init', 'onInit'];
 
 export function removeAsyncPlugin(isTester?: boolean) {
