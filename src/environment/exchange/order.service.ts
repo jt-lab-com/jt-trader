@@ -6,11 +6,15 @@ import { InjectPinoLogger, PinoLogger } from 'nestjs-pino';
 import { SystemParamsInterface } from '../script/scenario/script-scenario.service';
 import { OrderServiceInterface } from './interface/order-service.interface';
 
+export const ORDER_ID_SEPARATOR = '::';
+
 @Injectable()
 export class OrderService implements OrderServiceInterface {
-  private orders: OrderInterface[];
-  private positions: PositionInterface[];
-  private updates: Set<OrderInterface>;
+  private readonly openOrdersMap: Record<string, OrderInterface>;
+  private readonly closedOrdersMap: Record<string, OrderInterface>;
+  private readonly positions: PositionInterface[];
+  private orderUpdates: Set<OrderInterface>;
+  private positionUpdates: Set<PositionInterface>;
   private isHedgeMode: boolean;
   private currentTime: Date;
   private currentPrice: number;
@@ -26,15 +30,18 @@ export class OrderService implements OrderServiceInterface {
   private takerFee = 0;
   private balanceFee = 0;
   private kline: KLineInterface;
+  private nextOrderId = 1;
 
   constructor(@InjectPinoLogger(OrderService.name) private readonly logger: PinoLogger) {
-    this.orders = [];
     this.positions = [];
-    this.updates = new Set<OrderInterface>();
-    this.isHedgeMode = false;
+    this.orderUpdates = new Set<OrderInterface>();
+    this.positionUpdates = new Set<PositionInterface>();
+    this.isHedgeMode = true;
     this.balance = 0;
     this.marginBalance = 0;
     this.profit = 0;
+    this.openOrdersMap = {};
+    this.closedOrdersMap = {};
   }
 
   private positionBySide(side: 'sell' | 'buy' | string): PositionSideType {
@@ -43,17 +50,15 @@ export class OrderService implements OrderServiceInterface {
 
   private updateTriggerPriceLimits = (newPrice: number = undefined): void => {
     if (!newPrice) {
-      const { max, min } = this.orders
-        .filter((order) => order.status === 'open')
-        .reduce(
-          (acc, order) => {
-            let { max, min } = acc;
-            max = max === 0 || order.price < max ? order.price : max;
-            min = min === 0 || order.price > min ? order.price : min;
-            return { max, min };
-          },
-          { max: 0, min: 0 },
-        );
+      let min = 0;
+      let max = 0;
+
+      for (const orderId in this.openOrdersMap) {
+        const order = this.openOrdersMap[orderId];
+        max = max === 0 || order.price < max ? order.price : max;
+        min = min === 0 || order.price > min ? order.price : min;
+      }
+
       this.triggerPriceMax = max;
       this.triggerPriceMin = min;
     } else {
@@ -118,7 +123,7 @@ export class OrderService implements OrderServiceInterface {
 
     const fee = order.type === 'limit' ? this.makerFee : this.takerFee;
     const currentOrder: OrderInterface = {
-      id: `${this.orders.length + 1}`,
+      id: `${this.nextOrderId++}${ORDER_ID_SEPARATOR}${order.symbol}`,
       clientOrderId: order.clientOrderId,
       datetime: new Date(this.getCurrentTime()).toISOString(),
       symbol: order.symbol,
@@ -152,8 +157,8 @@ export class OrderService implements OrderServiceInterface {
       timestamp: this.getCurrentTime(),
     };
 
-    this.orders.push(currentOrder);
-    this.updates.add({ ...currentOrder });
+    this.openOrdersMap[currentOrder.id] = currentOrder;
+    this.orderUpdates.add({ ...currentOrder });
 
     if (currentOrder.type === 'market' && currentOrder.status === 'open') {
       this.execute(currentOrder);
@@ -165,13 +170,26 @@ export class OrderService implements OrderServiceInterface {
   };
 
   public update(orderId: string, values: OrderInterface): OrderInterface {
-    const order: OrderInterface = this.orders.find(({ id }) => orderId === id);
-    const value: OrderInterface = { ...order, ...values };
+    const order = this.openOrdersMap[orderId];
+    if (!order) return;
 
-    this.orders = [...this.orders.filter((item) => item.id !== order.id), value];
+    const updatedOrder = { ...order, ...values };
 
-    this.updates.add({ ...value, datetime: new Date(this.getCurrentTime()).toISOString() });
-    return { ...value };
+    if (['closed', 'canceled'].includes(updatedOrder.status)) {
+      this.closedOrdersMap[orderId] = updatedOrder;
+      delete this.openOrdersMap[orderId];
+    } else {
+      this.openOrdersMap[orderId] = updatedOrder;
+    }
+
+    this.orderUpdates.add({ ...updatedOrder, datetime: new Date(this.getCurrentTime()).toISOString() });
+    if (updatedOrder.status === 'closed') {
+      for (const position of this.positions) {
+        this.positionUpdates.add({ ...position, datetime: new Date(this.getCurrentTime()).toISOString() });
+      }
+    }
+
+    return { ...updatedOrder };
   }
 
   public setNewCandle(kline: KLineInterface): void {
@@ -182,7 +200,6 @@ export class OrderService implements OrderServiceInterface {
 
   public trigger = (symbol: string): void => {
     const kLine = this.kline;
-    const currentTime = this.currentTime;
 
     // обновляем unrealizedPnl и балансы
     const [initialMarginAll, unrealizedPnlAll] = this.positions.reduce(
@@ -206,34 +223,39 @@ export class OrderService implements OrderServiceInterface {
       (this.triggerPriceMin && kLine.low <= this.triggerPriceMin)
     ) {
       let executed = false;
-      this.orders
-        .filter(
-          (order) => order.timestamp < this.getCurrentTime() && ['open', 'untriggered'].indexOf(order.status) > -1,
-        )
-        .map((order) => {
-          if (kLine.high >= order.price && kLine.low <= order.price) {
-            this.execute({ ...order, timestamp: currentTime.getTime() });
-            executed = true;
-          }
-        });
+
+      const orders = Object.values(this.openOrdersMap);
+
+      for (const order of orders) {
+        if (kLine.high >= order.price && kLine.low <= order.price) {
+          this.execute({ ...order, timestamp: this.getCurrentTime() });
+          executed = true;
+        }
+      }
 
       if (executed) this.updateTriggerPriceLimits();
     }
   };
 
-  public checkUpdates(): OrderInterface[] | undefined {
-    if (this.updates.size === 0) return;
+  public checkOrdersUpdates(): OrderInterface[] | undefined {
+    if (this.orderUpdates.size === 0) return;
 
-    const values = [...this.updates.values()];
-    this.updates.clear();
+    const values = [...this.orderUpdates.values()];
+    this.orderUpdates.clear();
+    return values;
+  }
+
+  public checkPositionsUpdates(): PositionInterface[] | undefined {
+    if (this.positionUpdates.size === 0) return;
+
+    const values = [...this.positionUpdates.values()];
+    this.positionUpdates.clear();
     return values;
   }
 
   private execute(order: OrderInterface): void {
-    let position = this.positions.find((position) => {
-      if (order.positionSide === PositionSideType.both) return position.symbol === order.symbol;
-      else return position.symbol === order.symbol && position.side === order.positionSide;
-    });
+    const positionIndex = this.isHedgeMode ? (order.positionSide === PositionSideType.long ? 0 : 1) : 0;
+    let position = this.positions[positionIndex];
 
     if (order.reduceOnly && !position) {
       this.update(order.id, { status: 'canceled' });
@@ -304,9 +326,10 @@ export class OrderService implements OrderServiceInterface {
       }
     }
 
-    this.positions = this.positions.filter((item) => item.id !== position.id);
+    this.positions.splice(positionIndex, 1);
+
     if (position.contracts > 0) {
-      this.positions.push({ ...position, timestamp: order.timestamp });
+      this.positions[positionIndex] = position;
     }
 
     this.balance -= order.fee.cost;
@@ -338,12 +361,30 @@ export class OrderService implements OrderServiceInterface {
   };
 
   public getPositions = (): object[] => {
-    //return this.positions.map((position) => ({ ...position }));
-    return this.positions;
+    const positions = [];
+
+    for (const pos of this.positions) {
+      if (!pos) continue;
+      positions.push({ ...pos });
+    }
+
+    return positions;
   };
 
   public getOrders = (): OrderInterface[] => {
-    return [...this.orders];
+    return [...Object.values(this.openOrdersMap), ...Object.values(this.closedOrdersMap)];
+  };
+
+  public getOpenOrders = (): OrderInterface[] => {
+    return Object.values(this.openOrdersMap);
+  };
+
+  public getClosedOrders = (): OrderInterface[] => {
+    return Object.values(this.closedOrdersMap);
+  };
+
+  public getOrder = (orderId: string): OrderInterface => {
+    return this.openOrdersMap[orderId] ?? this.closedOrdersMap[orderId];
   };
 
   public enableHedgeMode = (): void => {
@@ -351,7 +392,7 @@ export class OrderService implements OrderServiceInterface {
   };
 
   public getCurrentTime = (): number => {
-    return this.currentTime.getTime();
+    return this.currentTime?.getTime() ?? Date.now();
   };
 
   public getPricePrecision = (): number => {
