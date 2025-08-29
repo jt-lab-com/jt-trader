@@ -109,10 +109,10 @@ export class MultiCartOrderService implements OrderServiceInterface {
     return set;
   }
 
-  getOpenedOrders(): OrderInterface[] {
+  getOpenOrders(): OrderInterface[] {
     const set: OrderInterface[] = [];
     for (const [, cart] of this.carts.entries()) {
-      set.push(...cart.getOpenedOrders());
+      set.push(...cart.getOpenOrders());
     }
 
     return set;

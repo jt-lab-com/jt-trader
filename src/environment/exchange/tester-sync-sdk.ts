@@ -189,7 +189,7 @@ export class TesterSyncSDK {
   }
 
   fetchOpenOrders(): any {
-    return this.orderService.getOpenedOrders();
+    return this.orderService.getOpenOrders();
   }
 
   fetchClosedOrders(): any {

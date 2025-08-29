@@ -23,7 +23,7 @@ export interface OrderServiceInterface {
 
   getOrders(): OrderInterface[];
 
-  getOpenedOrders(): OrderInterface[];
+  getOpenOrders(): OrderInterface[];
 
   getClosedOrders(): OrderInterface[];
 
