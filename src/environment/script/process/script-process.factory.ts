@@ -152,6 +152,9 @@ export class ScriptProcessFactory {
     const prefix = `${key}-preview`;
     const logger = this.getRuntimeLogger(key.toString());
     const bundle = await this.scriptBundler.generatePreviewExecutionBundle(accountId, key, strategy);
+    const apiCallLimitPerSecond: number = parseInt(
+      await this.accountService.getParam(accountId, ACCOUNT_LIMIT_API_CALL_PER_SEC),
+    );
     const context = new ScriptProcessContext(
       accountId,
       this.dataFeedFactory,
@@ -166,7 +169,7 @@ export class ScriptProcessFactory {
       bundle,
       key.toString(),
       prefix,
-      2,
+      apiCallLimitPerSecond,
       false,
     );
 
