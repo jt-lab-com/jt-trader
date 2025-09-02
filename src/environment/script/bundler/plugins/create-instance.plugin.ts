@@ -1,5 +1,6 @@
 import * as acorn from 'acorn';
 import acornTs from 'acorn-typescript';
+import { SCRIPT_NAMES } from '../config/const';
 
 export function createInstancePlugin(filePath: string, isTypescript?: boolean) {
   return {
@@ -30,7 +31,7 @@ export function createInstancePlugin(filePath: string, isTypescript?: boolean) {
         break;
       }
 
-      if (!['Script', 'Strategy'].includes(className)) throw new Error('Script class declaration not found');
+      if (!SCRIPT_NAMES.includes(className)) throw new Error('Script class declaration not found');
 
       const extendCodeStrings = [
         'Error.prepareStackTrace = prepareStackTrace;',

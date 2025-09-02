@@ -4,6 +4,7 @@ export * from "./artifact";
 export * from "./chart-playback";
 
 export interface ArtifactSchema {
-  data: Artifact | null;
+  artifact: Artifact | null;
+  preview: Record<string, Artifact>;
   isLoading: boolean;
 }

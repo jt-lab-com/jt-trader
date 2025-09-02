@@ -311,6 +311,18 @@ export class EventsGateway implements OnGatewayDisconnect, OnGatewayConnection {
           payload: { bundles: [], appBundles: [] },
         };
       }
+      case WS_CLIENT_EVENTS.PREVIEW_EXECUTION_REQUEST: {
+        const data = payload as WS_CLIENT_EVENT_PAYLOAD[WS_CLIENT_EVENTS.PREVIEW_EXECUTION_REQUEST];
+        const artifact = await this.scriptService.previewExecution(client.user.id, data.strategy, data.args);
+
+        return {
+          event: WS_SERVER_EVENTS.PREVIEW_EXECUTION_RESPONSE,
+          payload: {
+            key: data.key,
+            data: artifact,
+          },
+        };
+      }
       case WS_CLIENT_EVENTS.STRATEGY_CONTENT_REQUEST: {
         try {
           const data = payload as WS_CLIENT_EVENT_PAYLOAD[WS_CLIENT_EVENTS.STRATEGY_CONTENT_REQUEST];
@@ -576,7 +588,7 @@ export class EventsGateway implements OnGatewayDisconnect, OnGatewayConnection {
         return this.processMessage(client, WS_CLIENT_EVENTS.EXCHANGE_CONFIG_REQUEST);
       }
       case WS_CLIENT_EVENTS.PULL_USER_SOURCE_CODE_REQUEST: {
-        let payload = { error: true, message: 'Update failed' };
+        const payload = { error: true, message: 'Update failed' };
         try {
           execSync('cd ./jtl-infra-public; git reset HEAD^ --hard; git pull;');
           payload.error = false;

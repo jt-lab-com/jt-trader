@@ -18,6 +18,9 @@ import { ExceptionReasonType } from '../../../exception/types';
 import { ScriptProcessContextSync } from './script-process-context-sync';
 import { AccountService } from '../../account/account.service';
 import { ACCOUNT_DEVELOPER_ACCESS, ACCOUNT_LIMIT_API_CALL_PER_SEC, ACCOUNT_LIMIT_RUNTIMES } from '../../account/const';
+import { StrategyItem } from '../types';
+import { nanoid } from 'nanoid';
+import { StrategyArgsType } from '../../exchange/interface/strategy.interface';
 
 interface Process {
   process: ScriptProcess;
@@ -63,7 +66,7 @@ export class ScriptProcessFactory {
     const enabledProcessesLimit: number = parseInt(
       await this.accountService.getParam(accountId, ACCOUNT_LIMIT_RUNTIMES),
     );
-    let counter: number = 0;
+    let counter = 0;
     this.processes.forEach((item) => {
       counter += item.meta.isEnabled ? 1 : 0;
     });
@@ -142,6 +145,38 @@ export class ScriptProcessFactory {
 
       throw e;
     }
+  }
+
+  async createPreviewExecution(accountId: string, strategy: StrategyItem, args: object): Promise<string> {
+    const key = nanoid(8);
+    const prefix = `${key}-preview`;
+    const logger = this.getRuntimeLogger(key.toString());
+    const bundle = await this.scriptBundler.generatePreviewExecutionBundle(accountId, key, strategy);
+    const context = new ScriptProcessContext(
+      accountId,
+      this.dataFeedFactory,
+      this.exchange,
+      logger,
+      this.logger,
+      this.keysStorage,
+      this.eventEmitter,
+      this.cacheService,
+      this.artifactsService,
+      this.getSymbolInfo,
+      bundle,
+      key.toString(),
+      prefix,
+      2,
+      false,
+    );
+
+    if (!!args['exchange']) {
+      args['connectionName'] = args['exchange'];
+      delete args['exchange'];
+    }
+
+    const scriptProcess = new ScriptProcess(context, args);
+    return scriptProcess.previewExecution(bundle, args as StrategyArgsType);
   }
 
   async registerTest(id: number, args: { [key: string]: any } = {}): Promise<void> {
