@@ -94,7 +94,7 @@ export class HistoryBarsService {
 
       try {
         const data = await this.downloadZip(symbol, interval, date);
-        if (!data) throw new Error('quotes not found');
+        if (!data) throw new Error(`${symbol} quotes not found`);
 
         try {
           await decompress(data, downloadFolderPath);
@@ -102,13 +102,13 @@ export class HistoryBarsService {
           res();
         } catch (e) {
           this.logger.error(
-            { file: filepath, message: e.message, stack: e.stack?.split('\n') },
+            { file: filepath, message: e.message, stack: e.stack?.split('\n'), symbol },
             'an error occurred when writing downloaded historical bars to disk',
           );
         }
       } catch (e) {
         this.logger.error(
-          { message: e.message, stack: e.stack?.split('\n') },
+          { message: e.message, stack: e.stack?.split('\n'), symbol },
           'an error occurred while downloading historical bars',
         );
 
@@ -123,7 +123,7 @@ export class HistoryBarsService {
         return await this.s3Source.download(symbol, timeframe, date);
       } catch (e) {
         this.logger.error(
-          { message: e.message, stack: e.stack?.split('\n'), source: this.s3Source.sourceName },
+          { message: e.message, stack: e.stack?.split('\n'), source: this.s3Source.sourceName, symbol },
           'an error occurred while downloading historical bars',
         );
       }
@@ -138,7 +138,7 @@ export class HistoryBarsService {
             await this.s3Source.upload(symbol, timeframe, date, data);
           } catch (e) {
             this.logger.error(
-              { message: e.message, stack: e.stack?.split('\n') },
+              { message: e.message, stack: e.stack?.split('\n'), symbol },
               'an error occurred while uploading historical bars to s3',
             );
           }
