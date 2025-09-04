@@ -10,10 +10,12 @@ export class MultiCartOrderService implements OrderServiceInterface {
   private carts: Map<string, OrderService>;
   private currentTime: Date;
   private balance: number;
+  private marginBalance: number;
 
   constructor(private readonly logger: PinoLogger) {
     this.carts = new Map<string, OrderService>();
     this.balance = 0;
+    this.marginBalance = 0;
   }
 
   private selectCart(symbol: string): OrderService {
@@ -72,8 +74,23 @@ export class MultiCartOrderService implements OrderServiceInterface {
     return updates.length > 0 ? updates : undefined;
   }
 
-  updateConfig(config: SystemParamsInterface & { balance?: number }): void {
-    for (const [, cart] of this.carts.entries()) {
+  public checkBalanceUpdates() {
+    const { balance, marginBalance } = this.getBalance();
+    if (this.balance === balance && this.marginBalance === marginBalance) return;
+    this.balance = balance;
+    this.marginBalance = marginBalance;
+    return { balance, marginBalance };
+  }
+
+  updateConfig(config: SystemParamsInterface & { balance?: number }, symbol?: string): void {
+    if (!this.carts.size && !!symbol) {
+      const cart = this.selectCart(symbol);
+      cart.updateConfig(config);
+      return;
+    }
+
+    for (const [cartSymbol, cart] of this.carts.entries()) {
+      if (symbol && cartSymbol !== symbol) continue;
       cart.updateConfig(config);
     }
   }
@@ -88,10 +105,11 @@ export class MultiCartOrderService implements OrderServiceInterface {
     let [balance, marginBalance]: number[] = [0, 0];
     for (const [, cart] of this.carts.entries()) {
       const { balance: itemBalance, marginBalance: itemMarginBalance } = cart.getBalance();
-      balance += itemBalance - this.balance;
+      balance += itemBalance;
+      marginBalance += itemMarginBalance;
     }
 
-    return { balance: this.balance + balance, marginBalance };
+    return { balance, marginBalance };
   }
 
   getBalanceFee(): number {
@@ -155,8 +173,10 @@ export class MultiCartOrderService implements OrderServiceInterface {
     return set;
   }
 
-  getPricePrecision(): number {
-    for (const [, cart] of this.carts.entries()) {
+  getPricePrecision(symbol?: string): number {
+    for (const [cartSymbol, cart] of this.carts.entries()) {
+      if (!symbol) return cart.getPricePrecision();
+      if (cartSymbol !== symbol) continue;
       return cart.getPricePrecision();
     }
   }

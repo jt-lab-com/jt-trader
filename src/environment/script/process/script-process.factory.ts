@@ -63,7 +63,7 @@ export class ScriptProcessFactory {
     const enabledProcessesLimit: number = parseInt(
       await this.accountService.getParam(accountId, ACCOUNT_LIMIT_RUNTIMES),
     );
-    let counter: number = 0;
+    let counter = 0;
     this.processes.forEach((item) => {
       counter += item.meta.isEnabled ? 1 : 0;
     });
@@ -123,6 +123,23 @@ export class ScriptProcessFactory {
         apiCallLimitPerSecond,
         developerAccess,
       );
+
+      const isMock = meta.exchange.includes('-mock');
+
+      if (isMock) {
+        const keys = await this.keysStorage.selectKeys(meta.exchange, meta.accountId);
+        const sdk = this.exchange.getSDK(meta.exchange, keys);
+        const orderService = sdk.getMockOrderService();
+        const symbolsArgs = Array.isArray(meta.args) ? meta.args.find((arg) => arg.key === 'symbols') : [];
+        const symbols = !Array.isArray(symbolsArgs) ? symbolsArgs.value.toString().split(',') : [];
+        await sdk.loadMarkets(false);
+
+        for (const symbol of symbols) {
+          const data = sdk.markets[symbol];
+          const pricePrecision = data.precision.price.toString().split('.')[1]?.length;
+          orderService.updateConfig({ balance: 1000, pricePrecision, contractSize: data.contractSize }, symbol);
+        }
+      }
 
       const scriptProcess = new ScriptProcess(context, { ...metaArgs, ...args });
       this.processes.set(key, { process: scriptProcess, meta: { ...meta, isEnabled: false }, bundle });
