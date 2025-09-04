@@ -13,6 +13,7 @@ Download and install the latest version of [Docker](https://www.docker.com/) for
 * Download the `setup-windows.bat` file and place it in the working directory.
 * Run `setup-windows.bat`.  
    This will download all necessary components and generate the files required to run the application.
+* Open browser and navigate to `http://localhost:8080` to access the application.
 
 ### Linux / macOS
 
@@ -22,3 +23,5 @@ Download and install the latest version of [Docker](https://www.docker.com/) for
 ```bash
 bash setup.sh
 ```
+* This will download all necessary components and generate the files required to run the application.
+* Open browser and navigate to `http://localhost:8080` to access the application.
