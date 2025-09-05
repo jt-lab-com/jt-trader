@@ -1,7 +1,7 @@
 import { Artifact } from "./artifact";
 
 export * from "./artifact";
-export * from "./chart-playback";
+export * from "./trading-view";
 
 export interface ArtifactSchema {
   artifact: Artifact | null;
