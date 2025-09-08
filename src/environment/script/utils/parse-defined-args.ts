@@ -1,6 +1,7 @@
 import * as acorn from 'acorn';
 import tsPlugin from 'acorn-typescript';
 import { StrategyDefinedArg } from '@packages/types';
+import { SCRIPT_NAMES } from '../bundler/config/const';
 
 export function parseDefinedArgs(code: string, isTypeScript?: boolean): StrategyDefinedArg[] | null {
   let ast: acorn.Program;
@@ -47,11 +48,21 @@ export function parseDefinedArgs(code: string, isTypeScript?: boolean): Strategy
 
   const definedArgsPosition = findNodePosition(ast);
 
+  let className = '';
+
+  for (const node of ast.body) {
+    if (node.type !== 'ClassDeclaration') continue;
+    className = node.id.name;
+    break;
+  }
+
+  if (!SCRIPT_NAMES.includes(className)) throw new Error('Script class declaration not found');
+
   if (!definedArgsPosition) return null;
 
   const definedArgsJSON = code
     .substring(definedArgsPosition.start, definedArgsPosition.end)
-    .replace(isTypeScript ? 'static definedArgs = ' : 'Strategy.definedArgs = ', '')
+    .replace(isTypeScript ? 'static definedArgs = ' : `${className}.definedArgs = `, '')
     .replace(';', '')
     .replace(/'/g, '"')
     .replace(/([{,]\s*)([a-zA-Z0-9_]+)\s*:/g, '$1"$2":')
