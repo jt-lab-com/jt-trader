@@ -27,11 +27,9 @@ export class CCXTService implements ExchangeSDKInterface {
   public getSDK(name: string, keys: ExchangeKeysType): ExtendedExchange {
     let formattedName = name.replace('-testnet', '');
     const isMock: boolean = formattedName.endsWith('-mock');
-    if (isMock) {
-      formattedName = formattedName.replace('-mock', '');
-    }
-
     const key: string = [formattedName, keys.apiKey].join('::');
+    if (isMock) formattedName = formattedName.replace('-mock', '');
+
     let exchange: ExtendedExchange = this.sdk.get(key);
     if (!exchange) {
       exchange = this.sdkFactory.build(formattedName, isMock, {
