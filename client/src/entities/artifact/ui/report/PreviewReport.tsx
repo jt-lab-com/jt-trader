@@ -1,12 +1,14 @@
+import Box from "@mui/material/Box";
 import CircularProgress from "@mui/material/CircularProgress";
 import Stack from "@mui/material/Stack";
 import { Strategy } from "@packages/types";
-import { FC, useEffect, useMemo } from "react";
+import { FC, useEffect, useMemo, useState } from "react";
 import { useSelector } from "react-redux";
 import { useAppDispatch } from "@/shared/lib/hooks/useAppDispatch";
 import { useDebounce } from "@/shared/lib/hooks/useDebounce";
 import { getPreview, isArtifactLoading } from "../../model/selectors";
 import { previewExecutionRequest } from "../../model/services/preview-execution-request";
+import { Artifact } from "../../model/types";
 import { Report } from "./Report";
 
 interface PreviewReportProps {
@@ -32,6 +34,10 @@ export const PreviewReport: FC<PreviewReportProps> = (props) => {
     return `${strategyInfo}::${symbols.join("-")}::${exchange}::${objectToSortedString(args)}`;
   }, [payload]);
 
+  const isLoading = useSelector(isArtifactLoading);
+  const artifact = useSelector(getPreview(key));
+  const [artifactView, setArtifactView] = useState<Artifact | null>(null);
+
   const request = useDebounce(() => {
     dispatch(previewExecutionRequest({ ...payload, args: { exchange, ...payload.args }, key }));
   }, 800);
@@ -40,19 +46,39 @@ export const PreviewReport: FC<PreviewReportProps> = (props) => {
     request();
   }, [payload]);
 
-  const isLoading = useSelector(isArtifactLoading);
-  const artifact = useSelector(getPreview(key));
+  useEffect(() => {
+    if (!artifact) return;
+    setArtifactView(artifact);
+  }, [artifact]);
 
-  if (isLoading)
+  if (isLoading && !artifactView)
     return (
       <Stack alignItems={"center"} justifyContent={"center"}>
         <CircularProgress />
       </Stack>
     );
 
-  if (!artifact) return null;
-
-  return <Report artifact={artifact} isPreview />;
+  return (
+    <Box sx={{ position: "relative" }}>
+      {artifactView && <Report artifact={artifactView} isPreview />}
+      {isLoading && (
+        <Stack
+          sx={{
+            position: "absolute",
+            left: 0,
+            top: 0,
+            height: "100%",
+            width: "100%",
+            background: "rgba(255, 255, 255, 0.5)",
+          }}
+          alignItems={"center"}
+          justifyContent={"center"}
+        >
+          <CircularProgress />
+        </Stack>
+      )}
+    </Box>
+  );
 };
 
 function objectToSortedString(obj: Record<string, any>): string {

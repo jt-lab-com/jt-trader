@@ -2,6 +2,7 @@ import { Injectable } from '@nestjs/common';
 import typescriptPlugin from '@rollup/plugin-typescript';
 import { OutputAsset, rollup, SourceMap } from 'rollup';
 import * as path from 'path';
+import * as fs from 'fs';
 import { SourceMapConsumer } from 'source-map-sync';
 import { InjectPinoLogger, PinoLogger } from 'nestjs-pino';
 import { ExceptionReasonType } from '../../../exception/types';
@@ -13,6 +14,7 @@ import { StrategyItem } from '../types';
 import { parseVersionPlugin } from './plugins/parse-version';
 import * as virtual from 'rollup-plugin-virtual';
 import { EventEmitter2 } from '@nestjs/event-emitter';
+import { CacheService } from '../../../common/cache/cache.service';
 
 export interface StrategyBundle {
   content: string;
@@ -47,6 +49,7 @@ export class ScriptBundlerService {
     @InjectPinoLogger(ScriptBundlerService.name) private readonly logger: PinoLogger,
     private readonly siteApi: SiteApi,
     private readonly eventEmitter: EventEmitter2,
+    private readonly cacheService: CacheService,
   ) {
     this.sourcePath = process.env.STRATEGY_FILES_PATH;
   }
@@ -108,8 +111,22 @@ export class ScriptBundlerService {
   ): Promise<StrategyBundle> {
     try {
       if (strategy.type === 'local') {
-        return this.buildForPreviewExecution(strategy.path);
+        const fullFilePath = path.join(this.sourcePath, ...strategy.path.split('/'));
+        const stats = fs.statSync(fullFilePath);
+        const cacheKey = `previewExec::${strategy.id}-${strategy.type}::${stats.mtimeMs}`;
+
+        const cached = await this.cacheService.get(cacheKey);
+        if (cached) return JSON.parse(cached);
+
+        const result = await this.buildForPreviewExecution(strategy.path);
+        await this.cacheService.set(cacheKey, JSON.stringify(result));
+
+        return result;
       }
+
+      const cacheKey = `previewExec::${strategy.id}-${strategy.type}-${strategy.name}`;
+      const cached = await this.cacheService.get(cacheKey);
+      if (cached) return JSON.parse(cached);
 
       const response = await this.siteApi.getBundle(strategy, accountId);
       let content = response.content;
@@ -122,11 +139,15 @@ export class ScriptBundlerService {
 
       content = output[0].code;
 
-      return {
+      const result = {
         content,
         getStackTrace: this.getStackTrace,
         sourceMap: null,
       };
+
+      await this.cacheService.set(cacheKey, JSON.stringify(result));
+
+      return result;
     } catch (e) {
       e.cause = ExceptionReasonType.BundlerError;
       e.key = key;
