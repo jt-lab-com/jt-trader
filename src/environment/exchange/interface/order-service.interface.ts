@@ -16,6 +16,8 @@ export interface OrderServiceInterface {
 
   checkPositionsUpdates(): PositionInterface[] | undefined;
 
+  checkBalanceUpdates(): { balance: number; marginBalance: number } | undefined;
+
   getBalance();
 
   getBalanceFee(): number;

@@ -1,5 +1,4 @@
 import Box from "@mui/material/Box";
-import Typography from "@mui/material/Typography";
 import { FC } from "react";
 import { ErrorBoundary } from "react-error-boundary";
 import { Table } from "@/shared/ui/table";
@@ -31,25 +30,6 @@ export const BlockList: FC<BlockListProps> = (props) => {
   const handleLogError = (e: Error) => {
     console.error(e);
   };
-
-  if (!blocks.length) {
-    return (
-      <Box
-        sx={{
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          flexGrow: 1,
-          height: "100%",
-          width: "100%",
-        }}
-      >
-        <Box>
-          <Typography>Report data is empty</Typography>
-        </Box>
-      </Box>
-    );
-  }
 
   return (
     <>

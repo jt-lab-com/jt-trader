@@ -55,6 +55,23 @@ export const Report: FC<ReportProps> = (props) => {
       )}
 
       <ErrorBoundary fallback={fallbackRender}>
+        {!isPreview && !blocks.length && (
+          <Box
+            sx={{
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              flexGrow: 1,
+              height: "100%",
+              width: "100%",
+            }}
+          >
+            <Box>
+              <Typography>Report data is empty</Typography>
+            </Box>
+          </Box>
+        )}
+
         <BlockList artifactId={artifact.id} blocks={blocks} />
       </ErrorBoundary>
     </Stack>
