@@ -83,14 +83,13 @@ export class MultiCartOrderService implements OrderServiceInterface {
   }
 
   updateConfig(config: SystemParamsInterface & { balance?: number }, symbol?: string): void {
-    if (!this.carts.size && !!symbol) {
+    if (symbol) {
       const cart = this.selectCart(symbol);
       cart.updateConfig(config);
       return;
     }
 
-    for (const [cartSymbol, cart] of this.carts.entries()) {
-      if (symbol && cartSymbol !== symbol) continue;
+    for (const [_, cart] of this.carts.entries()) {
       cart.updateConfig(config);
     }
   }
