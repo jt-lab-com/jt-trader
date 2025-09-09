@@ -90,7 +90,7 @@ export class MainProcessExceptionHandler implements ExceptionHandler {
 
         const errorChunks = formattedStack.split('\n');
         const errorMessage = errorChunks[0];
-        const stackTrace = errorChunks.splice(1, Infinity);
+        const stackTrace = errorChunks.splice(1, Infinity).filter((line) => !!line);
 
         this.emitter.emit('client.log', {
           processId: e.key.toString(),
@@ -99,7 +99,7 @@ export class MainProcessExceptionHandler implements ExceptionHandler {
           message: [errorMessage, { stack: stackTrace }],
         });
 
-        e.logger?.error(formattedStack);
+        e.logger?.error({ stack: stackTrace }, errorMessage);
         break;
       }
 
