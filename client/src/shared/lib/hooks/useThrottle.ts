@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 
-export const useThrottle = <T extends string | number | undefined>(value: T, interval = 500): T => {
+export const useThrottle = <T extends string | number | object | undefined>(value: T, interval = 500): T => {
   const [throttledValue, setThrottledValue] = useState(value);
   const lastUpdated = useRef<number | null>(null);
 

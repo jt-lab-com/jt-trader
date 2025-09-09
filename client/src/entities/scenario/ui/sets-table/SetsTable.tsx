@@ -10,6 +10,7 @@ import TableHead from "@mui/material/TableHead";
 import TablePagination from "@mui/material/TablePagination";
 import TableRow from "@mui/material/TableRow";
 import Typography from "@mui/material/Typography";
+import { ScenarioSet, ScenarioSetArg } from "@packages/types";
 import { ChangeEvent, FC, useMemo, useState } from "react";
 import { MouseEvent } from "react";
 import { useSelector } from "react-redux";
@@ -17,7 +18,6 @@ import { Iconify } from "@/shared/ui/iconify";
 import { RouterLink } from "@/shared/ui/router-link";
 import { SvgColor } from "@/shared/ui/svg-color";
 import { getScenarioExecInfo } from "../../model/selectors";
-import { ScenarioSet, ScenarioSetArg } from "../../model/types";
 
 interface SetsTableProps {
   setList: ScenarioSet[];

@@ -13,10 +13,11 @@ import { BlockList } from "./BlockList";
 
 interface ReportProps {
   artifact: Artifact;
+  isPreview?: boolean;
 }
 
 export const Report: FC<ReportProps> = (props) => {
-  const { artifact } = props;
+  const { artifact, isPreview } = props;
 
   const filteredBlocks = artifact?.blocks?.filter((block) => !!block);
   const blocks = groupBlocks(filteredBlocks);
@@ -34,22 +35,24 @@ export const Report: FC<ReportProps> = (props) => {
 
   return (
     <Stack sx={{ height: "100%" }} gap={3}>
-      <Stack direction={"row"} justifyContent={"space-between"} alignItems={"center"}>
-        <Box sx={{ minWidth: 116 }} />
-        <Stack direction={"row"} justifyContent={"center"} alignItems={"center"} gap={1.5}>
-          <Image src={"/logo.svg"} />
-          <Typography sx={{ fontSize: 26, fontWeight: 600 }} color={"primary"}>
-            jt-lab.com
-          </Typography>
+      {!isPreview && (
+        <Stack direction={"row"} justifyContent={"space-between"} alignItems={"center"}>
+          <Box sx={{ minWidth: 116 }} />
+          <Stack direction={"row"} justifyContent={"center"} alignItems={"center"} gap={1.5}>
+            <Image src={"/logo.svg"} />
+            <Typography sx={{ fontSize: 26, fontWeight: 600 }} color={"primary"}>
+              jt-lab.com
+            </Typography>
+          </Stack>
+          <Button
+            startIcon={<Iconify icon={"solar:download-minimalistic-linear"} />}
+            variant={"outlined"}
+            onClick={handleDownload}
+          >
+            Download
+          </Button>
         </Stack>
-        <Button
-          startIcon={<Iconify icon={"solar:download-minimalistic-linear"} />}
-          variant={"outlined"}
-          onClick={handleDownload}
-        >
-          Download
-        </Button>
-      </Stack>
+      )}
 
       <ErrorBoundary fallback={fallbackRender}>
         <BlockList artifactId={artifact.id} blocks={blocks} />

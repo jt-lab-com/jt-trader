@@ -11,11 +11,13 @@ import {
   ChartData,
   TableData,
   TextBlockData,
+  TradingViewChartData,
 } from "../../model/types";
 import { ActionButtonList } from "../widgets/action-button/ActionButtonList";
 import { CardList } from "../widgets/card-list/CardList";
 import { Chart } from "../widgets/chart/Chart";
 import { TextBlock } from "../widgets/text-block/TextBlock";
+import { TradingViewChart } from "../widgets/trading-view-chart/TradingViewChart";
 import { BlockContainer } from "./BlockContainer";
 
 interface BlockListProps {
@@ -79,6 +81,14 @@ export const BlockList: FC<BlockListProps> = (props) => {
               <ErrorBoundary fallback={null} onError={handleLogError}>
                 <BlockContainer key={`${block.type}-${block.name}`} name={block.name}>
                   <Chart data={block.data as ChartData} />
+                </BlockContainer>
+              </ErrorBoundary>
+            );
+          case ArtifactBlockType.TRADING_VIEW_CHART:
+            return (
+              <ErrorBoundary fallback={null} onError={handleLogError}>
+                <BlockContainer key={`${block.type}-${block.name}`} name={block.name}>
+                  <TradingViewChart data={block.data as TradingViewChartData} />
                 </BlockContainer>
               </ErrorBoundary>
             );
