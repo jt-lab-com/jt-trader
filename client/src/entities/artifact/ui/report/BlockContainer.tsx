@@ -18,7 +18,7 @@ interface BlockContainerProps {
 export const BlockContainer: FC<BlockContainerProps> = (props) => {
   const { name, children, sx } = props;
 
-  const toggle = useBoolean();
+  const toggle = useBoolean(true);
 
   return (
     <Card sx={sx}>
