@@ -1,25 +1,22 @@
 import { CandleStick } from "@packages/types";
-import dayjs from "dayjs";
 import {
   CandlestickSeries,
   createSeriesMarkers,
   IChartApi,
   IPriceLine,
-  ISeriesApi,
-  ISeriesMarkersPluginApi,
   LineStyle,
   SeriesMarker,
   Time,
   UTCTimestamp,
 } from "lightweight-charts";
-import { HistoryBarsLoader } from "@/shared/api/history-bars-loader";
 import { roundTimeByTimeframe } from "@/shared/lib/utils/timeframe";
 import {
   PlaybackChartCard,
   PlaybackChartPriceLine,
   PlaybackChartShape,
   PlaybackChartSymbolData,
-} from "../../model/types";
+} from "../../../model/types";
+import { TVChartDatafeedBase } from "../datafeed.base";
 import { chartEvents, Events } from "./events";
 import { ChartPlayer, ChartPlayerSpeed } from "./player";
 
@@ -40,17 +37,12 @@ type UserPriceLineId = string;
 type Drawable = PlaybackChartShape | PlaybackChartPriceLine | PlaybackChartCard;
 type DrawableMap<T extends Drawable> = Record<number, T[]>;
 
-export class ChartPlaybackDatafeed {
-  private readonly chart: IChartApi;
-  private readonly barsLoader: HistoryBarsLoader;
-  private candleStickSeries: ISeriesApi<"Candlestick"> | null = null;
-  private seriesMarkers: ISeriesMarkersPluginApi<Time> | null = null;
+export class ChartPlaybackDatafeed extends TVChartDatafeedBase {
   private renderedPriceLinesMap: Record<UserPriceLineId, IPriceLine> = {};
   private player: ChartPlayer | null = null;
 
   constructor(chart: IChartApi) {
-    this.chart = chart;
-    this.barsLoader = new HistoryBarsLoader();
+    super(chart);
 
     chartEvents.on(Events.Play, () => {
       this.player?.play();
@@ -83,7 +75,7 @@ export class ChartPlaybackDatafeed {
     let priceLinesMap: DrawableMap<PlaybackChartPriceLine>;
     let cardsMap: DrawableMap<PlaybackChartCard>;
 
-    if (shapes) shapesMap = shapesMap = this.groupDrawablesByTime(shapes, interval);
+    if (shapes) shapesMap = this.groupDrawablesByTime(shapes, interval);
     if (priceLines) priceLinesMap = this.groupDrawablesByTime(priceLines, interval);
     if (cards) cardsMap = this.groupDrawablesByTime(cards, interval);
 
@@ -185,15 +177,5 @@ export class ChartPlaybackDatafeed {
       acc[timestamp] = [item];
       return acc;
     }, {});
-  }
-
-  private async loadHistory(symbol: string, interval: string, timeTo: number) {
-    const from = dayjs(timeTo)
-      .subtract(interval.includes("D") ? 6 : 1, "month")
-      .toDate()
-      .getTime();
-
-    const candles = await this.barsLoader.getBars(symbol, interval, from, timeTo);
-    return candles.map((candle) => ({ ...candle, time: (candle.time / 1000) as UTCTimestamp }));
   }
 }

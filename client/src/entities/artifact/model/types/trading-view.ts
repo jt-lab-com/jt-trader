@@ -1,4 +1,4 @@
-import { LineStyle, LineWidth } from "lightweight-charts";
+import { LineStyle, LineType, LineWidth } from "lightweight-charts";
 
 export interface PlaybackChartSymbolData {
   startTime: number;
@@ -106,4 +106,27 @@ export enum CardType {
   Formula = "formula",
   Date = "date",
   Currency = "currency",
+}
+
+export interface TradingViewChartData {
+  symbol: string;
+  startTime: number;
+  endTime: number;
+  interval: string;
+  visibleRange?: PlaybackChartVisibleRange;
+  shapes?: PlaybackChartShape[];
+  priceLines?: PlaybackChartPriceLine[];
+  indicators?: LineSeries[];
+  oscillators?: LineSeries[];
+  height?: number;
+  width?: number;
+}
+
+export interface LineSeries {
+  name?: string;
+  color?: string;
+  lineWidth?: LineWidth;
+  lineStyle?: LineStyle;
+  lineType?: LineType;
+  data: Array<{ time: number; value: number }>;
 }

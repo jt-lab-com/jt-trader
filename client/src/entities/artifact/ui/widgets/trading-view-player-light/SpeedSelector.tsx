@@ -1,7 +1,7 @@
 import MenuItem from "@mui/material/MenuItem";
 import TextField, { TextFieldProps } from "@mui/material/TextField";
 import { ChangeEvent, FC } from "react";
-import { ChartPlayerSpeed } from "../../../lib/chart-playback/player";
+import { ChartPlayerSpeed } from "../../../lib/trading-view/chart-playback/player";
 
 type SpeedSelectorProps = Omit<TextFieldProps, "onChange"> & {
   chartSpeed: ChartPlayerSpeed;

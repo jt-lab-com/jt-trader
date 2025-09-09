@@ -13,9 +13,10 @@ import Stack from "@mui/material/Stack";
 import { Job, JobRuntimeType, SaveJobParams, StrategyDefinedArg } from "@packages/types";
 import { FC, useEffect, useMemo } from "react";
 import { FormProvider, useForm, useWatch } from "react-hook-form";
+import { PreviewReport } from "@/entities/artifact";
 import { useConfig } from "@/entities/config";
 import { useMarkets } from "@/entities/markets";
-import { StrategiesSelect, StrategyContent, useStrategy } from "@/entities/strategy";
+import { StrategiesSelect, useStrategy } from "@/entities/strategy";
 import { RHFSelect } from "@/shared/ui/rhf-select";
 import { RHFTextField } from "@/shared/ui/rhf-textfield";
 import { getAvailableMarketSymbols } from "../../lib/get-available-market-symbols";
@@ -47,7 +48,17 @@ export const EditorModal: FC<EditorModalProps> = (props) => {
 
   const { handleSubmit, setValue, control, clearErrors, reset } = methods;
   const selectedStrategy = useWatch({ name: "selectedStrategy", control });
-  const exchange = useWatch({ name: "exchange", control });
+  const exchange = useWatch<JobSchema>({ name: "exchange", control });
+  const symbols = useWatch({ name: "symbols", control });
+  const args = useWatch({ name: "args", control });
+
+  const argsObject = useMemo(() => {
+    return args.reduce((acc: Record<string, unknown>, arg: { key: string; value: unknown }) => {
+      acc[arg.key] = arg.value;
+      return acc;
+    }, {});
+  }, [args]);
+
   const markets = useMarkets(exchange);
 
   const definedArgs = selectedStrategy
@@ -225,13 +236,12 @@ export const EditorModal: FC<EditorModalProps> = (props) => {
               </Grid>
             </Grid>
 
-            {selectedStrategy?.type === "local" && (
-              <Grid container>
-                <Grid item xs={12}>
-                  <StrategyContent strategyPath={selectedStrategy.path} />
-                </Grid>
-              </Grid>
-            )}
+            <PreviewReport
+              strategy={selectedStrategy}
+              exchange={exchange}
+              symbols={symbols}
+              args={argsObject}
+            />
           </Stack>
         </FormProvider>
       </DialogContent>
