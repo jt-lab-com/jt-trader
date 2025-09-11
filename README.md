@@ -1,1 +1,135 @@
-# JT Trader<!-- TOC -->* [License](#license)* [Dependencies](#dependencies)* [Installation](#installation)* [Environment Setup](#environment-setup)* [Build and Run](#build-and-run)<!-- TOC -->## LicenseJT Trader is dual-licensed:- 🟢 Free for personal, educational, and open-source use under the [AGPLv3 license](LICENSE).- 🔒 Commercial use requires a [paid license](am@jt-lab.com).If you want to use JT Trader in a commercial product or SaaS solution, please contact us for pricing.## DependenciesTo run the application, you need Node.js v18.x and [Redis](https://redis.io).___## InstallationClone the repository along with the [jt-lib](https://github.com/xsystems8/jt-lib) submodule:```bashgit clone --recurse-submodules git@github.com:jt-lab-com/jt-trader.git```Go to the project directory and install dependencies:```bashcd jtl-env && yarn```---## Environment SetupCreate a `.env` file in the root directory of the project by copying the contents of `.env.example`, and specify the values for the following environment variables:| Variable              | Description                                                                                                                                                                  ||-----------------------|------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|| `PORT`                | The port on which the application will run.                                                                                                                                  || `STRATEGY_FILES_PATH` | **Absolute path** to the directory containing the strategy source code. Example: `/<project-root>/strategy-source/src`                                                       || `ROLLUP_TS_CONFIG`    | Path to the `tsconfig.json` file used for building strategies.                                                                                                               || `MARKETS_FILE_PATH`   | Path to the JSON file with the available markets configuration. This file will be created automatically when the app starts.                                                 || `ARTIFACTS_DIR_PATH`  | Path to the directory for storing strategy reports. This directory will be created automatically when the app starts.                                                        || `HISTORY_BARS_PATH`   | Path to the directory for storing downloaded historical data (candles). This directory will be created automatically when the app starts.                                    || `DATABASE_URL`        | **Absolute path** to the SQLite database file. It will be created automatically when the app starts.                                                                         || `LOGS_DIR_PATH`       | Path to the directory for storing strategy execution logs. This directory will be created automatically when the app starts.                                                 || `SITE_API_HOST`       | Base URL of the site's API.                                                                                                                                                  || `ENGINE_MODE`         | Trading engine mode. Possible values: `both`, `realtime`, `tester`.                                                                                                          || `STANDALONE_APP`      | Set to `1` if the app is running in standalone (local) mode.                                                                                                                 || `REDIS_URL`           | Redis database connection URL. Used for caching. Can be omitted if Redis is running locally.                                                                                 || `ACCESS_SECRET`       | Optional secret used to restrict access to the server’s resources. Set this to prevent unauthorized users from accessing your application when it’s exposed to the Internet. |---## Build and RunTo build the project, run:```bashyarn build:prod```To start the application in production mode:```bashyarn start:prod```---
+# JT Trader
+
+[![License](https://img.shields.io/badge/license-AGPLv3-blue.svg)](LICENSE)
+[![TypeScript](https://img.shields.io/badge/TypeScript-4.0+-blue.svg)](https://www.typescriptlang.org/)
+[![Node.js](https://img.shields.io/badge/Node.js-16+-green.svg)](https://nodejs.org/)
+[![CCXT](https://img.shields.io/badge/CCXT-4.0+-orange.svg)](https://github.com/ccxt/ccxt)
+[![JT-Lib](https://img.shields.io/badge/JT--Lib-0.0+-purple.svg)](https://github.com/jt-lab-com/jt-lib)
+
+
+JT Trader is a powerful algorithmic trading platform built on modern technology stack. The platform provides a complete set of tools for creating, testing, and deploying trading strategies.
+
+## 📋 Table of Contents
+
+- [🚀 Key Features](#-key-features)
+- [📋 Requirements](#-requirements)
+- [🛠 Installation](#-installation)
+- [⚙️ Configuration](#️-configuration)
+- [🚀 Running](#-running)
+- [📚 Documentation](#-documentation)
+- [📄 License](#-license)
+- [🤝 Support](#-support)
+- [🔗 Related Projects](#-related-projects)
+
+## 🚀 Key Features
+
+- **Strategy Development** - Create trading strategies using TypeScript and modern API
+- **Strategy Testing** - Built-in tester for validating strategies on historical data
+- **Real-time Trading** - Run strategies in real-time mode
+- **Web Interface** - User-friendly web interface for strategy management
+- **Reporting** - Detailed analytics and reports on trading operations
+- **API** - RESTful API for integration with external systems
+
+## 📋 Requirements
+
+- Node.js v18.x
+- Redis
+- SQLite (built-in database)
+
+## 🛠 Installation
+
+1. Clone the repository with submodules:
+```bash
+git clone --recurse-submodules git@github.com:jt-lab-com/jt-trader.git
+```
+
+2. Navigate to the project directory and install dependencies:
+```bash
+cd jt-trader && yarn
+```
+
+3. Configure environment variables by copying `.env.example` to `.env` and setting the required values.
+
+## ⚙️ Configuration
+
+Create a `.env` file in the project root directory by copying `.env.example` and set the following environment variables:
+
+```env
+# Main settings
+PORT=8080
+SITE_API_HOST=https://jt-lab.com
+STANDALONE_APP=1
+
+# Trading engine mode: both, realtime, tester
+ENGINE_MODE="both"
+
+# File and directory paths
+DATABASE_URL="file:/path/to/your/project/storage.db"
+ROLLUP_TS_CONFIG=tsconfig.bundler.json
+STRATEGY_FILES_PATH=/path/to/your/project/strategy-source/src
+MARKETS_FILE_PATH=markets.json
+ARTIFACTS_DIR_PATH=/path/to/your/project/artifacts
+HISTORY_BARS_PATH=downloaded-history-bars
+LOGS_DIR_PATH=artifacts
+
+# Redis (optional - system can work with file cache)
+# REDIS_URL=redis://localhost:6379
+```
+
+### Environment Variables
+
+| Variable | Description | Example |
+|----------|-------------|---------|
+| `PORT` | Port for running the application | `8080` |
+| `SITE_API_HOST` | Base URL for site API | `https://jt-lab.com` |
+| `STANDALONE_APP` | Local mode operation (1 = enabled) | `1` |
+| `ENGINE_MODE` | Trading engine mode | `"both"`, `"realtime"`, `"tester"` |
+| `DATABASE_URL` | **Absolute path** to SQLite database file | `"file:/path/to/your/project/storage.db"` |
+| `STRATEGY_FILES_PATH` | **Absolute path** to strategy source code | `/path/to/your/project/strategy-source/src` |
+| `ROLLUP_TS_CONFIG` | Path to TypeScript configuration | `tsconfig.bundler.json` |
+| `MARKETS_FILE_PATH` | Path to markets configuration file | `markets.json` |
+| `ARTIFACTS_DIR_PATH` | Path to strategy reports directory | `/path/to/your/project/artifacts` |
+| `HISTORY_BARS_PATH` | Path to historical data directory | `downloaded-history-bars` |
+| `LOGS_DIR_PATH` | Path to logs directory | `artifacts` |
+| `REDIS_URL` | Redis connection URL (optional) | `redis://localhost:6379` |
+
+
+```
+
+## 🚀 Running
+
+Build the project:
+```bash
+yarn build:prod
+```
+
+Run in production mode:
+```bash
+yarn start:prod
+```
+
+## 📚 Documentation
+
+Detailed documentation is available at [docs.jt-lab.com](https://docs.jt-lab.com/jt-trader/getting-started/).
+
+## 📄 License
+
+JT Trader is dual-licensed:
+
+- 🟢 **Free** for personal, educational, and open-source use (AGPLv3)
+- 🔒 **Commercial use** requires a paid license
+
+## 🤝 Support
+
+- [Official Website](https://jt-lab.com)
+- [Documentation](https://docs.jt-lab.com/jt-trader/getting-started/)
+- [GitHub Issues](https://github.com/jt-lab-com/jt-trader/issues)
+
+## 🔗 Related Projects
+
+- [jt-lib](https://github.com/jt-lab-com/jt-lib) - Library for creating trading strategies
+- [Documentation](https://docs.jt-lab.com) - Complete project documentation
+
+---
+
+**JT Lab** - Professional tools for algorithmic trading
