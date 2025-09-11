@@ -135,7 +135,7 @@ Detailed documentation is available at [docs.jt-lab.com](https://docs.jt-lab.com
 JT Trader is dual-licensed:
 
 - 🟢 **Free** for personal, educational, and open-source use (AGPLv3)
-- 🔒 **Commercial use** requires a paid license
+- 🔒 **Commercial use** requires a [paid license](am@jt-lab.com)
 
 ## 🤝 Support
 
