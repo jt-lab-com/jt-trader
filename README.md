@@ -29,7 +29,8 @@ JT Trader is a powerful algorithmic trading platform built on modern technology 
 - **Real-time Trading** - Run strategies in real-time mode
 - **Web Interface** - User-friendly web interface for strategy management
 - **Reporting** - Detailed analytics and reports on trading operations
-- **API** - RESTful API for integration with external systems
+- **Cross-Platform** - Works on Windows, macOS, and Linux
+- **Cloud Ready** - Can be deployed on cloud platforms
 
 ## 🖼️ Screenshots
 
