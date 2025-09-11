@@ -2,7 +2,7 @@
 
 [![License](https://img.shields.io/badge/license-AGPLv3-blue.svg)](LICENSE)
 [![TypeScript](https://img.shields.io/badge/TypeScript-4.0+-blue.svg)](https://www.typescriptlang.org/)
-[![Node.js](https://img.shields.io/badge/Node.js-16+-green.svg)](https://nodejs.org/)
+[![Node.js](https://img.shields.io/badge/Node.js-18-green.svg)](https://nodejs.org/)
 [![CCXT](https://img.shields.io/badge/CCXT-4.0+-orange.svg)](https://github.com/ccxt/ccxt)
 [![JT-Lib](https://img.shields.io/badge/JT--Lib-0.0+-purple.svg)](https://github.com/jt-lab-com/jt-lib)
 
@@ -43,14 +43,11 @@ JT Trader is a powerful algorithmic trading platform built on modern technology 
 [<img src="img/thumbnails/thumb_config-intro.png" width="90" alt="Configuration">](img/config-intro.png)
 [<img src="img/thumbnails/thumb_create-scenarion-tester-intro.png" width="90" alt="Create Scenario Tester">](img/create-scenarion-tester-intro.png)
 
-
 </div>
 
 ## 📋 Requirements
 
-- Node.js v18.x
-- Redis
-- SQLite (built-in database)
+- Node.js v18.x (not tested yet on other versions)
 
 ## 🛠 Installation
 
