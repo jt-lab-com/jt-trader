@@ -12,6 +12,7 @@ JT Trader is a powerful algorithmic trading platform built on modern technology 
 ## 📋 Table of Contents
 
 - [🚀 Key Features](#-key-features)
+- [🖼️ Screenshots](#️-screenshots)
 - [📋 Requirements](#-requirements)
 - [🛠 Installation](#-installation)
 - [⚙️ Configuration](#️-configuration)
@@ -30,6 +31,21 @@ JT Trader is a powerful algorithmic trading platform built on modern technology 
 - **Reporting** - Detailed analytics and reports on trading operations
 - **API** - RESTful API for integration with external systems
 
+## 🖼️ Screenshots
+
+<div align="center">
+
+[<img src="img/thumbnails/thumb_runtime-intro.png" width="90" alt="Runtime Interface">](img/runtime-intro.png)
+[<img src="img/thumbnails/thumb_create-runtime-intro.png" width="90" alt="Create Runtime">](img/create-runtime-intro.png)
+[<img src="img/thumbnails/thumb_tester-intro.png" width="90" alt="Tester Interface">](img/tester-intro.png)
+[<img src="img/thumbnails/thumb_tester-full-report-intro.png" width="90" alt="Tester Report">](img/tester-full-report-intro.png)
+[<img src="img/thumbnails/thumb_strategy-files-intro.png" width="90" alt="Strategy Files">](img/strategy-files-intro.png)
+[<img src="img/thumbnails/thumb_config-intro.png" width="90" alt="Configuration">](img/config-intro.png)
+[<img src="img/thumbnails/thumb_create-scenarion-tester-intro.png" width="90" alt="Create Scenario Tester">](img/create-scenarion-tester-intro.png)
+
+
+</div>
+
 ## 📋 Requirements
 
 - Node.js v18.x
@@ -38,17 +54,23 @@ JT Trader is a powerful algorithmic trading platform built on modern technology 
 
 ## 🛠 Installation
 
-1. Clone the repository with submodules:
+
+**1. [📥 Download Launcher](https://docs.jt-lab.com/installation/#1-installation-via-launcher)**
+
+**2. [🐳 Docker Installation](https://docs.jt-lab.com/installation/#installing-docker)**
+
+### 📦 From GitHub
+1. Clone the repository:
 ```bash
 git clone --recurse-submodules git@github.com:jt-lab-com/jt-trader.git
 ```
 
-2. Navigate to the project directory and install dependencies:
+2. Install dependencies:
 ```bash
 cd jt-trader && yarn
 ```
 
-3. Configure environment variables by copying `.env.example` to `.env` and setting the required values.
+3. Configure environment variables by copying `.env.example` to `.env`.
 
 ## ⚙️ Configuration
 
