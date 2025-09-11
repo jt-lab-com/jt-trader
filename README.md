@@ -113,12 +113,10 @@ LOGS_DIR_PATH=artifacts
 | `LOGS_DIR_PATH` | Path to logs directory | `artifacts` |
 | `REDIS_URL` | Redis connection URL (optional) | `redis://localhost:6379` |
 
-
-```
-
 ## 🚀 Running
 
 Build the project:
+
 ```bash
 yarn build:prod
 ```
