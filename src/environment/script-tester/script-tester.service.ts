@@ -19,6 +19,7 @@ import { ExceptionReasonType } from '../../exception/types';
 import { AxiosError } from 'axios';
 import { ScriptBundlerService } from '../script/bundler/script-bundler.service';
 import { ScriptArtifactsService } from '../script/artifacts/script-artifacts.service';
+import { formatTesterSymbol } from './utils/format-tester-symbol';
 
 type TaskType = {
   id: number;
@@ -139,7 +140,7 @@ export class ScriptTesterService {
     try {
       require.resolve(process.env.CONSOLE_MODULE_PATH);
     } catch (e) {
-      this.logger.error({ scenarioId, stack: e.stack?.split("\n") }, e.message);
+      this.logger.error({ scenarioId, stack: e.stack?.split('\n') }, e.message);
       this.eventEmitter.emit('client.notification', {
         accountId: scenario.accountId,
         message: `invalid tester module \n${process.env.CONSOLE_MODULE_PATH}`,
@@ -167,19 +168,20 @@ export class ScriptTesterService {
     );
 
     const allScenarioSymbols = new Set();
-    for (let set of scenario.sets) {
+    for (const set of scenario.sets) {
       const symbolArg = set.args.find(({ key }) => key === 'symbol');
       if (!symbolArg) continue;
+      const symbol = formatTesterSymbol(symbolArg.value);
 
       allScenarioSymbols.add(symbolArg);
       this.eventEmitter.emit('client.prepare-tester-source-start', {
         accountId: scenario.accountId,
-        symbol: symbolArg.value,
+        symbol: symbol.replace(':USDT', ''),
       });
 
       try {
         await this.historyBarsService.prepareTesterSource({
-          symbol: symbolArg.value.toUpperCase().replace(':USDT', ''),
+          symbol: symbol.replace(':USDT', ''),
           timeframe: scenario.timeframe,
           start: new Date(scenario.start),
           end: new Date(scenario.end),
@@ -190,7 +192,7 @@ export class ScriptTesterService {
           accountId: scenario.accountId,
           message:
             e instanceof AxiosError && e.response.status === 404
-              ? `No ${symbolArg.value} quotes found`
+              ? `No ${symbol.replace(':USDT', '')} quotes found`
               : 'An error occurred while loading quotes',
           type: 'error',
         });
@@ -216,6 +218,7 @@ export class ScriptTesterService {
       const set = scenario.sets[index];
       const symbolArg = set.args.find(({ key }) => key === 'symbol');
       if (!symbolArg) return;
+      const symbol = formatTesterSymbol(symbolArg.value);
 
       const { version } = await this.bundlerService.generateBundle(scenario.accountId, set.id.toString(), {
         ...strategy,
@@ -227,7 +230,8 @@ export class ScriptTesterService {
         accountId: scenario.accountId,
         sync,
         strategy: { ...strategy, version: version.toString() },
-        symbol: symbolArg.value.toUpperCase().replace(':USDT', ''),
+        // symbol: symbolArg.value.toUpperCase().replace(':USDT', ''),
+        symbol,
         start: scenario.start,
         end: scenario.end,
         set: [
@@ -341,7 +345,7 @@ export class ScriptTesterService {
         this.logger.error(
           {
             scenarioId: currentScenario.id,
-            stack: e.stack?.split("\n"),
+            stack: e.stack?.split('\n'),
             artifacts,
           },
           'Scenario report update failed',
@@ -352,7 +356,10 @@ export class ScriptTesterService {
     this.resultQueue.push({ id, status });
     this.currentScenario[currentScenario?.id]?.set(id, true);
 
-    const scenarioResult = Array.from(this.currentScenario[currentScenario?.id]?.values() ?? [])?.reduce((acc, item) => acc && item, true);
+    const scenarioResult = Array.from(this.currentScenario[currentScenario?.id]?.values() ?? [])?.reduce(
+      (acc, item) => acc && item,
+      true,
+    );
     if (scenarioResult) {
       this.currentScenario[currentScenario?.id] = undefined;
       this.logger.info({ pid, scenarioId: currentScenario?.id, artifacts }, 'Last scenario set processed');

@@ -66,7 +66,7 @@ export class ScriptProcessContextSync extends ScriptProcessContextBase {
         },
       ]);
     } catch (e) {
-      return { error: e.message, clientOrderId } as OrderInterface;
+      throw { error: e.message, clientOrderId };
     }
   }
 
@@ -93,6 +93,6 @@ export class ScriptProcessContextSync extends ScriptProcessContextBase {
   }
 
   symbolInfo(symbol) {
-    return this.getSymbolInfo(symbol);
+    return this.getSymbolInfo(symbol, this.args.connectionName);
   }
 }
