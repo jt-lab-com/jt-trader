@@ -6,7 +6,15 @@ import { EXCHANGE_LIST } from '../src/environment/exchange/exchange-connector/co
 
 config();
 
+function ensureMarketsDir() {
+  if (!fs.existsSync(process.env.MARKETS_DIR_PATH)) {
+    fs.mkdirSync(process.env.MARKETS_DIR_PATH);
+  }
+}
+
 async function downloadMarkets() {
+  ensureMarketsDir();
+
   for (const exchangeData of EXCHANGE_LIST) {
     const code = exchangeData.code;
     if (code.includes('-testnet') || code.includes('-mock')) continue;
