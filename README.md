@@ -62,6 +62,7 @@ JT Trader is a powerful algorithmic trading platform built on modern technology 
 ```bash
 git clone --recurse-submodules git@github.com:jt-lab-com/jt-trader.git
 ```
+Go to the project directory and install dependencies:
 
 2. Install dependencies:
 ```bash
