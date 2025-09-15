@@ -3377,10 +3377,10 @@ caniuse-lite@^1.0.30001629:
   resolved "https://registry.yarnpkg.com/caniuse-lite/-/caniuse-lite-1.0.30001632.tgz#964207b7cba5851701afb4c8afaf1448db3884b6"
   integrity sha512-udx3o7yHJfUxMLkGohMlVHCvFvWmirKh9JAH/d7WOLPetlH+LTL5cocMZ0t7oZx/mdlOWXti97xLZWc8uURRHg==
 
-ccxt@^4.4.33:
-  version "4.4.33"
-  resolved "https://registry.yarnpkg.com/ccxt/-/ccxt-4.4.33.tgz#7bf35e79448a06564faf57b60eebd417ce475194"
-  integrity sha512-01TFbsxBMPxapluvYKZ2YrznOix+37sRlkkYiZqZZJbBikEHWn+0xEIKbDbsEutFc8X/c2V4f/wfAYxyvOB7LQ==
+ccxt@^4.5.4:
+  version "4.5.4"
+  resolved "https://registry.yarnpkg.com/ccxt/-/ccxt-4.5.4.tgz#b43b3ced161d121c6ac952f35ee0ab787758a7ea"
+  integrity sha512-OwMYJSw3c10J6pV8iYS2X01H0ZWKQCTk/wopI0H0G0EIKMDkI4Od0B5IaJNwjuEv1Yg/qSATJAI3uqT+eg6yLQ==
   dependencies:
     ws "^8.8.1"
 
