@@ -18,6 +18,8 @@ export const ConfigTable: FC<ConfigTableProps> = (props) => {
   const { exchangeList } = useConfig();
   const theme = useTheme();
 
+  const exchanges = exchangeList.filter((exchange) => !exchange.code.includes("mock"));
+
   const renderRow = (exchange: Exchange) => {
     return (
       <TableRow key={exchange.code}>
@@ -44,7 +46,7 @@ export const ConfigTable: FC<ConfigTableProps> = (props) => {
           <TableCell width={100} />
         </TableRow>
       </TableHead>
-      <TableBody>{exchangeList.map(renderRow)}</TableBody>
+      <TableBody>{exchanges.map(renderRow)}</TableBody>
     </Table>
   );
 };
