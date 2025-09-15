@@ -27,9 +27,21 @@ const GATE_IO_KEYS = {
   USER_ID: 'gateio_user_id',
 };
 
+const GATE_IO_TESTNET_KEYS = {
+  API_SECRET: 'gateio_testnet_api_secret',
+  API_KEY: 'gateio_testnet_api_key',
+  USER_ID: 'gateio_testnet_user_id',
+};
+
 const BYBIT_KEYS = {
   API_SECRET: 'bybit_api_secret',
   API_KEY: 'bybit_api_key',
+};
+
+const KUCOIN_KEYS = {
+  API_SECRET: 'kucoin__api_secret',
+  API_KEY: 'kucoin_api_key',
+  PASSWORD: 'kucoin_password',
 };
 
 const BINANCE = {
@@ -156,6 +168,25 @@ const GATE_IO = {
   ],
 };
 
+const GATE_IO_TESTNET = {
+  code: 'gateio-testnet',
+  name: 'Gate.io Testnet',
+  disabled: false,
+  sandbox: true,
+  fields: [
+    {
+      name: GATE_IO_TESTNET_KEYS.API_KEY,
+      type: 'string' as const,
+      label: 'API Key',
+    },
+    {
+      name: GATE_IO_TESTNET_KEYS.API_SECRET,
+      type: 'string' as const,
+      label: 'API Secret',
+    },
+  ],
+};
+
 const GATE_IO_MOCK = {
   code: 'gateio-mock',
   name: 'Gate.io Mock (Futures)',
@@ -183,24 +214,51 @@ const BYBIT = {
   ],
 };
 
+const KUCOIN = {
+  code: 'kucoin',
+  name: 'Kucoin (Futures)',
+  disabled: false,
+  sandbox: false,
+  fields: [
+    {
+      name: KUCOIN_KEYS.API_KEY,
+      type: 'string' as const,
+      label: 'API Key',
+    },
+    {
+      name: KUCOIN_KEYS.API_SECRET,
+      type: 'string' as const,
+      label: 'API Secret',
+    },
+    {
+      name: KUCOIN_KEYS.PASSWORD,
+      type: 'string' as const,
+      label: 'Password',
+    },
+  ],
+};
+
 export const EXCHANGE_KEYS = {
   BINANCE: BINANCE_KEYS,
   BINANCE_TESTNET: BINANCE_TESTNET_KEYS,
   BINANCE_USDM: BINANCE_USDM_KEYS,
-  OKX: OKX_KEYS,
   GATE_IO: GATE_IO_KEYS,
-  GATE_IO_MOCK: undefined,
   BYBIT: BYBIT_KEYS,
+
+  OKX: OKX_KEYS,
+  GATE_IO_MOCK: undefined,
 };
 
 export const EXCHANGE_LIST: Exchange[] = [
-  BINANCE_TESTNET,
-  /* BINANCE,*/ BINANCE_USDM,
-  BINANCE_US,
-  OKX,
+  // BINANCE_TESTNET,
+  // /* BINANCE,*/ BINANCE_USDM,
+  // BINANCE_US,
   GATE_IO,
-  GATE_IO_MOCK,
   BYBIT,
+  KUCOIN,
+  OKX,
+  GATE_IO_TESTNET,
+  GATE_IO_MOCK,
 ];
 
 export const BINANCE_USDM_HARDCODED_LEVERAGES = {
