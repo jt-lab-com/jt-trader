@@ -213,7 +213,7 @@ export class ScriptProcessContext extends ScriptProcessContextBase {
   }
 
   public symbolInfo(symbol) {
-    if (this.isTester()) return this.getSymbolInfo(symbol);
+    if (this.isTester()) return this.getSymbolInfo(symbol, this.args.connectionName);
     const sdk = this.exchange.getSDK(this.args.connectionName, this.keys);
     return { ...sdk.market(symbol) };
   }
