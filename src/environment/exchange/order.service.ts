@@ -27,6 +27,8 @@ export class OrderService implements OrderServiceInterface {
   private triggerPriceMax = 0;
   private triggerPriceMin = 0;
   private defaultLeverage = 1;
+  private minLeverage = 1;
+  private maxLeverage = 100;
   private makerFee = 0;
   private takerFee = 0;
   private balanceFee = 0;
@@ -71,10 +73,6 @@ export class OrderService implements OrderServiceInterface {
   };
 
   public create = (order: OrderInterface): OrderInterface => {
-    const reject = {
-      error: '',
-      clientOrderId: order.clientOrderId,
-    };
     const ratio = order.side === 'buy' ? 1 : -1;
 
     let price =
@@ -85,8 +83,7 @@ export class OrderService implements OrderServiceInterface {
     // цена limit ордера не может быть выше текущей при покупке и ниже текущей при продаже
     const diff = (order.price - this.currentPrice) * ratio;
     if (order.type === 'limit' && diff > 0) {
-      reject.error = `${order.side} order price ${ratio === 1 ? 'higher' : 'lower'} current price`;
-      return reject;
+      throw new Error(`${order.side} order price ${ratio === 1 ? 'higher' : 'lower'} current price`);
     }
 
     const isUntriggeredOrder = [!!order.stopLossPrice, !!order.takeProfitPrice].indexOf(true) > -1;
@@ -94,14 +91,12 @@ export class OrderService implements OrderServiceInterface {
     if (isUntriggeredOrder) {
       // - если isUntriggeredOrder, то пропускать только market
       if (order.type === 'limit') {
-        reject.error = 'Only market stop orders available';
-        return reject;
+        throw new Error('Only market stop orders available');
       }
 
       // - передать можно только 1 параметр из stopLossPrice, takeProfitPrice
       if (!!order.stopLossPrice === true && !!order.takeProfitPrice === true) {
-        reject.error = 'Only one of fields value available (stopLossPrice or takeProfitPrice)';
-        return reject;
+        throw new Error('Only one of fields value available (stopLossPrice or takeProfitPrice)');
       }
 
       // - цена ордера = триггер цена
@@ -114,8 +109,7 @@ export class OrderService implements OrderServiceInterface {
     let reduceOnly: boolean = order.reduceOnly !== undefined ? order.reduceOnly : false;
     if (this.isHedgeMode) {
       if ([PositionSideType.short, PositionSideType.long].indexOf(order.positionSide) === -1) {
-        reject.error = `positionSide field required values: ${PositionSideType.short}, ${PositionSideType.long}`;
-        return reject;
+        throw new Error(`positionSide field required values: ${PositionSideType.short}, ${PositionSideType.long}`);
       }
 
       positionSide = order.positionSide;
@@ -162,7 +156,7 @@ export class OrderService implements OrderServiceInterface {
     this.orderUpdates.add({ ...currentOrder });
 
     if (currentOrder.type === 'market' && currentOrder.status === 'open') {
-      this.execute(currentOrder);
+      return this.execute(currentOrder);
     } else {
       this.updateTriggerPriceLimits(currentOrder.price);
     }
@@ -266,7 +260,7 @@ export class OrderService implements OrderServiceInterface {
     return this.getBalance();
   }
 
-  private execute(order: OrderInterface): void {
+  private execute(order: OrderInterface): OrderInterface {
     const positionIndex = this.isHedgeMode ? (order.positionSide === PositionSideType.long ? 0 : 1) : 0;
     let position = this.positions[positionIndex];
 
@@ -369,7 +363,7 @@ export class OrderService implements OrderServiceInterface {
     this.balanceFee += order.fee.cost;
 
     // this.balance += order.price * order.amount * (order.side === 'buy' ? -1 : 1);
-    this.update(order.id, {
+    return this.update(order.id, {
       status: 'closed',
       timestamp: order.timestamp,
       average: order.price,
@@ -440,11 +434,17 @@ export class OrderService implements OrderServiceInterface {
     this.marketOrderSpread = config.marketOrderSpread ?? this.marketOrderSpread;
     this.pricePrecision = config.pricePrecision ?? this.pricePrecision;
     this.balance = config.balance ?? this.balance;
-    this.defaultLeverage = config.defaultLeverage ?? this.defaultLeverage;
     this.makerFee = config.makerFee ?? this.makerFee;
     this.takerFee = config.takerFee ?? this.takerFee;
     this.isHedgeMode = config.hedgeMode ?? this.isHedgeMode;
     this.contractSize = config.contractSize ?? this.contractSize;
+    this.minLeverage = config.minLeverage ?? this.minLeverage;
+    this.maxLeverage = config.maxLeverage ?? this.maxLeverage;
+    this.defaultLeverage = config.defaultLeverage
+      ? config.defaultLeverage > this.maxLeverage
+        ? this.maxLeverage
+        : config.defaultLeverage
+      : this.defaultLeverage;
   };
 
   public getConfig(): SystemParamsInterface {

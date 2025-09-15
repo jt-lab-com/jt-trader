@@ -35,9 +35,9 @@ export interface ProcessMeta extends Runtime {
 @Injectable()
 export class ScriptProcessFactory {
   private readonly processes: Map<number, Process>;
-  private markets: any[];
+  private readonly markets: Record<string, any[]>;
   static readonly monitoringInterval: number = 5000;
-  private runtimeLogger: Map<string, Logger>;
+  private readonly runtimeLogger: Map<string, Logger>;
 
   constructor(
     private readonly dataFeedFactory: DataFeedFactory,
@@ -53,13 +53,20 @@ export class ScriptProcessFactory {
   ) {
     this.processes = new Map([]);
     this.runtimeLogger = new Map([]);
-    // this.monitoring();
-    this.markets = JSON.parse(fs.readFileSync(process.env.MARKETS_FILE_PATH).toString());
+    this.markets = {};
+
+    const marketsDirPath = process.env.MARKETS_DIR_PATH;
+    const files = fs.readdirSync(marketsDirPath);
+    const jsonFiles = files
+      .filter((file) => path.extname(file).toLowerCase() === '.json')
+      .map((file) => path.basename(file, '.json'));
+    jsonFiles.forEach((file) => {
+      this.markets[file] = JSON.parse(fs.readFileSync(path.join(marketsDirPath, `${file}.json`)).toString());
+    });
   }
 
-  getSymbolInfo = (symbol: string) => {
-    const formattedSymbol = symbol.replace(':USDT', '').replace('/', '');
-    return this.markets.find(({ id }) => id === formattedSymbol);
+  getSymbolInfo = (symbol: string, exchange: string) => {
+    return this.markets[exchange]?.find((market) => market.symbol === symbol);
   };
 
   private async processesLimit(accountId: string): Promise<boolean> {
