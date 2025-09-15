@@ -2,7 +2,8 @@ import * as fs from 'fs';
 import { config } from 'dotenv';
 import * as ccxt from 'ccxt';
 import * as path from 'path';
-import { EXCHANGE_LIST } from '../src/environment/exchange/exchange-connector/const';
+
+const EXCHANGE_LIST = ['gateio', 'bybit', 'kucoin', 'okx'];
 
 config();
 
@@ -15,8 +16,7 @@ function ensureMarketsDir() {
 async function downloadMarkets() {
   ensureMarketsDir();
 
-  for (const exchangeData of EXCHANGE_LIST) {
-    const code = exchangeData.code;
+  for (const code of EXCHANGE_LIST) {
     if (code.includes('-testnet') || code.includes('-mock')) continue;
     const exchange = new ccxt[code]({
       enableRateLimit: true,
