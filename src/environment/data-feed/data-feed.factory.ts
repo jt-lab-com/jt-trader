@@ -39,7 +39,10 @@ export class DataFeedFactory {
     const isMock: boolean = exchange.endsWith('-mock');
     let dataFlow = this.dataFlow;
     // если биржа mock и приватный метод пользователя
-    if (isMock && ['watchOrderBook', 'watchTicker', 'watchOrders', 'watchPositions'].indexOf(method) === -1) {
+    if (
+      isMock &&
+      ['watchOrderBook', 'watchTicker', 'watchOrders', 'watchPositions', 'watchBalance'].indexOf(method) === -1
+    ) {
       dataFlow = 'subscriber';
     }
 

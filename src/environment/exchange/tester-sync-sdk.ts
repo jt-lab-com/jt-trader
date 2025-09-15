@@ -155,9 +155,10 @@ export class TesterSyncSDK {
     const tms = this.getCurrentRow()?.timestamp;
     // const unrealizedPnl = this.orderService.getPositions().reduce((acc, position) => acc + position.unrealizedPnl, 0);
     const { balance, marginBalance } = this.orderService.getBalance();
-    const [free, used, total] = [balance, marginBalance, balance - marginBalance].map((value) =>
-      value.toFixed(this.orderService.getPricePrecision()),
-    );
+    // const [free, used, total] = [balance, marginBalance, balance - marginBalance].map(
+    //   (value) => +value.toFixed(this.orderService.getPricePrecision()),
+    // );
+    const [free, used, total] = [balance, marginBalance, balance - marginBalance];
 
     return {
       USDT: { free, used, total },

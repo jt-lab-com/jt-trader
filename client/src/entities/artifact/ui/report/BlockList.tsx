@@ -1,5 +1,4 @@
 import Box from "@mui/material/Box";
-import Typography from "@mui/material/Typography";
 import { FC } from "react";
 import { ErrorBoundary } from "react-error-boundary";
 import { Table } from "@/shared/ui/table";
@@ -11,11 +10,13 @@ import {
   ChartData,
   TableData,
   TextBlockData,
+  TradingViewChartData,
 } from "../../model/types";
 import { ActionButtonList } from "../widgets/action-button/ActionButtonList";
 import { CardList } from "../widgets/card-list/CardList";
 import { Chart } from "../widgets/chart/Chart";
 import { TextBlock } from "../widgets/text-block/TextBlock";
+import { TradingViewChart } from "../widgets/trading-view-chart/TradingViewChart";
 import { BlockContainer } from "./BlockContainer";
 
 interface BlockListProps {
@@ -29,25 +30,6 @@ export const BlockList: FC<BlockListProps> = (props) => {
   const handleLogError = (e: Error) => {
     console.error(e);
   };
-
-  if (!blocks.length) {
-    return (
-      <Box
-        sx={{
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          flexGrow: 1,
-          height: "100%",
-          width: "100%",
-        }}
-      >
-        <Box>
-          <Typography>Report data is empty</Typography>
-        </Box>
-      </Box>
-    );
-  }
 
   return (
     <>
@@ -79,6 +61,14 @@ export const BlockList: FC<BlockListProps> = (props) => {
               <ErrorBoundary fallback={null} onError={handleLogError}>
                 <BlockContainer key={`${block.type}-${block.name}`} name={block.name}>
                   <Chart data={block.data as ChartData} />
+                </BlockContainer>
+              </ErrorBoundary>
+            );
+          case ArtifactBlockType.TRADING_VIEW_CHART:
+            return (
+              <ErrorBoundary fallback={null} onError={handleLogError}>
+                <BlockContainer key={`${block.type}-${block.name}`} name={block.name}>
+                  <TradingViewChart data={block.data as TradingViewChartData} />
                 </BlockContainer>
               </ErrorBoundary>
             );

@@ -6,6 +6,7 @@ import { EventEmitter } from 'events';
 import { performance } from 'node:perf_hooks';
 import { ScriptProcessContextSync } from './script-process-context-sync';
 import { getAllObjectMethods } from '../../../common/utils';
+import { StrategyArgsType } from '../../exchange/interface/strategy.interface';
 
 export class ScriptProcess {
   private _instance: BaseScriptInterface;
@@ -49,6 +50,20 @@ export class ScriptProcess {
     await this.context.updateArgs(this._instance);
     await this._instance.init();
     this.isInited = true;
+  }
+
+  async previewExecution(bundle: StrategyBundle, args: StrategyArgsType) {
+    const { content } = bundle;
+    await this.context.updateArgs(
+      {
+        connectionName: args.connectionName,
+        symbols: args.symbols,
+        interval: 1,
+      } as BaseScriptInterface,
+      false,
+    );
+    this._instance = await this._vm.run(new VMScript(content));
+    return this.context.getArtifactsKey();
   }
 
   async start() {

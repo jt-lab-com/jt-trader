@@ -10,10 +10,13 @@ export interface SystemParamsInterface {
   marketOrderSpread?: number;
   pricePrecision?: number;
   defaultLeverage?: number;
+  minLeverage?: number;
+  maxLeverage?: number;
   makerFee?: number;
   takerFee?: number;
   timeframe?: number;
   hedgeMode?: boolean;
+  contractSize?: number;
 }
 
 export interface ScenarioDTO extends SystemParamsInterface {
@@ -93,7 +96,7 @@ export class ScriptScenarioService {
       return;
     }
 
-    let isDone: boolean = true;
+    let isDone = true;
     const data: any[] = scenario.sets.reduce(
       (acc, set) => {
         isDone = isDone && set.isDone;
@@ -144,8 +147,8 @@ export class ScriptScenarioService {
       const series = [];
       const seriesDown = [];
       const seriesTime = [];
-      let lastExistedProfit = [];
-      let lastExistedDrawdown = [];
+      const lastExistedProfit = [];
+      const lastExistedDrawdown = [];
 
       for (let i = 0; i < profitDataArray.length; i++) {
         const [tms, { profit, drawdown }] = profitDataArray[i];

@@ -2,10 +2,11 @@ import { Injectable } from '@nestjs/common';
 import typescriptPlugin from '@rollup/plugin-typescript';
 import { OutputAsset, rollup, SourceMap } from 'rollup';
 import * as path from 'path';
+import * as fs from 'fs';
 import { SourceMapConsumer } from 'source-map-sync';
 import { InjectPinoLogger, PinoLogger } from 'nestjs-pino';
 import { ExceptionReasonType } from '../../../exception/types';
-import { createInstancePlugin, removeAsyncAwaitPlugin, parseArgumentsPlugin } from './plugins';
+import { createInstancePlugin, removeAsyncAwaitPlugin, parseArgumentsPlugin, previewExecutionPlugin } from './plugins';
 import { tsConfig } from './config/ts-config';
 import { SiteApi } from '../../../common/api/site-api';
 import { DEFINED_ARGS_FILENAME, SCRIPT_VERSION_FILENAME } from './config/const';
@@ -13,6 +14,7 @@ import { StrategyItem } from '../types';
 import { parseVersionPlugin } from './plugins/parse-version';
 import * as virtual from 'rollup-plugin-virtual';
 import { EventEmitter2 } from '@nestjs/event-emitter';
+import { CacheService } from '../../../common/cache/cache.service';
 
 export interface StrategyBundle {
   content: string;
@@ -47,6 +49,7 @@ export class ScriptBundlerService {
     @InjectPinoLogger(ScriptBundlerService.name) private readonly logger: PinoLogger,
     private readonly siteApi: SiteApi,
     private readonly eventEmitter: EventEmitter2,
+    private readonly cacheService: CacheService,
   ) {
     this.sourcePath = process.env.STRATEGY_FILES_PATH;
   }
@@ -101,6 +104,57 @@ export class ScriptBundlerService {
     }
   }
 
+  async generatePreviewExecutionBundle(
+    accountId: string,
+    key: string,
+    strategy: StrategyItem,
+  ): Promise<StrategyBundle> {
+    try {
+      if (strategy.type === 'local') {
+        const fullFilePath = path.join(this.sourcePath, ...strategy.path.split('/'));
+        const stats = fs.statSync(fullFilePath);
+        const cacheKey = `previewExec::${strategy.id}-${strategy.type}::${stats.mtimeMs}`;
+
+        const cached = await this.cacheService.get(cacheKey);
+        if (cached) return JSON.parse(cached);
+
+        const result = await this.buildForPreviewExecution(strategy.path);
+        await this.cacheService.set(cacheKey, JSON.stringify(result));
+
+        return result;
+      }
+
+      const cacheKey = `previewExec::${strategy.id}-${strategy.type}-${strategy.name}`;
+      const cached = await this.cacheService.get(cacheKey);
+      if (cached) return JSON.parse(cached);
+
+      const response = await this.siteApi.getBundle(strategy, accountId);
+      let content = response.content;
+
+      const bundle = await rollup({
+        input: 'entry',
+        plugins: [virtual({ entry: content }), previewExecutionPlugin()],
+      });
+      const { output } = await bundle.generate({ format: 'es', name: 'vm.js', sourcemap: false });
+
+      content = output[0].code;
+
+      const result = {
+        content,
+        getStackTrace: this.getStackTrace,
+        sourceMap: null,
+      };
+
+      await this.cacheService.set(cacheKey, JSON.stringify(result));
+
+      return result;
+    } catch (e) {
+      e.cause = ExceptionReasonType.BundlerError;
+      e.key = key;
+      throw e;
+    }
+  }
+
   public async buildAndSaveToStore(strategyPath: string, accountId: string): Promise<void> {
     try {
       const { warn, sourceMap, content, definedArgs, version } = await this.build(strategyPath);
@@ -124,6 +178,23 @@ export class ScriptBundlerService {
       e.cause = ExceptionReasonType.BundlerError;
       throw e;
     }
+  }
+
+  private async buildForPreviewExecution(filePath: string): Promise<StrategyBundle> {
+    const fullFilePath: string = path.join(this.sourcePath, ...filePath.split('/'));
+    const plugins = [typescriptPlugin(tsConfig), previewExecutionPlugin(fullFilePath)];
+
+    const bundle = await rollup({ input: { vm: fullFilePath }, plugins, onwarn: () => {} });
+    const { output } = await bundle.generate({ format: 'es', name: 'vm.js', sourcemap: false });
+    const code = output[0].code;
+
+    await bundle.close();
+
+    return {
+      content: code,
+      sourceMap: null,
+      getStackTrace: this.getStackTrace,
+    };
   }
 
   private async build(filePath: string): Promise<StrategyBundle> {

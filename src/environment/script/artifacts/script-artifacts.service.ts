@@ -44,4 +44,14 @@ export class ScriptArtifactsService {
       this.logger.warn({ key, stack: e.stack?.split('\n'), message: e.message }, 'Could not read report');
     }
   }
+
+  delete(key: string): void {
+    const fileName = path.join(this.filePath, `${key}.json`);
+    if (!fs.existsSync(fileName)) return;
+    try {
+      fs.rmSync(fileName);
+    } catch (e) {
+      this.logger.warn({ key, stack: e.stack?.split('\n'), message: e.message }, 'Could not delete report');
+    }
+  }
 }

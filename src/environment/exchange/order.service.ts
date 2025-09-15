@@ -21,11 +21,14 @@ export class OrderService implements OrderServiceInterface {
   private balance: number;
   private marginBalance: number;
   private profit: number;
+  private contractSize = 1;
   private marketOrderSpread = 0.0001;
   private pricePrecision = 2;
   private triggerPriceMax = 0;
   private triggerPriceMin = 0;
   private defaultLeverage = 1;
+  private minLeverage = 1;
+  private maxLeverage = 100;
   private makerFee = 0;
   private takerFee = 0;
   private balanceFee = 0;
@@ -70,10 +73,6 @@ export class OrderService implements OrderServiceInterface {
   };
 
   public create = (order: OrderInterface): OrderInterface => {
-    const reject = {
-      error: '',
-      clientOrderId: order.clientOrderId,
-    };
     const ratio = order.side === 'buy' ? 1 : -1;
 
     let price =
@@ -84,8 +83,7 @@ export class OrderService implements OrderServiceInterface {
     // цена limit ордера не может быть выше текущей при покупке и ниже текущей при продаже
     const diff = (order.price - this.currentPrice) * ratio;
     if (order.type === 'limit' && diff > 0) {
-      reject.error = `${order.side} order price ${ratio === 1 ? 'higher' : 'lower'} current price`;
-      return reject;
+      throw new Error(`${order.side} order price ${ratio === 1 ? 'higher' : 'lower'} current price`);
     }
 
     const isUntriggeredOrder = [!!order.stopLossPrice, !!order.takeProfitPrice].indexOf(true) > -1;
@@ -93,14 +91,12 @@ export class OrderService implements OrderServiceInterface {
     if (isUntriggeredOrder) {
       // - если isUntriggeredOrder, то пропускать только market
       if (order.type === 'limit') {
-        reject.error = 'Only market stop orders available';
-        return reject;
+        throw new Error('Only market stop orders available');
       }
 
       // - передать можно только 1 параметр из stopLossPrice, takeProfitPrice
       if (!!order.stopLossPrice === true && !!order.takeProfitPrice === true) {
-        reject.error = 'Only one of fields value available (stopLossPrice or takeProfitPrice)';
-        return reject;
+        throw new Error('Only one of fields value available (stopLossPrice or takeProfitPrice)');
       }
 
       // - цена ордера = триггер цена
@@ -113,8 +109,7 @@ export class OrderService implements OrderServiceInterface {
     let reduceOnly: boolean = order.reduceOnly !== undefined ? order.reduceOnly : false;
     if (this.isHedgeMode) {
       if ([PositionSideType.short, PositionSideType.long].indexOf(order.positionSide) === -1) {
-        reject.error = `positionSide field required values: ${PositionSideType.short}, ${PositionSideType.long}`;
-        return reject;
+        throw new Error(`positionSide field required values: ${PositionSideType.short}, ${PositionSideType.long}`);
       }
 
       positionSide = order.positionSide;
@@ -161,7 +156,7 @@ export class OrderService implements OrderServiceInterface {
     this.orderUpdates.add({ ...currentOrder });
 
     if (currentOrder.type === 'market' && currentOrder.status === 'open') {
-      this.execute(currentOrder);
+      return this.execute(currentOrder);
     } else {
       this.updateTriggerPriceLimits(currentOrder.price);
     }
@@ -201,21 +196,29 @@ export class OrderService implements OrderServiceInterface {
   public trigger = (symbol: string): void => {
     const kLine = this.kline;
 
-    // обновляем unrealizedPnl и балансы
-    const [initialMarginAll, unrealizedPnlAll] = this.positions.reduce(
-      ([initialMargin, unrealizedPnl], item) => {
-        if (item.symbol === symbol) {
-          item.markPrice = kLine.close;
-          const ratio = item.side === PositionSideType.long ? 1 : -1;
-          item.unrealizedPnl = (item.markPrice - item.entryPrice) * item.contracts * ratio;
-          return [initialMargin + item.initialMargin, unrealizedPnl + item.unrealizedPnl];
-        }
-        return [initialMargin, unrealizedPnl];
-      },
-      [0, 0],
-    );
-    const diff = initialMarginAll + unrealizedPnlAll > 0 ? initialMarginAll : unrealizedPnlAll;
-    this.marginBalance = this.balance - diff;
+    if (this.positions.length) {
+      // обновляем unrealizedPnl и балансы
+      const [initialMarginAll, unrealizedPnlAll] = this.positions.reduce(
+        ([initialMargin, unrealizedPnl], item) => {
+          if (item.symbol === symbol) {
+            item.markPrice = kLine.close;
+            const ratio = item.side === PositionSideType.long ? 1 : -1;
+            item.unrealizedPnl = (item.markPrice - item.entryPrice) * item.contracts * ratio;
+            return [initialMargin + item.initialMargin, unrealizedPnl + item.unrealizedPnl];
+          }
+          return [initialMargin, unrealizedPnl];
+        },
+        [0, 0],
+      );
+
+      // const diff = initialMarginAll + unrealizedPnlAll > 0 ? initialMarginAll : unrealizedPnlAll;
+      // this.marginBalance = this.balance - diff;
+
+      const diff = initialMarginAll + unrealizedPnlAll > 0 ? initialMarginAll : unrealizedPnlAll;
+      this.marginBalance = this.balance + diff;
+
+      // this.marginBalance = initialMarginAll + unrealizedPnlAll > 0 ? initialMarginAll : unrealizedPnlAll;
+    }
 
     // проверяем, где цена, и исполняем ордер
     if (
@@ -253,7 +256,11 @@ export class OrderService implements OrderServiceInterface {
     return values;
   }
 
-  private execute(order: OrderInterface): void {
+  public checkBalanceUpdates() {
+    return this.getBalance();
+  }
+
+  private execute(order: OrderInterface): OrderInterface {
     const positionIndex = this.isHedgeMode ? (order.positionSide === PositionSideType.long ? 0 : 1) : 0;
     let position = this.positions[positionIndex];
 
@@ -264,13 +271,16 @@ export class OrderService implements OrderServiceInterface {
     }
 
     if (!position) {
+      const notional = order.amount * order.price * this.contractSize;
+      const initialMargin = notional / this.defaultLeverage;
+
       position = {
         id: order.id,
         symbol: order.symbol,
         hedged: !!this.isHedgeMode,
         side: this.positionBySide(order.side),
         contracts: order.amount,
-        contractSize: 1,
+        contractSize: this.contractSize,
         entryPrice: order.price,
         markPrice: order.price,
         unrealizedPnl: 0,
@@ -278,8 +288,8 @@ export class OrderService implements OrderServiceInterface {
         leverage: this.defaultLeverage,
         liquidationPrice: 0,
         collateral: 0,
-        notional: order.amount * order.price,
-        initialMargin: order.amount * order.price * (1 / this.defaultLeverage),
+        notional,
+        initialMargin,
         initialMarginPercentage: Math.round((1 / this.defaultLeverage) * 100),
         maintenanceMargin: 0,
         maintenanceMarginPercentage: 0,
@@ -289,6 +299,10 @@ export class OrderService implements OrderServiceInterface {
         marginType: 'cross',
         percentage: 0,
       };
+
+      this.balance -= initialMargin;
+      this.marginBalance += this.balance + initialMargin;
+      // this.marginBalance += initialMargin;
     } else {
       const ratio = position.side === this.positionBySide(order.side) ? 1 : -1;
       position.entryPrice =
@@ -297,6 +311,7 @@ export class OrderService implements OrderServiceInterface {
             (position.contracts + order.amount)
           : position.entryPrice;
 
+      const prevMargin = position.initialMargin;
       const prevContracts = position.contracts;
       const shiftedContracts: number = position.contracts + ratio * order.amount;
 
@@ -320,10 +335,22 @@ export class OrderService implements OrderServiceInterface {
       // this.profit += ratio === -1 ? (order.price - position.entryPrice) * order.amount : 0;
       position.unrealizedPnl = unrealizedPnl;
 
+      const notional = position.contracts * position.entryPrice * this.contractSize;
+      const initialMargin = notional / this.defaultLeverage;
+
       // изменяем balance при уменьшении позиции
       if (prevContracts > position.contracts) {
         this.balance += profit;
+        this.marginBalance = this.marginBalance - prevMargin + initialMargin;
+        // this.marginBalance = this.balance + profit
+      } else {
+        // this.balance = this.balance - position.entryPrice * order.amount;
+        this.balance = this.balance - order.price * order.amount;
+        this.marginBalance = this.marginBalance + initialMargin;
+        // this.marginBalance = this.marginBalance - prevMargin + initialMargin;
       }
+
+      // this.marginBalance = this.balance + unrealizedPnl;
     }
 
     this.positions.splice(positionIndex, 1);
@@ -336,7 +363,7 @@ export class OrderService implements OrderServiceInterface {
     this.balanceFee += order.fee.cost;
 
     // this.balance += order.price * order.amount * (order.side === 'buy' ? -1 : 1);
-    this.update(order.id, {
+    return this.update(order.id, {
       status: 'closed',
       timestamp: order.timestamp,
       average: order.price,
@@ -407,10 +434,17 @@ export class OrderService implements OrderServiceInterface {
     this.marketOrderSpread = config.marketOrderSpread ?? this.marketOrderSpread;
     this.pricePrecision = config.pricePrecision ?? this.pricePrecision;
     this.balance = config.balance ?? this.balance;
-    this.defaultLeverage = config.defaultLeverage ?? this.defaultLeverage;
     this.makerFee = config.makerFee ?? this.makerFee;
     this.takerFee = config.takerFee ?? this.takerFee;
     this.isHedgeMode = config.hedgeMode ?? this.isHedgeMode;
+    this.contractSize = config.contractSize ?? this.contractSize;
+    this.minLeverage = config.minLeverage ?? this.minLeverage;
+    this.maxLeverage = config.maxLeverage ?? this.maxLeverage;
+    this.defaultLeverage = config.defaultLeverage
+      ? config.defaultLeverage > this.maxLeverage
+        ? this.maxLeverage
+        : config.defaultLeverage
+      : this.defaultLeverage;
   };
 
   public getConfig(): SystemParamsInterface {

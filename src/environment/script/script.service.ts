@@ -1,19 +1,20 @@
 import { Injectable } from '@nestjs/common';
 import { InjectPinoLogger, PinoLogger } from 'nestjs-pino';
 import { ScriptProcessFactory } from './process/script-process.factory';
-import { ScriptStorageService, StrategyTypeDTO } from './storage/script-storage.service';
+import { ScriptStorageService } from './storage/script-storage.service';
 import { SiteApi } from '../../common/api/site-api';
 import { StrategyItem } from './types';
 import { StoreBundleResponse } from '../../common/api/types';
 import { ExceptionReasonType } from '../../exception/types';
 import { CacheService } from '../../common/cache/cache.service';
 import { EventEmitter2 } from '@nestjs/event-emitter';
+import { ScriptArtifactsService } from './artifacts/script-artifacts.service';
 
-const ENABLED_RUNTIME_PREFIX: string = 'ENABLED_RUNTIME_PREFIX::';
+const ENABLED_RUNTIME_PREFIX = 'ENABLED_RUNTIME_PREFIX::';
 
 @Injectable()
 export class ScriptService {
-  private runIsLocked: boolean = false;
+  private runIsLocked = false;
 
   constructor(
     private readonly factory: ScriptProcessFactory,
@@ -21,6 +22,7 @@ export class ScriptService {
     private readonly siteApi: SiteApi,
     private readonly cacheService: CacheService,
     private readonly eventEmitter: EventEmitter2,
+    private readonly artifactsService: ScriptArtifactsService,
     @InjectPinoLogger(ScriptService.name) private readonly logger: PinoLogger,
   ) {
     // setInterval(async () => {
@@ -46,7 +48,7 @@ export class ScriptService {
     }
   }
 
-  async stop(id: number, softMode: boolean = false) {
+  async stop(id: number, softMode = false) {
     await this.factory.stop(id);
     if (softMode) {
       await this.markProcess(id, false);
@@ -54,7 +56,7 @@ export class ScriptService {
     this.eventEmitter.emit('system.update-report');
   }
 
-  async stopAll(remove: boolean = true, softMode: boolean = false) {
+  async stopAll(remove = true, softMode = false) {
     const keys = await this.factory.stopAll(remove);
     await Promise.all(
       keys.map(async (key) => {
@@ -68,14 +70,14 @@ export class ScriptService {
     const keys = await this.cacheService.keys(ENABLED_RUNTIME_PREFIX);
     if (!keys || !keys.length) return;
 
-    for (let key of keys) {
+    for (const key of keys) {
       const [id] = key.split('::').slice(-1);
       await this.run(parseInt(id));
     }
   }
 
   private async markProcess(id: number, isRunning: boolean) {
-    const key: string = `${ENABLED_RUNTIME_PREFIX}${id}`;
+    const key = `${ENABLED_RUNTIME_PREFIX}${id}`;
     if (isRunning) {
       await this.cacheService.set(key, '1');
     } else {
@@ -186,5 +188,12 @@ export class ScriptService {
       bundles: response.bundles.map(bundleMapper),
       appBundles: response.app_bundles.map(bundleMapper),
     };
+  }
+
+  async previewExecution(accountId: string, strategy: StrategyItem, args: object): Promise<string> {
+    const artifactsKey = await this.factory.createPreviewExecution(accountId, strategy, args);
+    const artifacts = this.artifactsService.read(artifactsKey);
+    this.artifactsService.delete(artifactsKey);
+    return artifacts;
   }
 }

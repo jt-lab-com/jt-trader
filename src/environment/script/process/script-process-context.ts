@@ -20,7 +20,7 @@ export class ScriptProcessContext extends ScriptProcessContextBase {
     });
   }
 
-  updateArgs = async (instance: BaseScriptInterface) => {
+  updateArgs = async (instance: BaseScriptInterface, loadTickers = true) => {
     const { symbols, connectionName, interval } = instance;
     this.args = { symbols, connectionName, interval };
     if (this.isTester()) {
@@ -32,7 +32,9 @@ export class ScriptProcessContext extends ScriptProcessContextBase {
     const sdk = this.exchange.getSDK(this.args.connectionName, this.keys);
     await sdk.loadMarkets(false);
 
-    await this.loadTickers();
+    if (loadTickers) {
+      await this.loadTickers();
+    }
 
     this._callInstance = async (method, data = undefined, emitOnly = false) => {
       const tickMethods = ['runOnTick', 'runOnTimer'];
@@ -211,7 +213,7 @@ export class ScriptProcessContext extends ScriptProcessContextBase {
   }
 
   public symbolInfo(symbol) {
-    if (this.isTester()) return this.getSymbolInfo(symbol);
+    if (this.isTester()) return this.getSymbolInfo(symbol, this.args.connectionName);
     const sdk = this.exchange.getSDK(this.args.connectionName, this.keys);
     return { ...sdk.market(symbol) };
   }

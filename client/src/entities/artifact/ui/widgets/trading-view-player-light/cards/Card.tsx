@@ -7,14 +7,14 @@ import { Expression, Parser } from "expr-eval";
 import { FC, ReactNode, useEffect, useRef, useState } from "react";
 import { useThrottle } from "@/shared/lib/hooks/useThrottle";
 import { fCurrency } from "@/shared/lib/utils/format-number";
-import { chartEvents, Events } from "../../../../lib/chart-playback/events";
+import { chartEvents, Events } from "../../../../lib/trading-view/chart-playback/events";
 import {
   CardType,
   CurrencyOptions,
   DateOptions,
   FormulaOptions,
   TextOptions,
-} from "../../../../model/types/chart-playback";
+} from "../../../../model/types/trading-view";
 
 const parser = new Parser();
 

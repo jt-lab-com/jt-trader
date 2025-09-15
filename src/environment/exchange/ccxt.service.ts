@@ -1,16 +1,16 @@
 import { Injectable } from '@nestjs/common';
 import { ExchangeKeysType, ExchangeSDKInterface } from '../../common/interface/exchange-sdk.interface';
-import { Exchange } from 'ccxt';
 import { SystemParamsInterface } from '../script/scenario/script-scenario.service';
 import { SocksProxyAgent } from 'socks-proxy-agent';
 import { ExchangeSdkFactory } from './ccxt-sdk.factory';
 import { InjectPinoLogger, PinoLogger } from 'nestjs-pino';
 import { CacheService } from '../../common/cache/cache.service';
 import { BINANCE_USDM_HARDCODED_LEVERAGES } from './exchange-connector/const';
+import { ExtendedExchange } from './interface/exchange.interface';
 
 @Injectable()
 export class CCXTService implements ExchangeSDKInterface {
-  private sdk: Map<string, Exchange>;
+  private sdk: Map<string, ExtendedExchange>;
   private agent: SocksProxyAgent;
 
   constructor(
@@ -24,15 +24,12 @@ export class CCXTService implements ExchangeSDKInterface {
     }
   }
 
-  public getSDK(name: string, keys: ExchangeKeysType): Exchange {
-    let formattedName = name.replace('-testnet', '');
-    const isMock: boolean = formattedName.endsWith('-mock');
-    if (isMock) {
-      formattedName = formattedName.replace('-mock', '');
-    }
+  public getSDK(name: string, keys: ExchangeKeysType): ExtendedExchange {
+    const isMock = name.endsWith('-mock');
+    const key = [name, keys.apiKey].join('::');
+    const formattedName = name.replace('-testnet', '').replace('-mock', '');
 
-    const key: string = [formattedName, keys.apiKey].join('::');
-    let exchange: Exchange = this.sdk.get(key);
+    let exchange: ExtendedExchange = this.sdk.get(key);
     if (!exchange) {
       exchange = this.sdkFactory.build(formattedName, isMock, {
         defaultType: 'swap',
@@ -47,10 +44,9 @@ export class CCXTService implements ExchangeSDKInterface {
       exchange.options['marginMode'] = 'cross'; // or 'cross' or 'isolated'
       exchange.options['defaultMarginMode'] = 'cross'; // 'cross' or 'isolated'
 
-
       this.sdk.set(key, exchange);
     }
-    return exchange as Exchange;
+    return exchange as ExtendedExchange;
   }
 
   public async getExchangeMarkets(name: string): Promise<any[]> {
