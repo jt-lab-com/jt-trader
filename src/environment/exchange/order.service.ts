@@ -447,6 +447,10 @@ export class OrderService implements OrderServiceInterface {
       : this.defaultLeverage;
   };
 
+  public getLeverageLimits() {
+    return { min: this.minLeverage, max: this.maxLeverage };
+  }
+
   public getConfig(): SystemParamsInterface {
     return {
       marketOrderSpread: this.marketOrderSpread,

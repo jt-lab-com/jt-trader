@@ -188,4 +188,9 @@ export class MultiCartOrderService implements OrderServiceInterface {
 
     return profit;
   }
+
+  getLeverageLimits(symbol: string) {
+    const cart = this.selectCart(symbol);
+    return cart.getLeverageLimits();
+  }
 }

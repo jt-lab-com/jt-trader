@@ -40,6 +40,8 @@ export interface OrderServiceInterface {
 
   getPricePrecision(): number;
 
+  getLeverageLimits(symbol: string): { min: number; max: number };
+
   updateConfig(
     config: SystemParamsInterface & {
       balance?: number;
