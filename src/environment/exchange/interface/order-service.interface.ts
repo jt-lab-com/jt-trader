@@ -42,11 +42,15 @@ export interface OrderServiceInterface {
 
   getLeverageLimits(symbol: string): { min: number; max: number };
 
-  updateConfig(
-    config: SystemParamsInterface & {
-      balance?: number;
-    },
-  ): void;
+  updateConfig(config: OrderServiceConfigParams): void;
 
-  getConfig(): SystemParamsInterface;
+  getConfig(): OrderServiceConfigParams;
+}
+
+export interface OrderServiceConfigParams extends SystemParamsInterface {
+  balance?: number;
+  minLeverage?: number;
+  maxLeverage?: number;
+  contractSize?: number;
+  amountPrecision?: number;
 }

@@ -4,7 +4,7 @@ import { OrderInterface, PositionSideType } from './interface/order.interface';
 import { PositionInterface } from './interface/position.interface';
 import { InjectPinoLogger, PinoLogger } from 'nestjs-pino';
 import { SystemParamsInterface } from '../script/scenario/script-scenario.service';
-import { OrderServiceInterface } from './interface/order-service.interface';
+import { OrderServiceConfigParams, OrderServiceInterface } from './interface/order-service.interface';
 
 export const ORDER_ID_SEPARATOR = '::';
 
@@ -24,6 +24,7 @@ export class OrderService implements OrderServiceInterface {
   private contractSize = 1;
   private marketOrderSpread = 0.0001;
   private pricePrecision = 2;
+  private amountPrecision = 1;
   private triggerPriceMax = 0;
   private triggerPriceMin = 0;
   private defaultLeverage = 1;
@@ -73,6 +74,11 @@ export class OrderService implements OrderServiceInterface {
   };
 
   public create = (order: OrderInterface): OrderInterface => {
+    if (order.amount % this.amountPrecision !== 0)
+      throw new Error(
+        `Invalid amount: ${order.amount}. The value does not match the required amount precision of ${this.amountPrecision}.`,
+      );
+
     const ratio = order.side === 'buy' ? 1 : -1;
 
     let price =
@@ -271,8 +277,8 @@ export class OrderService implements OrderServiceInterface {
     }
 
     if (!position) {
-      const notional = order.amount * order.price * this.contractSize;
-      const initialMargin = notional / this.defaultLeverage;
+      const notional = parseFloat((order.amount * order.price * this.contractSize).toFixed(this.pricePrecision));
+      const initialMargin = parseFloat((notional / this.defaultLeverage).toFixed(this.pricePrecision));
 
       position = {
         id: order.id,
@@ -329,10 +335,8 @@ export class OrderService implements OrderServiceInterface {
         position.contracts *
         (position.side === PositionSideType.long ? 1 : -1);
 
-      const profit = ratio === -1 ? (order.price - position.entryPrice) * order.amount : 0;
-      // const profit = ratio === -1 ? position.unrealizedPnl - unrealizedPnl : 0;
+      const profit = ratio === -1 ? (order.price - position.entryPrice) * order.amount * this.contractSize : 0;
       this.profit += position.side === PositionSideType.short ? profit * -1 : profit;
-      // this.profit += ratio === -1 ? (order.price - position.entryPrice) * order.amount : 0;
       position.unrealizedPnl = unrealizedPnl;
 
       const notional = position.contracts * position.entryPrice * this.contractSize;
@@ -384,7 +388,7 @@ export class OrderService implements OrderServiceInterface {
   };
 
   public getProfit = (): number => {
-    return this.profit;
+    return parseFloat(this.profit.toFixed(this.pricePrecision));
   };
 
   public getPositions = (): object[] => {
@@ -426,13 +430,10 @@ export class OrderService implements OrderServiceInterface {
     return this.pricePrecision;
   };
 
-  public updateConfig = (
-    config: SystemParamsInterface & {
-      balance?: number;
-    },
-  ): void => {
+  public updateConfig = (config: OrderServiceConfigParams): void => {
     this.marketOrderSpread = config.marketOrderSpread ?? this.marketOrderSpread;
     this.pricePrecision = config.pricePrecision ?? this.pricePrecision;
+    this.amountPrecision = config.amountPrecision ?? this.amountPrecision;
     this.balance = config.balance ?? this.balance;
     this.makerFee = config.makerFee ?? this.makerFee;
     this.takerFee = config.takerFee ?? this.takerFee;

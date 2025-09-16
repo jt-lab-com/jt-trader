@@ -2,7 +2,7 @@ import { OrderService, ORDER_ID_SEPARATOR } from './order.service';
 import { OrderInterface } from './interface/order.interface';
 import { PinoLogger } from 'nestjs-pino';
 import { KLineInterface } from './interface/kline.interface';
-import { OrderServiceInterface } from './interface/order-service.interface';
+import { OrderServiceConfigParams, OrderServiceInterface } from './interface/order-service.interface';
 import { SystemParamsInterface } from '../script/scenario/script-scenario.service';
 import { PositionInterface } from './interface/position.interface';
 
@@ -82,7 +82,7 @@ export class MultiCartOrderService implements OrderServiceInterface {
     return { balance, marginBalance };
   }
 
-  updateConfig(config: SystemParamsInterface & { balance?: number }, symbol?: string): void {
+  updateConfig(config: OrderServiceConfigParams, symbol?: string): void {
     if (symbol) {
       const cart = this.selectCart(symbol);
       cart.updateConfig(config);

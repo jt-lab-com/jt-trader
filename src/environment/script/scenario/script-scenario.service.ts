@@ -10,13 +10,10 @@ export interface SystemParamsInterface {
   marketOrderSpread?: number;
   pricePrecision?: number;
   defaultLeverage?: number;
-  minLeverage?: number;
-  maxLeverage?: number;
   makerFee?: number;
   takerFee?: number;
   timeframe?: number;
   hedgeMode?: boolean;
-  contractSize?: number;
 }
 
 export interface ScenarioDTO extends SystemParamsInterface {
