@@ -129,7 +129,10 @@ export class OrderService implements OrderServiceInterface {
       reduceOnly = order.positionSide !== this.positionBySide(order.side);
     }
 
-    const fee = order.type === 'limit' ? this.makerFee : this.takerFee;
+    const feeFactor = order.type === 'limit' ? this.makerFee : this.takerFee;
+    const cost = price * order.amount * this.contractSize;
+    const fee = cost * feeFactor;
+
     const currentOrder: OrderInterface = {
       id: `${this.nextOrderId++}${ORDER_ID_SEPARATOR}${order.symbol}`,
       clientOrderId: order.clientOrderId,
@@ -137,21 +140,21 @@ export class OrderService implements OrderServiceInterface {
       symbol: order.symbol,
       type: order.type,
       side: order.side,
-      amount: order.amount ?? 0,
+      amount: order.amount,
       price,
       status: isUntriggeredOrder ? 'untriggered' : 'open',
       reduceOnly,
       positionSide,
       lastTradeTimestamp: 0,
       timeInForce: 'IOC',
-      average: 0,
+      average: price,
       filled: 0,
-      remaining: 0,
-      cost: price * order.amount,
+      remaining: order.amount,
+      cost,
       trades: [],
       fee: {
-        currency: '',
-        cost: order.amount * price * fee,
+        currency: 'USDT',
+        cost: fee,
       },
       info: {},
       // ...order,
@@ -216,7 +219,7 @@ export class OrderService implements OrderServiceInterface {
           if (item.symbol === symbol) {
             item.markPrice = kLine.close;
             const ratio = item.side === PositionSideType.long ? 1 : -1;
-            item.unrealizedPnl = (item.markPrice - item.entryPrice) * item.contracts * ratio;
+            item.unrealizedPnl = (item.markPrice - item.entryPrice) * item.contracts * ratio * this.contractSize;
             return [initialMargin + item.initialMargin, unrealizedPnl + item.unrealizedPnl];
           }
           return [initialMargin, unrealizedPnl];
