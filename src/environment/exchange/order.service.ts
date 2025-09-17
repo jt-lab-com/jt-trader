@@ -73,12 +73,19 @@ export class OrderService implements OrderServiceInterface {
     }
   };
 
+  amountToPrecision(value: number): number {
+    return Math.floor(value / this.amountPrecision) * this.amountPrecision;
+  }
+
   public create = (order: OrderInterface): OrderInterface => {
-    if (order.amount % this.amountPrecision !== 0)
+    //our exchange rounds down the amount by itself to the nearest amountPrecision
+    const roundedAmount = this.amountToPrecision(order.amount);
+    if (roundedAmount < this.amountPrecision)
       throw new Error(
-        `Invalid amount: ${order.amount}. The value does not match the required amount precision of ${this.amountPrecision}.`,
+        `Invalid amount: ${order.amount} / ${roundedAmount}. The value does not match the required amount precision of ${this.amountPrecision}.`,
       );
 
+    order.amount = roundedAmount;
     const ratio = order.side === 'buy' ? 1 : -1;
 
     let price =
