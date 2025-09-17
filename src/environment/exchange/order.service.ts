@@ -37,7 +37,7 @@ export class OrderService implements OrderServiceInterface {
   private nextOrderId = 1;
 
   constructor(@InjectPinoLogger(OrderService.name) private readonly logger: PinoLogger) {
-    this.positions = [];
+    this.positions = [null, null];
     this.orderUpdates = new Set<OrderInterface>();
     this.positionUpdates = new Set<PositionInterface>();
     this.isHedgeMode = true;
@@ -216,6 +216,7 @@ export class OrderService implements OrderServiceInterface {
       // обновляем unrealizedPnl и балансы
       const [initialMarginAll, unrealizedPnlAll] = this.positions.reduce(
         ([initialMargin, unrealizedPnl], item) => {
+          if (!item) return [initialMargin, unrealizedPnl];
           if (item.symbol === symbol) {
             item.markPrice = kLine.close;
             const ratio = item.side === PositionSideType.long ? 1 : -1;
@@ -367,7 +368,7 @@ export class OrderService implements OrderServiceInterface {
       // this.marginBalance = this.balance + unrealizedPnl;
     }
 
-    this.positions.splice(positionIndex, 1);
+    this.positions[positionIndex] = null;
 
     if (position.contracts > 0) {
       this.positions[positionIndex] = position;
