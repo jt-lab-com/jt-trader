@@ -23,7 +23,7 @@ export const getDefaultValues = (scenario?: Scenario, testerDefaults?: TesterDef
     scenarioName: scenario?.name ?? "",
     selectedStrategy: scenario?.strategy ?? null,
     hedgeMode: scenario?.hedgeMode ?? testerDefaults?.hedgeMode ?? true,
-    withOptimizer: scenario?.withOptimizer ?? true,
+    withOptimizer: scenario?.withOptimizer ?? false,
     symbols: scenario?.symbols.join(", ") ?? testerDefaults?.symbols.join(", ") ?? "",
     startTime: scenario?.start ?? testerDefaults?.start ?? "",
     endTime: scenario?.end ?? testerDefaults?.end ?? "",

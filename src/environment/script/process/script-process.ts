@@ -7,6 +7,7 @@ import { performance } from 'node:perf_hooks';
 import { ScriptProcessContextSync } from './script-process-context-sync';
 import { getAllObjectMethods } from '../../../common/utils';
 import { StrategyArgsType } from '../../exchange/interface/strategy.interface';
+import * as assert from 'assert';
 
 export class ScriptProcess {
   private _instance: BaseScriptInterface;
@@ -31,6 +32,7 @@ export class ScriptProcess {
           EventEmitter,
           performance,
           ARGS: args,
+          assert,
           console: {
             log: (...rest) => context._log('info', rest),
             warn: (...rest) => context._log('warn', rest),

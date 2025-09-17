@@ -103,7 +103,8 @@ async function bootstrap() {
     balance,
     takerFee,
     makerFee,
-    contractSize: Math.min(contractSize, amountPrecision),
+    contractSize,
+    amountPrecision,
     hedgeMode: ['undefined', 'true'].indexOf(hedgeMode) > -1,
   });
 

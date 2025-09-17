@@ -66,7 +66,8 @@ export class ScriptProcessContextSync extends ScriptProcessContextBase {
         },
       ]);
     } catch (e) {
-      throw { error: e.message, clientOrderId };
+      e.clientOrderId = clientOrderId;
+      throw e;
     }
   }
 
