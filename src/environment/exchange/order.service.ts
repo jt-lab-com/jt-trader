@@ -344,7 +344,8 @@ export class OrderService implements OrderServiceInterface {
       const unrealizedPnl =
         (position.markPrice - position.entryPrice) *
         position.contracts *
-        (position.side === PositionSideType.long ? 1 : -1);
+        (position.side === PositionSideType.long ? 1 : -1) *
+        this.contractSize;
 
       const profit = ratio === -1 ? (order.price - position.entryPrice) * order.amount * this.contractSize : 0;
       this.profit += position.side === PositionSideType.short ? profit * -1 : profit;
