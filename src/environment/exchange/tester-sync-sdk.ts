@@ -198,6 +198,11 @@ export class TesterSyncSDK {
   }
 
   setLeverage(leverage: number, symbol: string): any {
+    const { min, max } = this.orderService.getLeverageLimits(symbol);
+
+    if (leverage < min) throw new Error(`Leverage must be at least ${min}x.`);
+    if (leverage > max) throw new Error(`Leverage must not be greater than ${max}x.`);
+
     this.orderService.updateConfig({ defaultLeverage: leverage });
   }
 }
