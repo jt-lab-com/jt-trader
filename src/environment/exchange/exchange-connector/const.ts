@@ -39,8 +39,8 @@ const BYBIT_KEYS = {
 };
 
 const BYBIT_KEYS_TESTNET = {
-  API_SECRET: 'bybit_api_secret',
-  API_KEY: 'bybit_api_key',
+  API_SECRET: 'bybit_testnet_api_secret',
+  API_KEY: 'bybit_testnet_api_key',
 };
 
 const KUCOIN_KEYS = {
