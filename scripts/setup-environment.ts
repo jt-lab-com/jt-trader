@@ -2,7 +2,7 @@ import * as fs from 'fs';
 import * as path from 'path';
 
 const ROOT_PATH = process.cwd();
-const ENV_PATH = path.resolve(ROOT_PATH, '.env');
+const ENV_PATH = path.join(ROOT_PATH, '.env');
 const DB_PATH = path.join(ROOT_PATH, 'storage.db');
 
 const ENV_DEFAULTS: Record<string, string> = {

@@ -38,6 +38,11 @@ const BYBIT_KEYS = {
   API_KEY: 'bybit_api_key',
 };
 
+const BYBIT_KEYS_TESTNET = {
+  API_SECRET: 'bybit_api_secret',
+  API_KEY: 'bybit_api_key',
+};
+
 const KUCOIN_KEYS = {
   API_SECRET: 'kucoin__api_secret',
   API_KEY: 'kucoin_api_key',
@@ -184,6 +189,11 @@ const GATE_IO_TESTNET = {
       type: 'string' as const,
       label: 'API Secret',
     },
+    {
+      name: GATE_IO_TESTNET_KEYS.USER_ID,
+      type: 'string' as const,
+      label: 'User ID',
+    },
   ],
 };
 
@@ -208,6 +218,25 @@ const BYBIT = {
     },
     {
       name: BYBIT_KEYS.API_SECRET,
+      type: 'string' as const,
+      label: 'API Secret',
+    },
+  ],
+};
+
+const BYBIT_TESTNET = {
+  code: 'bybit-testnet',
+  name: 'Bybit Testnet',
+  disabled: false,
+  sandbox: true,
+  fields: [
+    {
+      name: BYBIT_KEYS_TESTNET.API_KEY,
+      type: 'string' as const,
+      label: 'API Key',
+    },
+    {
+      name: BYBIT_KEYS_TESTNET.API_SECRET,
       type: 'string' as const,
       label: 'API Secret',
     },
@@ -257,7 +286,8 @@ export const EXCHANGE_LIST: Exchange[] = [
   BYBIT,
   KUCOIN,
   OKX,
-  GATE_IO_TESTNET,
+  // GATE_IO_TESTNET,
+  BYBIT_TESTNET,
   GATE_IO_MOCK,
 ];
 
