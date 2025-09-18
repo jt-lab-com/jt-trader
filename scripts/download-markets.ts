@@ -18,6 +18,9 @@ async function downloadMarkets() {
 
   for (const code of EXCHANGE_LIST) {
     if (code.includes('-testnet') || code.includes('-mock')) continue;
+    const filePath = path.join(process.env.MARKETS_DIR_PATH, `${code}.json`);
+    if (fs.existsSync(filePath)) continue;
+
     const exchange = new ccxt[code]({
       enableRateLimit: true,
       options: {
@@ -25,7 +28,7 @@ async function downloadMarkets() {
       },
     });
     const markets = await exchange.fetchMarkets();
-    const filePath = path.join(process.env.MARKETS_DIR_PATH, `${code}.json`);
+
     fs.writeFileSync(filePath, JSON.stringify(markets));
   }
 }
