@@ -1,6 +1,7 @@
 import { SystemParamsInterface } from '../../script/scenario/script-scenario.service';
 import { OrderInterface } from './order.interface';
 import { KLineInterface } from './kline.interface';
+import { PositionInterface } from './position.interface';
 
 export interface OrderServiceInterface {
   create(order: OrderInterface): OrderInterface;
@@ -11,7 +12,11 @@ export interface OrderServiceInterface {
 
   trigger(symbol: string): void;
 
-  checkUpdates(): OrderInterface[] | undefined;
+  checkOrdersUpdates(): OrderInterface[] | undefined;
+
+  checkPositionsUpdates(): PositionInterface[] | undefined;
+
+  checkBalanceUpdates(): { balance: number; marginBalance: number } | undefined;
 
   getBalance();
 
@@ -23,17 +28,29 @@ export interface OrderServiceInterface {
 
   getOrders(): OrderInterface[];
 
+  getOpenOrders(): OrderInterface[];
+
+  getClosedOrders(): OrderInterface[];
+
+  getOrder(id: string): OrderInterface;
+
   enableHedgeMode(): void;
 
   getCurrentTime(): number;
 
   getPricePrecision(): number;
 
-  updateConfig(
-    config: SystemParamsInterface & {
-      balance?: number;
-    },
-  ): void;
+  getLeverageLimits(symbol: string): { min: number; max: number };
 
-  getConfig(): SystemParamsInterface;
+  updateConfig(config: OrderServiceConfigParams): void;
+
+  getConfig(): OrderServiceConfigParams;
+}
+
+export interface OrderServiceConfigParams extends SystemParamsInterface {
+  balance?: number;
+  minLeverage?: number;
+  maxLeverage?: number;
+  contractSize?: number;
+  amountPrecision?: number;
 }

@@ -4,7 +4,6 @@ import { ConfigStateSchema, EngineMode } from "../types";
 
 const initialState: ConfigStateSchema = {
   exchanges: { main: [] },
-  s3Host: null,
   engineMode: null,
   engineVersion: null,
   testerDefaults: null,
@@ -23,9 +22,6 @@ const configSlice = createSlice({
     },
     setEngineMode: (state, action: PayloadAction<EngineMode>) => {
       state.engineMode = action.payload;
-    },
-    setS3Host: (state, action: PayloadAction<string>) => {
-      state.s3Host = action.payload;
     },
     setExchangeList: (state, action: PayloadAction<{ main: Exchange[]; additional?: Exchange[] }>) => {
       state.exchanges = action.payload;

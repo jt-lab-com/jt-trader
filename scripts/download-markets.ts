@@ -1,19 +1,40 @@
 import * as fs from 'fs';
 import { config } from 'dotenv';
 import * as ccxt from 'ccxt';
+import * as path from 'path';
+
+const EXCHANGE_LIST = ['gateio', 'bybit', 'kucoin', 'okx'];
 
 config();
 
-async function downloadMarkets() {
-  const exchange = new ccxt.binanceusdm({
-    enableRateLimit: true,
-    options: {
-      defaultType: 'future',
-    },
-  });
-  const markets = await exchange.fetchMarkets();
-
-  fs.writeFileSync(process.env.MARKETS_FILE_PATH, JSON.stringify(markets));
+function ensureMarketsDir() {
+  if (!fs.existsSync(process.env.MARKETS_DIR_PATH)) {
+    fs.mkdirSync(process.env.MARKETS_DIR_PATH);
+  }
 }
 
-downloadMarkets().catch((err) => console.error(err));
+async function downloadMarkets() {
+  ensureMarketsDir();
+
+  for (const code of EXCHANGE_LIST) {
+    if (code.includes('-testnet') || code.includes('-mock')) continue;
+    const filePath = path.join(process.env.MARKETS_DIR_PATH, `${code}.json`);
+    if (fs.existsSync(filePath)) continue;
+
+    const exchange = new ccxt[code]({
+      enableRateLimit: true,
+      options: {
+        defaultType: 'future',
+      },
+    });
+    const markets = await exchange.fetchMarkets();
+
+    fs.writeFileSync(filePath, JSON.stringify(markets));
+  }
+}
+
+downloadMarkets()
+  .then(() => {
+    console.log(`Markets files successfully downloaded to: ${process.env.MARKETS_DIR_PATH}`);
+  })
+  .catch((err) => console.error(err));

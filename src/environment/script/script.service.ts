@@ -1,13 +1,14 @@
 import { Injectable } from '@nestjs/common';
 import { InjectPinoLogger, PinoLogger } from 'nestjs-pino';
 import { ScriptProcessFactory } from './process/script-process.factory';
-import { ScriptStorageService, StrategyTypeDTO } from './storage/script-storage.service';
+import { ScriptStorageService } from './storage/script-storage.service';
 import { SiteApi } from '../../common/api/site-api';
 import { StrategyItem } from './types';
 import { StoreBundleResponse } from '../../common/api/types';
 import { ExceptionReasonType } from '../../exception/types';
 import { CacheService } from '../../common/cache/cache.service';
 import { EventEmitter2 } from '@nestjs/event-emitter';
+import { ScriptArtifactsService } from './artifacts/script-artifacts.service';
 import { MarketType } from 'ccxt';
 
 const ENABLED_RUNTIME_PREFIX = 'ENABLED_RUNTIME_PREFIX::';
@@ -22,6 +23,7 @@ export class ScriptService {
     private readonly siteApi: SiteApi,
     private readonly cacheService: CacheService,
     private readonly eventEmitter: EventEmitter2,
+    private readonly artifactsService: ScriptArtifactsService,
     @InjectPinoLogger(ScriptService.name) private readonly logger: PinoLogger,
   ) {
     // setInterval(async () => {
@@ -191,5 +193,12 @@ export class ScriptService {
       bundles: response.bundles.map(bundleMapper),
       appBundles: response.app_bundles.map(bundleMapper),
     };
+  }
+
+  async previewExecution(accountId: string, strategy: StrategyItem, args: object): Promise<string> {
+    const artifactsKey = await this.factory.createPreviewExecution(accountId, strategy, args);
+    const artifacts = this.artifactsService.read(artifactsKey);
+    this.artifactsService.delete(artifactsKey);
+    return artifacts;
   }
 }

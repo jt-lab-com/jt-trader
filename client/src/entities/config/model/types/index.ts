@@ -9,7 +9,6 @@ export interface ConfigStateSchema {
   };
   engineVersion: string | null;
   engineMode: EngineMode | null;
-  s3Host: string | null;
   testerDefaults: TesterDefaultArgs | null;
   __inited: boolean;
 }

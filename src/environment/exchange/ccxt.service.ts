@@ -1,17 +1,17 @@
 import { Injectable } from '@nestjs/common';
 import { ExchangeKeysType, ExchangeSDKInterface } from '../../common/interface/exchange-sdk.interface';
-import { Exchange } from 'ccxt';
 import { SystemParamsInterface } from '../script/scenario/script-scenario.service';
 import { SocksProxyAgent } from 'socks-proxy-agent';
 import { ExchangeSdkFactory } from './ccxt-sdk.factory';
 import { InjectPinoLogger, PinoLogger } from 'nestjs-pino';
 import { CacheService } from '../../common/cache/cache.service';
 import { BINANCE_USDM_HARDCODED_LEVERAGES } from './exchange-connector/const';
+import { ExtendedExchange } from './interface/exchange.interface';
 import { MarketType } from '@packages/types';
 
 @Injectable()
 export class CCXTService implements ExchangeSDKInterface {
-  private sdk: Map<string, Exchange>;
+  private sdk: Map<string, ExtendedExchange>;
   private agent: SocksProxyAgent;
 
   constructor(
@@ -25,15 +25,12 @@ export class CCXTService implements ExchangeSDKInterface {
     }
   }
 
-  public getSDK(name: string, marketType: MarketType, keys: ExchangeKeysType): Exchange {
-    let formattedName = name.replace('-testnet', '');
-    const isMock: boolean = formattedName.endsWith('-mock');
-    if (isMock) {
-      formattedName = formattedName.replace('-mock', '');
-    }
+  public getSDK(name: string, marketType: MarketType, keys: ExchangeKeysType): ExtendedExchange {
+    const isMock = name.endsWith('-mock');
+    const formattedName = name.replace('-testnet', '').replace('-mock', '');
 
     const key: string = [formattedName, marketType, keys.apiKey].join('::');
-    let exchange: Exchange = this.sdk.get(key);
+    let exchange: ExtendedExchange = this.sdk.get(key);
     if (!exchange) {
       exchange = this.sdkFactory.build(formattedName, isMock, {
         options: {
@@ -53,14 +50,13 @@ export class CCXTService implements ExchangeSDKInterface {
 
       this.sdk.set(key, exchange);
     }
-    return exchange as Exchange;
+    return exchange as ExtendedExchange;
   }
 
   public async getExchangeMarkets(name: string, marketType: MarketType): Promise<any[]> {
     const key = `EXCHANGE_MARKETS_${name}_${marketType}`;
 
     const data = await this.cacheService.get(key);
-
     if (!data) {
       const sdk = this.getSDK(name, marketType, { apiKey: '', secret: '' });
       await sdk.loadMarkets(true);

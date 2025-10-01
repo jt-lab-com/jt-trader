@@ -55,3 +55,4 @@ export const getJobDefaultValues = (job?: Job | null, isCopy?: boolean): JobSche
 };
 
 export type JobSchema = Yup.InferType<typeof jobSchema>;
+export type ArgsSchema = Yup.InferType<typeof argsSchema>;

@@ -18,6 +18,9 @@ import { ExceptionReasonType } from '../../../exception/types';
 import { ScriptProcessContextSync } from './script-process-context-sync';
 import { AccountService } from '../../account/account.service';
 import { ACCOUNT_DEVELOPER_ACCESS, ACCOUNT_LIMIT_API_CALL_PER_SEC, ACCOUNT_LIMIT_RUNTIMES } from '../../account/const';
+import { StrategyItem } from '../types';
+import { nanoid } from 'nanoid';
+import { StrategyArgsType } from '../../exchange/interface/strategy.interface';
 
 interface Process {
   process: ScriptProcess;
@@ -32,9 +35,9 @@ export interface ProcessMeta extends Runtime {
 @Injectable()
 export class ScriptProcessFactory {
   private readonly processes: Map<number, Process>;
-  private markets: any[];
+  private readonly markets: Record<string, any[]>;
   static readonly monitoringInterval: number = 5000;
-  private runtimeLogger: Map<string, Logger>;
+  private readonly runtimeLogger: Map<string, Logger>;
 
   constructor(
     private readonly dataFeedFactory: DataFeedFactory,
@@ -50,13 +53,20 @@ export class ScriptProcessFactory {
   ) {
     this.processes = new Map([]);
     this.runtimeLogger = new Map([]);
-    // this.monitoring();
-    this.markets = JSON.parse(fs.readFileSync(process.env.MARKETS_FILE_PATH).toString());
+    this.markets = {};
+
+    const marketsDirPath = process.env.MARKETS_DIR_PATH;
+    const files = fs.readdirSync(marketsDirPath);
+    const jsonFiles = files
+      .filter((file) => path.extname(file).toLowerCase() === '.json')
+      .map((file) => path.basename(file, '.json'));
+    jsonFiles.forEach((file) => {
+      this.markets[file] = JSON.parse(fs.readFileSync(path.join(marketsDirPath, `${file}.json`)).toString());
+    });
   }
 
-  getSymbolInfo = (symbol: string) => {
-    const formattedSymbol = symbol.replace(':USDT', '').replace('/', '');
-    return this.markets.find(({ id }) => id === formattedSymbol);
+  getSymbolInfo = (symbol: string, exchange: string) => {
+    return this.markets[exchange]?.find((market) => market.symbol === symbol);
   };
 
   private async processesLimit(accountId: string): Promise<boolean> {
@@ -124,6 +134,23 @@ export class ScriptProcessFactory {
         developerAccess,
       );
 
+      const isMock = meta.exchange.includes('-mock');
+
+      if (isMock) {
+        const keys = await this.keysStorage.selectKeys(meta.exchange, meta.accountId);
+        const sdk = this.exchange.getSDK(meta.exchange, 'swap', keys);
+        const orderService = sdk.getMockOrderService();
+        const symbolsArgs = Array.isArray(meta.args) ? meta.args.find((arg) => arg.key === 'symbols') : [];
+        const symbols = !Array.isArray(symbolsArgs) ? symbolsArgs.value.toString().split(',') : [];
+        await sdk.loadMarkets(false);
+
+        for (const symbol of symbols) {
+          const data = sdk.markets[symbol];
+          const pricePrecision = data.precision.price.toString().split('.')[1]?.length;
+          orderService.updateConfig({ balance: 1000, pricePrecision, contractSize: data.contractSize }, symbol);
+        }
+      }
+
       const scriptProcess = new ScriptProcess(context, { ...metaArgs, ...args });
       this.processes.set(key, { process: scriptProcess, meta: { ...meta, isEnabled: false }, bundle });
       await scriptProcess.init(bundle);
@@ -142,6 +169,41 @@ export class ScriptProcessFactory {
 
       throw e;
     }
+  }
+
+  async createPreviewExecution(accountId: string, strategy: StrategyItem, args: object): Promise<string> {
+    const key = nanoid(8);
+    const prefix = `${key}-preview`;
+    const logger = this.getRuntimeLogger(key.toString());
+    const bundle = await this.scriptBundler.generatePreviewExecutionBundle(accountId, key, strategy);
+    const apiCallLimitPerSecond: number = parseInt(
+      await this.accountService.getParam(accountId, ACCOUNT_LIMIT_API_CALL_PER_SEC),
+    );
+    const context = new ScriptProcessContext(
+      accountId,
+      this.dataFeedFactory,
+      this.exchange,
+      logger,
+      this.logger,
+      this.keysStorage,
+      this.eventEmitter,
+      this.cacheService,
+      this.artifactsService,
+      this.getSymbolInfo,
+      bundle,
+      key.toString(),
+      prefix,
+      apiCallLimitPerSecond,
+      false,
+    );
+
+    if (!!args['exchange']) {
+      args['connectionName'] = args['exchange'];
+      delete args['exchange'];
+    }
+
+    const scriptProcess = new ScriptProcess(context, args);
+    return scriptProcess.previewExecution(bundle, args as StrategyArgsType);
   }
 
   async registerTest(id: number, args: { [key: string]: any } = {}): Promise<void> {

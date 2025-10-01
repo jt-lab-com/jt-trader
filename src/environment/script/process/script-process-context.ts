@@ -20,8 +20,8 @@ export class ScriptProcessContext extends ScriptProcessContextBase {
     });
   }
 
-  updateArgs = async (instance: BaseScriptInterface) => {
-    const { symbols, connectionName, interval, marketType = 'swap' } = instance;
+  updateArgs = async (instance: BaseScriptInterface, loadTickers = true) => {
+    const { symbols, connectionName, interval, marketType } = instance;
     this.args = { symbols, connectionName, interval, marketType };
     if (this.isTester()) {
       this.keys = { apiKey: 'xxxxx', secret: 'yyyyy' };
@@ -32,7 +32,9 @@ export class ScriptProcessContext extends ScriptProcessContextBase {
     const sdk = this.exchange.getSDK(this.args.connectionName, this.args.marketType, this.keys);
     await sdk.loadMarkets(false);
 
-    await this.loadTickers();
+    if (loadTickers) {
+      await this.loadTickers();
+    }
 
     this._callInstance = async (method, data = undefined, emitOnly = false) => {
       const tickMethods = ['runOnTick', 'runOnTimer'];
@@ -211,7 +213,7 @@ export class ScriptProcessContext extends ScriptProcessContextBase {
   }
 
   public symbolInfo(symbol) {
-    if (this.isTester()) return this.getSymbolInfo(symbol);
+    if (this.isTester()) return this.getSymbolInfo(symbol, this.args.connectionName);
     const sdk = this.exchange.getSDK(this.args.connectionName, this.args.marketType, this.keys);
     return { ...sdk.market(symbol) };
   }

@@ -1,9 +1,10 @@
 import { Artifact } from "./artifact";
 
 export * from "./artifact";
-export * from "./chart-playback";
+export * from "./trading-view";
 
 export interface ArtifactSchema {
-  data: Artifact | null;
+  artifact: Artifact | null;
+  preview: Record<string, Artifact>;
   isLoading: boolean;
 }

@@ -13,7 +13,11 @@ export class ExchangeSdkFactory {
     protected readonly historyBarsService: HistoryBarsService,
   ) {}
 
-  build(exchangeName: string, isMock: boolean, ...args): Exchange {
+  build(
+    exchangeName: string,
+    isMock: boolean,
+    ...args
+  ): Exchange & { getMockOrderService: () => MultiCartOrderService } {
     const logger = this.logger;
     const orderService = new MultiCartOrderService(this.logger);
     const mockedSDK = new TesterAsyncSDK(() => Promise.resolve({}), orderService, this.historyBarsService);
@@ -27,6 +31,10 @@ export class ExchangeSdkFactory {
       private _exchangeName = exchangeName;
       private _isMock: () => boolean = () => isMock;
       private _getMockedSDK: () => TesterAsyncSDK = () => mockedSDK;
+
+      getMockOrderService() {
+        return orderService;
+      }
 
       /*
        * method: 'editOrder' | 'cancelOrder' fetchOpenOrders fetchClosedOrders fetchPositions fetchBalance setLeverage
@@ -104,11 +112,11 @@ export class ExchangeSdkFactory {
         }
       }
 
-      _mockedWatch() {
+      _mockedWatch(callback?: () => unknown, timeout = 1000) {
         return new Promise((resolve) => {
           setTimeout(() => {
-            resolve([]);
-          }, 1000);
+            resolve(callback?.());
+          }, timeout);
         });
       }
 
@@ -126,10 +134,9 @@ export class ExchangeSdkFactory {
         return this._superWsMethodCall('watchOrderBook', ...args);
       }
 
-      // TODO: mock implement
       watchOrders(...args) {
         if (this._isMock()) {
-          return this._mockedWatch();
+          return this._mockedWatch(() => orderService.checkOrdersUpdates());
         }
 
         return this._superWsMethodCall('watchOrders', ...args);
@@ -138,16 +145,37 @@ export class ExchangeSdkFactory {
       // TODO: mock implement
       watchBalance(...args) {
         if (this._isMock()) {
-          return this._mockedWatch();
+          return this._mockedWatch(() => {
+            const updates = orderService.checkBalanceUpdates();
+            if (!updates) return;
+            const { balance, marginBalance } = updates;
+            const [free, used, total] = [
+              balance,
+              marginBalance !== 0 ? marginBalance - balance : 0,
+              balance + (marginBalance !== 0 ? marginBalance - balance : 0),
+            ].map((value) => +value.toFixed(2));
+            const tms = Date.now();
+            // const free = balance;
+            // const used = marginBalance;
+            // const total = balance + marginBalance;
+
+            return {
+              USDT: { free, used, total },
+              free: { USDT: free },
+              used: { USDT: used },
+              total: { USDT: total },
+              timestamp: tms,
+              datetime: tms ? new Date(tms).toISOString() : '',
+            };
+          });
         }
 
         return this._superWsMethodCall('watchBalance', ...args);
       }
 
-      // TODO: mock implement
       watchPositions(...args) {
         if (this._isMock()) {
-          return this._mockedWatch();
+          return this._mockedWatch(() => orderService.checkPositionsUpdates());
         }
 
         return this._superWsMethodCall('watchPositions', ...args);

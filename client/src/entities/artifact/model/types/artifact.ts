@@ -1,4 +1,4 @@
-import { PlaybackChartSymbolData } from "./chart-playback";
+import { PlaybackChartSymbolData, TradingViewChartData } from "./trading-view";
 
 export interface Artifact {
   id: string;
@@ -12,8 +12,8 @@ export interface ArtifactBlock {
   type: ArtifactBlockType;
   name?: string;
   isVisible: boolean;
-  data: // | TVChartData
-  | TableData[]
+  data:
+    | TableData[]
     | DrawdownChartData
     | ChartData
     | CardData
@@ -21,7 +21,8 @@ export interface ArtifactBlock {
     | ActionButtonData
     | ActionButtonData[]
     | TextBlockData
-    | ChartPlaybackData;
+    | TradingViewChartData
+    | PlaybackChartSymbolData;
 }
 
 export enum ArtifactBlockType {
@@ -105,46 +106,3 @@ export interface ActionButtonData {
 }
 
 export type TableData = Record<string, unknown>;
-
-export interface ChartPlaybackData {
-  symbols: PlaybackChartSymbolData[];
-}
-
-// export interface TVChartData {
-//   exchange: string;
-//   interval: number;
-//   startTime: number;
-//   endTime: number;
-//   table: Array<TVTableShapeItem>;
-//   shapes: TVUserShape[];
-//   multipointShapes: TVUserMultipointShape[];
-//   indicator?: CustomIndicator;
-//   oscillator?: CustomOscillator;
-// }
-
-export interface CustomIndicator {
-  name?: string;
-  timeframe: number;
-  data: CustomIndicatorData[];
-}
-
-export interface CustomIndicatorData {
-  timestamp: number;
-  value: number;
-}
-
-export interface CustomOscillator {
-  name?: string;
-  timeframe: number;
-  data: CustomOscillatorData[];
-}
-
-export interface CustomOscillatorData {
-  timestamp: number;
-  value: number;
-}
-
-export interface TVTableShapeItem {
-  id: number;
-  [key: string]: string | number;
-}

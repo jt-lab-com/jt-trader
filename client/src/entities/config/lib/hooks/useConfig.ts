@@ -5,7 +5,6 @@ import {
   getEngineVersion,
   getMainExchangeList,
   getAdditionalExchangeList,
-  getS3Host,
   getTesterDefaults,
 } from "../../model/selectors";
 import { EngineMode } from "../../model/types";
@@ -27,7 +26,6 @@ export const useConfig = (): UseConfigReturnParams => {
   const mainExchangeList = useSelector(getMainExchangeList);
   const additionalExchangeList = useSelector(getAdditionalExchangeList);
 
-  const s3Host = useSelector(getS3Host);
   const testerDefaults = useSelector(getTesterDefaults);
 
   return {

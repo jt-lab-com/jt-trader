@@ -42,7 +42,7 @@ export class ScriptProcessContextBase {
     protected readonly eventEmitter: EventEmitter2,
     protected readonly cacheService: CacheService,
     protected readonly artifactsService: ScriptArtifactsService,
-    protected readonly getSymbolInfo: (symbol: string) => any,
+    protected readonly getSymbolInfo: (symbol: string, connectionName: string) => any,
     protected readonly bundle: StrategyBundle,
     protected readonly key: string,
     protected readonly prefix: string = '',

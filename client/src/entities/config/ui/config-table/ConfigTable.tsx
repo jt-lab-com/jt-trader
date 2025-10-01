@@ -18,6 +18,8 @@ export const ConfigTable: FC<ConfigTableProps> = (props) => {
   const { exchanges } = useConfig();
   const theme = useTheme();
 
+  // const exchanges = exchangeList.filter((exchange) => !exchange.code.includes("mock"));
+
   const renderRow = (exchange: Exchange) => {
     return (
       <TableRow key={exchange.code}>

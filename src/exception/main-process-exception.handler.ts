@@ -88,14 +88,18 @@ export class MainProcessExceptionHandler implements ExceptionHandler {
         }
         // formattedStack = formattedStack.indexOf('node_modules') > -1 ? e.toString() : formattedStack;
 
+        const errorChunks = formattedStack.split('\n');
+        const errorMessage = errorChunks[0];
+        const stackTrace = errorChunks.splice(1, Infinity).filter((line) => !!line);
+
         this.emitter.emit('client.log', {
           processId: e.key.toString(),
           artifacts: ScriptArtifactsService.createArtifactsKey([e.key.toString(), 'runtime']),
           level: 'error',
-          message: formattedStack,
+          message: [errorMessage, { stack: stackTrace }],
         });
 
-        e.logger?.error(formattedStack);
+        e.logger?.error({ stack: stackTrace }, errorMessage);
         break;
       }
 

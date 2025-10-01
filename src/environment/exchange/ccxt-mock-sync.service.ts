@@ -64,7 +64,11 @@ export class CCXTMockSyncService implements ExchangeSDKInterface {
     if (!config) throw this.testerDataEnd();
 
     try {
-      this.rows = this.historyBarsService.getBarsFromDiskSync(config.symbol, config.timeframe, config.date);
+      this.rows = this.historyBarsService.getBarsFromDiskSync(
+        config.symbol.replace(':USDT', ''),
+        config.timeframe,
+        config.date,
+      );
     } catch (e) {
       console.error(e);
       console.error({ config });

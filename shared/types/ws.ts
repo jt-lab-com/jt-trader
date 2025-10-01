@@ -1,7 +1,6 @@
 import { Exchange, MarketType } from './exchange';
 import { ExchangeField } from './exchange';
 import { Ticker } from 'ccxt';
-import { ScenarioSet } from '../../client/src/entities/scenario/model/types';
 
 export enum WS_AUTH_ERROR_CODE {
   INVALID_ACCESS_TOKEN = 4001,
@@ -17,6 +16,7 @@ export enum WS_CLIENT_EVENTS {
   STOP_BACKGROUND_JOB_REQUEST = 'stop-background-job-request',
   SAVE_BACKGROUND_JOB_REQUEST = 'save-background-job-request',
   REMOVE_BACKGROUND_JOB_REQUEST = 'remove-background-job-request',
+  PREVIEW_EXECUTION_REQUEST = 'preview-execution-request',
 
   /* REPORT */
   REPORT_ACTION_REQUEST = 'report-action-request',
@@ -73,6 +73,7 @@ export type WS_CLIENT_EVENT_PAYLOAD = {
   [WS_CLIENT_EVENTS.STOP_BACKGROUND_JOB_REQUEST]: number;
   [WS_CLIENT_EVENTS.SAVE_BACKGROUND_JOB_REQUEST]: SaveJobParams | CopyJobParams;
   [WS_CLIENT_EVENTS.REMOVE_BACKGROUND_JOB_REQUEST]: number;
+  [WS_CLIENT_EVENTS.PREVIEW_EXECUTION_REQUEST]: PreviewExecutionRequestPayload;
 
   [WS_CLIENT_EVENTS.TESTER_SCENARIO_LIST_REQUEST]: undefined;
   [WS_CLIENT_EVENTS.CREATE_TESTER_SCENARIO]: CreateScenarioParams;
@@ -124,6 +125,8 @@ export enum WS_SERVER_EVENTS {
   LOGIN_RESPONSE = 'login-response',
 
   BACKGROUND_JOBS_LIST_RESPONSE = 'background-jobs-list-response',
+
+  PREVIEW_EXECUTION_RESPONSE = 'preview-execution-response',
 
   TESTER_SCENARIO_LIST_RESPONSE = 'tester-scenario-list-response',
   TESTER_SCENARIO_EXEC_INFO = 'tester-scenario-exec-info',
@@ -182,6 +185,7 @@ export type WS_SERVER_EVENT_PAYLOAD = {
   [WS_SERVER_EVENTS.CLIENT_NOTIFICATION]: ClientNotificationPayload;
 
   [WS_SERVER_EVENTS.BACKGROUND_JOBS_LIST_RESPONSE]: Job[];
+  [WS_SERVER_EVENTS.PREVIEW_EXECUTION_RESPONSE]: PreviewExecutionResponsePayload;
 
   // [WS_SERVER_EVENTS.TESTER_SCENARIO_LIST_RESPONSE]: ScenarioInterface[];
   [WS_SERVER_EVENTS.TESTER_SCENARIO_LIST_RESPONSE]: any[];
@@ -230,6 +234,17 @@ export type WS_SERVER_EVENT_PAYLOAD = {
   [WS_SERVER_EVENTS.EXCHANGE_MARKETS_RESPONSE]: ExchangeMarketsResponsePayload;
 };
 
+export interface PreviewExecutionRequestPayload {
+  key: string;
+  strategy: Strategy;
+  args: { exchange: string; symbols: string[] } & Record<string, unknown>;
+}
+
+export interface PreviewExecutionResponsePayload {
+  key: string;
+  data: any;
+}
+
 interface ClientNotificationPayload {
   message: string;
   type: ClientNotificationType;
@@ -244,7 +259,6 @@ export enum ClientNotificationType {
 
 interface EngineConfigResponsePayload {
   version: string;
-  s3Host: string;
   testerDefaults: TesterDefaultArgs;
 }
 
@@ -473,6 +487,18 @@ export interface Scenario {
   end: string; // yyyy-mm format
   artifacts: string;
   hedgeMode?: boolean;
+}
+
+export interface ScenarioSet {
+  id: number;
+  args: ScenarioSetArg[];
+  artifacts: string;
+  status: 0 | 1 | 2 | 3;
+}
+
+export interface ScenarioSetArg {
+  key: string;
+  value: string;
 }
 
 export interface RenameFileParams {
