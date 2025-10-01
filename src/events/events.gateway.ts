@@ -337,46 +337,6 @@ export class EventsGateway implements OnGatewayDisconnect, OnGatewayConnection {
           };
         }
       }
-      case WS_CLIENT_EVENTS.CODE_EDITOR_FILE_SAVE_REQUEST: {
-        const data = payload as WS_CLIENT_EVENT_PAYLOAD[WS_CLIENT_EVENTS.CODE_EDITOR_FILE_SAVE_REQUEST];
-        this.scriptService.saveStrategy(data.filePath, data.content);
-
-        return {
-          event: WS_SERVER_EVENTS.CODE_EDITOR_FILE_SAVE_RESPONSE,
-          payload: {
-            error: false,
-          },
-        };
-      }
-      case WS_CLIENT_EVENTS.CODE_EDITOR_FILE_REMOVE_REQUEST: {
-        const data = payload as WS_CLIENT_EVENT_PAYLOAD[WS_CLIENT_EVENTS.CODE_EDITOR_FILE_REMOVE_REQUEST];
-        this.scriptService.removeStrategy(data);
-        break;
-      }
-      case WS_CLIENT_EVENTS.CODE_EDITOR_FILE_RENAME_REQUEST: {
-        const data = payload as WS_CLIENT_EVENT_PAYLOAD[WS_CLIENT_EVENTS.CODE_EDITOR_FILE_RENAME_REQUEST];
-        this.scriptService.renameStrategy(data.oldPath, data.newPath, data.content);
-
-        return {
-          event: WS_SERVER_EVENTS.CODE_EDITOR_FILE_RENAME_RESPONSE,
-          payload: {
-            error: false,
-          },
-        };
-      }
-      case WS_CLIENT_EVENTS.CODE_EDITOR_FILE_TREE_REQUEST: {
-        return {
-          event: WS_SERVER_EVENTS.CODE_EDITOR_FILE_TREE_RESPONSE,
-          payload: this.scriptService.getSourceFileTree(),
-        };
-      }
-      case WS_CLIENT_EVENTS.CODE_EDITOR_FILE_CONTENT_REQUEST: {
-        const data = payload as WS_CLIENT_EVENT_PAYLOAD[WS_CLIENT_EVENTS.CODE_EDITOR_FILE_CONTENT_REQUEST];
-        return {
-          event: WS_SERVER_EVENTS.CODE_EDITOR_FILE_CONTENT_RESPONSE,
-          payload: this.scriptService.getFileTreeStrategyContent(data),
-        };
-      }
       case WS_CLIENT_EVENTS.REBOOT_SYSTEM_REQUEST: {
         process.emit('SIGINT');
       }
@@ -587,6 +547,11 @@ export class EventsGateway implements OnGatewayDisconnect, OnGatewayConnection {
         await this.exchangeConnectorService.updateExchangeConfig(client.user.id, data);
         return this.processMessage(client, WS_CLIENT_EVENTS.EXCHANGE_CONFIG_REQUEST);
       }
+      case WS_CLIENT_EVENTS.EXCHANGE_CONFIG_DELETE: {
+        const data = payload as WS_CLIENT_EVENT_PAYLOAD[WS_CLIENT_EVENTS.EXCHANGE_CONFIG_DELETE];
+        await this.exchangeConnectorService.deleteExchangeFields(client.user.id, data);
+        return this.processMessage(client, WS_CLIENT_EVENTS.EXCHANGE_CONFIG_REQUEST);
+      }
       case WS_CLIENT_EVENTS.PULL_USER_SOURCE_CODE_REQUEST: {
         const payload = { error: true, message: 'Update failed' };
         try {
@@ -601,10 +566,10 @@ export class EventsGateway implements OnGatewayDisconnect, OnGatewayConnection {
           payload,
         };
       }
-      case WS_CLIENT_EVENTS.CODE_EDITOR_BUILD_BUNDLE_REQUEST: {
+      case WS_CLIENT_EVENTS.BUILD_BUNDLE_REQUEST: {
         try {
           await this.scriptBundlerService.buildAndSaveToStore(
-            (payload as WS_CLIENT_EVENT_PAYLOAD[WS_CLIENT_EVENTS.CODE_EDITOR_BUILD_BUNDLE_REQUEST]).filePath,
+            (payload as WS_CLIENT_EVENT_PAYLOAD[WS_CLIENT_EVENTS.BUILD_BUNDLE_REQUEST]).filePath,
             client.user.id,
           );
 

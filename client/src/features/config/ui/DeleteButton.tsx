@@ -8,8 +8,9 @@ interface DeleteButtonProps {
 }
 
 export const DeleteButton: FC<DeleteButtonProps> = (props) => {
+  const { onDelete } = props;
   return (
-    <IconButton disabled={props.disabled} onClick={props.onDelete}>
+    <IconButton disabled={props.disabled} onClick={onDelete}>
       <Iconify icon={"solar:trash-bin-2-outline"} />
     </IconButton>
   );

@@ -25,12 +25,13 @@ export class CCXTService implements ExchangeSDKInterface {
     }
   }
 
-  public getSDK(name: string, marketType: MarketType, keys: ExchangeKeysType): ExtendedExchange {
+  public getSDK(name: string, marketType: MarketType, keys?: ExchangeKeysType): ExtendedExchange {
     const isMock = name.endsWith('-mock');
     const formattedName = name.replace('-testnet', '').replace('-mock', '');
 
-    const key: string = [formattedName, marketType, keys.apiKey].join('::');
+    const key: string = [formattedName, marketType, keys?.apiKey].join('::');
     let exchange: ExtendedExchange = this.sdk.get(key);
+
     if (!exchange) {
       exchange = this.sdkFactory.build(formattedName, isMock, {
         options: {
@@ -38,9 +39,9 @@ export class CCXTService implements ExchangeSDKInterface {
         },
         defaultType: marketType,
         agent: this.agent,
-        ...keys,
+        ...(!!keys?.apiKey && !!keys?.secret && { ...keys }),
       });
-      if (keys.sandboxMode === true) {
+      if (keys?.sandboxMode === true) {
         exchange.setSandboxMode(true);
       }
       // exchange.options['adjustForTimeDifference'] = true;

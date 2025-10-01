@@ -52,6 +52,11 @@ export class ConfigService {
     }
   }
 
+  public async deleteParam(accountId: string, name: string): Promise<void> {
+    const param = await this.getParam(accountId, name);
+    await this.prisma.config.delete({ where: { id: param.id } });
+  }
+
   public async getParam(accountId: string, name: string): Promise<{ id: number; type: string } & ConfigParamType> {
     return this.prisma.config.findFirst({ where: { accountId, name } });
   }

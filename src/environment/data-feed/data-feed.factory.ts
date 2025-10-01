@@ -129,9 +129,11 @@ export class DataFeedFactory {
   public subscribeOrders(
     exchange: string,
     symbol: string,
-    keys: ExchangeKeysType,
+    keys: ExchangeKeysType | null,
     subscriber: (data: Order[]) => void,
   ): number {
+    if (!keys) return;
+
     const dataFeed = this.selectDataFeed([
       exchange,
       'watchOrders',
@@ -144,7 +146,14 @@ export class DataFeedFactory {
     return dataFeed.subscribe(subscriber);
   }
 
-  public unsubscribeOrders(exchange: string, symbol: string, keys: ExchangeKeysType, subscriberId: number): void {
+  public unsubscribeOrders(
+    exchange: string,
+    symbol: string,
+    keys: ExchangeKeysType | null,
+    subscriberId: number,
+  ): void {
+    if (!keys) return;
+
     const dataFeed = this.selectDataFeed([
       exchange,
       'watchOrders',
@@ -157,7 +166,13 @@ export class DataFeedFactory {
     dataFeed.unsubscribe(subscriberId);
   }
 
-  public subscribeBalance(exchange: string, keys: ExchangeKeysType, subscriber: (data: Balance) => void): number {
+  public subscribeBalance(
+    exchange: string,
+    keys: ExchangeKeysType | null,
+    subscriber: (data: Balance) => void,
+  ): number {
+    if (!keys) return;
+
     const dataFeed = this.selectDataFeed([
       exchange,
       'watchBalance',
@@ -170,7 +185,9 @@ export class DataFeedFactory {
     return dataFeed.subscribe(subscriber);
   }
 
-  public unsubscribeBalance(exchange: string, keys: ExchangeKeysType, subscriberId: number): void {
+  public unsubscribeBalance(exchange: string, keys: ExchangeKeysType | null, subscriberId: number): void {
+    if (!keys) return;
+
     const dataFeed = this.selectDataFeed([
       exchange,
       'watchBalance',
@@ -186,9 +203,11 @@ export class DataFeedFactory {
   public subscribePositions(
     exchange: string,
     symbols: string[],
-    keys: ExchangeKeysType,
+    keys: ExchangeKeysType | null,
     subscriber: (data: Position[]) => void,
   ): number {
+    if (!keys) return;
+
     const dataFeed = this.selectDataFeed([
       exchange,
       'watchPositions',
@@ -201,7 +220,14 @@ export class DataFeedFactory {
     return dataFeed.subscribe(subscriber);
   }
 
-  public unsubscribePositions(exchange: string, symbols: string[], keys: ExchangeKeysType, subscriberId: number): void {
+  public unsubscribePositions(
+    exchange: string,
+    symbols: string[],
+    keys: ExchangeKeysType | null,
+    subscriberId: number,
+  ): void {
+    if (!keys) return;
+
     const dataFeed = this.selectDataFeed([
       exchange,
       'watchPositions',

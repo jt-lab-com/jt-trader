@@ -2,6 +2,7 @@ import Stack from "@mui/material/Stack";
 import { Exchange, ExchangeField } from "@packages/types";
 import { FC } from "react";
 import { useAppDispatch } from "@/shared/lib/hooks/useAppDispatch";
+import { deleteExchangeKeys } from "../model/services/delete-exchange-keys";
 import { saveExchangeConfig } from "../model/services/save";
 import { DeleteButton } from "./DeleteButton";
 import { EditButton } from "./EditButton";
@@ -15,7 +16,7 @@ export const ControlButtons: FC<ControlButtonsProps> = (props) => {
   const dispatch = useAppDispatch();
 
   const handleDelete = () => {
-    dispatch(saveExchangeConfig(exchange.fields.map((field) => ({ ...field, value: "" }))));
+    dispatch(deleteExchangeKeys(exchange.fields.map((field) => field.name)));
   };
 
   const handleSave = (fields: ExchangeField[]) => {

@@ -18,7 +18,7 @@ export const ConfigTable: FC<ConfigTableProps> = (props) => {
   const { exchanges } = useConfig();
   const theme = useTheme();
 
-  // const exchanges = exchangeList.filter((exchange) => !exchange.code.includes("mock"));
+  const exchangeList = exchanges.main.filter((exchange) => !exchange.code.includes("mock"));
 
   const renderRow = (exchange: Exchange) => {
     return (
@@ -27,7 +27,7 @@ export const ConfigTable: FC<ConfigTableProps> = (props) => {
         <TableCell align={"center"}>
           <Dot
             sx={{ mx: "auto" }}
-            color={exchange.connected ? theme.palette.primary.main : theme.palette.error.main}
+            color={exchange.connected ? theme.palette.success.main : theme.palette.error.main}
           />
         </TableCell>
         <TableCell>{renderControls(exchange)}</TableCell>
@@ -46,7 +46,7 @@ export const ConfigTable: FC<ConfigTableProps> = (props) => {
           <TableCell width={100} />
         </TableRow>
       </TableHead>
-      <TableBody>{exchanges.main?.map(renderRow)}</TableBody>
+      <TableBody>{exchangeList?.map(renderRow)}</TableBody>
     </Table>
   );
 };

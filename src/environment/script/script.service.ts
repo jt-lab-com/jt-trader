@@ -90,16 +90,6 @@ export class ScriptService {
 
   getStrategyContent = this.storage.getContent;
 
-  getSourceFileTree = this.storage.getFileTree;
-
-  getFileTreeStrategyContent = this.storage.getFileTreeStrategyContent;
-
-  saveStrategy = this.storage.saveStrategy;
-
-  removeStrategy = this.storage.removeStrategy;
-
-  renameStrategy = this.storage.renameStrategy;
-
   getRuntimeList = async (accountId: string) =>
     (await this.storage.getRuntimeList(accountId)).map((item) => ({
       ...item,

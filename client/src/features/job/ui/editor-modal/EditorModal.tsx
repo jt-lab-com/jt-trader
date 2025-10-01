@@ -10,6 +10,7 @@ import Grid from "@mui/material/Grid";
 import InputLabel from "@mui/material/InputLabel";
 import MenuItem from "@mui/material/MenuItem";
 import Stack from "@mui/material/Stack";
+import { useTheme } from "@mui/material/styles";
 import { Job, JobRuntimeType, SaveJobParams, StrategyDefinedArg } from "@packages/types";
 import { FC, useEffect, useMemo } from "react";
 import { FormProvider, useForm, useWatch } from "react-hook-form";
@@ -17,6 +18,7 @@ import { PreviewReport } from "@/entities/artifact";
 import { useConfig } from "@/entities/config";
 import { useMarkets } from "@/entities/markets";
 import { StrategiesSelect, useStrategy } from "@/entities/strategy";
+import { Dot } from "@/shared/ui/dot";
 import { RHFSelect } from "@/shared/ui/rhf-select";
 import { RHFTextField } from "@/shared/ui/rhf-textfield";
 import { getAvailableMarketSymbols } from "../../lib/get-available-market-symbols";
@@ -38,6 +40,7 @@ interface EditorModalProps {
 
 export const EditorModal: FC<EditorModalProps> = (props) => {
   const { open, editMode, job, onClose, onSave } = props;
+  const theme = useTheme();
   const { getStrategyDefinedArgs, fetchStrategies } = useStrategy();
   const {
     exchanges: { main: exchangeList },
@@ -203,8 +206,14 @@ export const EditorModal: FC<EditorModalProps> = (props) => {
               <Grid item xs={3}>
                 <RHFSelect name={"exchange"} label={"Exchange"} size={"small"} variant={"outlined"}>
                   {exchangeOptions.map((exchange) => (
-                    <MenuItem key={exchange.code} disabled={!exchange.connected} value={exchange.code}>
-                      {exchange.name}
+                    <MenuItem key={exchange.code} value={exchange.code}>
+                      <Stack direction={"row"} gap={0.7} alignItems={"center"}>
+                        <Dot
+                          sx={{ width: 8, height: 8 }}
+                          color={exchange.connected ? theme.palette.success.main : theme.palette.error.main}
+                        />
+                        {exchange.name}
+                      </Stack>
                     </MenuItem>
                   ))}
                 </RHFSelect>

@@ -33,25 +33,24 @@ export class ExchangeConnectorService {
       };
     });
 
-    if (process.env.NODE_ENV === 'development') {
-      const additionalExchanges = this.getAdditionalExchanges(configParams);
-      const connectedAdditionalExchanges = additionalExchanges.filter((exchange) => exchange.connected);
-      const availableAdditionalExchanges = additionalExchanges.filter((exchange) => !exchange.connected);
+    const additionalExchanges = this.getAdditionalExchanges(configParams);
+    const addedAdditionalExchanges = additionalExchanges.filter((exchange) => exchange.added);
+    const availableAdditionalExchanges = additionalExchanges.filter((exchange) => !exchange.added);
 
-      return {
-        main: [...mainExchangeList, ...connectedAdditionalExchanges],
-        additional: availableAdditionalExchanges,
-      };
-    }
-
-    return { main: mainExchangeList };
+    return {
+      main: [...mainExchangeList, ...addedAdditionalExchanges],
+      additional: availableAdditionalExchanges,
+    };
   }
 
-  private getAdditionalExchanges(configParams: ConfigParamType[]): Array<Exchange & { connected: boolean }> {
+  private getAdditionalExchanges(
+    configParams: ConfigParamType[],
+  ): Array<Exchange & { connected: boolean; added: boolean }> {
+    // eslint-disable-next-line @typescript-eslint/ban-ts-comment
     // @ts-ignore
     return ccxt.pro.exchanges
       .filter((exchangeName: string) => !EXCHANGE_LIST.find(({ code }) => exchangeName === code))
-      .map((exchangeName: string): Exchange & { connected: boolean } => {
+      .map((exchangeName: string): Exchange & { connected: boolean; added: boolean } => {
         const requiredCredentials = new ccxt.pro[exchangeName]().describe()?.requiredCredentials;
         const exchangeFields = Object.keys(requiredCredentials)
           .filter((key) => requiredCredentials[key])
@@ -65,10 +64,15 @@ export class ExchangeConnectorService {
           if (field.type !== 'string') return true;
           return !!configParams.find(({ name, value }) => name === field.name && !!value);
         });
+        const added = exchangeFields.every((field) => {
+          if (field.type !== 'string') return true;
+          return !!configParams.find(({ name }) => name === field.name);
+        });
 
         return {
           code: exchangeName,
           name: exchangeName,
+          added,
           connected,
           sandbox: false,
           disabled: false,
@@ -98,12 +102,17 @@ export class ExchangeConnectorService {
     await this.configService.updateParamsList(accountId, fields);
   }
 
+  async deleteExchangeFields(accountId: string, fields: string[]) {
+    for (const fieldName of fields) {
+      await this.configService.deleteParam(accountId, fieldName);
+    }
+  }
+
   async getExchangeConfig(accountId: string, code: string): Promise<ExchangeKeysType> {
     const exchange = EXCHANGE_LIST.find((exchange) => exchange.code === code);
 
-    if (!exchange && process.env.NODE_ENV !== 'development') return null;
-
     if (!exchange) {
+      if (!ccxt.pro[code]) return null;
       const requiredCredentials = new ccxt.pro[code]()?.describe()?.requiredCredentials;
       const exchangeFields = Object.keys(requiredCredentials)
         .filter((key) => requiredCredentials[key])
