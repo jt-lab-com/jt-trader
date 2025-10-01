@@ -16,7 +16,6 @@ interface UseConfigReturnParams {
     main: Exchange[];
     additional?: Exchange[];
   };
-  s3Host: string | null;
   testerDefaults: TesterDefaultArgs | null;
 }
 
@@ -35,7 +34,6 @@ export const useConfig = (): UseConfigReturnParams => {
       main: mainExchangeList,
       additional: additionalExchangeList,
     },
-    s3Host,
     testerDefaults,
   };
 };
