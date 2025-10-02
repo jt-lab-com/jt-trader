@@ -4,7 +4,7 @@ import { InjectRedis } from '@liaoliaots/nestjs-redis';
 import Redis from 'ioredis';
 import { InjectPinoLogger, PinoLogger } from 'nestjs-pino';
 import { promisify } from 'util';
-import os from 'os';
+import * as os from 'os';
 
 @Injectable()
 export class RedisDriver implements CacheDriverInterface {
@@ -25,11 +25,9 @@ export class RedisDriver implements CacheDriverInterface {
     this.subscribers = new Map();
     this.sequence = 0;
 
-    if (!(process.env.DATA_PROXY_MODE === '1')) return;
-
     this.clientSubscriber.on('message', (channel, data) => {
       if (this.subscribers.size === 0) return;
-      for (let [, { event, callback }] of this.subscribers.entries()) {
+      for (const [, { event, callback }] of this.subscribers.entries()) {
         if (channel === event) callback(data);
       }
     });
@@ -83,7 +81,7 @@ export class RedisDriver implements CacheDriverInterface {
     this.subscribers.delete(id);
   };
 
-  publish = async (key: string, message: any, toJSON: boolean = false): Promise<any> => {
+  publish = async (key: string, message: any, toJSON = false): Promise<any> => {
     return await this.publisher(key, toJSON ? JSON.stringify(message) : message);
   };
 }
