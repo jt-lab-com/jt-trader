@@ -31,6 +31,7 @@ export class ScriptProcessContextBase {
   protected tickIsLocked = false;
   protected _callInstance: (method: string, data?: any, emitOnly?: boolean) => Promise<any>;
   protected setTimeouts: any[] = [];
+  protected redisSubscribers: Map<string, number>;
 
   constructor(
     protected readonly accountId: string,
@@ -53,6 +54,7 @@ export class ScriptProcessContextBase {
     this.ticker = {};
     this.subscribers = new Map<string, number>();
     this.callbacks = new Map<string, ((args: any[], data?: any) => Promise<void>)[]>();
+    this.redisSubscribers = new Map<string, number>();
     this.lastOnTimer = 0;
 
     this.updateReport({});

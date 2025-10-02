@@ -82,6 +82,7 @@ export class ScriptProcess {
 
     if (this.isInited) {
       this.context.unsubscribeDataFeeds();
+      this.context.unsubscribeAllChannels();
       await this._instance.stop();
     }
   }
