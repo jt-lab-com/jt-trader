@@ -97,10 +97,6 @@ export class ScriptProcessContextBase {
     return ['tester', 'tester-sync'].indexOf(process.env.NODE_ENV) > -1;
   }
 
-  protected _hasDeveloperAccess(): boolean {
-    return this.developerAccess;
-  }
-
   public subscribeDataFeeds() {
     const { symbols, connectionName, interval } = this.args;
     const [symbol] = symbols;
@@ -234,15 +230,7 @@ export class ScriptProcessContextBase {
     }
   }
 
-  public ccxt() {
-    if (!this._hasDeveloperAccess()) throw new Error('Invalid method ccxt().');
-
-    return this.exchange.getSDK(this.args.connectionName, this.args.marketType, this.keys);
-  }
-
   protected _sdkObject() {
-    if (!this._hasDeveloperAccess()) throw new Error('Invalid method sdkGetProp() / sdkSetProp() / sdkCall().');
-
     return this.exchange.getSDK(this.args.connectionName, this.args.marketType, this.keys);
   }
 
