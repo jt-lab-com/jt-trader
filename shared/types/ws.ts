@@ -559,6 +559,7 @@ interface HistoricalRuntimeBarsRequestParams {
 
 interface SubscribeRealtimeTickerRequestParams {
   exchange: string;
+  marketType: MarketType;
   symbol: string;
   listenerId: string;
 }

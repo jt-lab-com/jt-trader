@@ -85,8 +85,8 @@ export class EventsGateway implements OnGatewayDisconnect, OnGatewayConnection {
     const userConnections = this.connectionService.getUserConnections(client.user?.id);
 
     if (userConnections?.socketClients.length === 1) {
-      userConnections.exchangeTickerSubscribes.forEach(({ exchange, symbol, datafeedSubId }) => {
-        this.dataFeedFactory.unsubscribeTicker(exchange, symbol, datafeedSubId);
+      userConnections.exchangeTickerSubscribes.forEach(({ exchange, symbol, marketType, datafeedSubId }) => {
+        this.dataFeedFactory.unsubscribeTicker(exchange, marketType, symbol, datafeedSubId);
       });
 
       this.connectionService.removeConnection(client.id, client.user?.id);
@@ -495,18 +495,24 @@ export class EventsGateway implements OnGatewayDisconnect, OnGatewayConnection {
       }
       case WS_CLIENT_EVENTS.SUBSCRIBE_REALTIME_TICKER_REQUEST: {
         const data = payload as WS_CLIENT_EVENT_PAYLOAD[WS_CLIENT_EVENTS.SUBSCRIBE_REALTIME_TICKER_REQUEST];
-        const subId = this.dataFeedFactory.subscribeTicker(data.exchange, data.symbol, (ticker: Ticker) => {
-          client.emit('message', {
-            event: WS_SERVER_EVENTS.REALTIME_TICKER,
-            payload: {
-              ...data,
-              ticker,
-            },
-          });
-        });
+        const subId = this.dataFeedFactory.subscribeTicker(
+          data.exchange,
+          data.marketType,
+          data.symbol,
+          (ticker: Ticker) => {
+            client.emit('message', {
+              event: WS_SERVER_EVENTS.REALTIME_TICKER,
+              payload: {
+                ...data,
+                ticker,
+              },
+            });
+          },
+        );
 
         this.connectionService.addExchangeTickerSubscriber(client.user.id, {
           exchange: data.exchange,
+          marketType: data.marketType,
           symbol: data.symbol,
           datafeedSubId: subId,
           clientListenerId: data.listenerId,
@@ -528,7 +534,12 @@ export class EventsGateway implements OnGatewayDisconnect, OnGatewayConnection {
 
         if (!subscribe) return;
 
-        this.dataFeedFactory.unsubscribeTicker(subscribe.exchange, subscribe.symbol, subscribe.datafeedSubId);
+        this.dataFeedFactory.unsubscribeTicker(
+          subscribe.exchange,
+          subscribe.marketType,
+          subscribe.symbol,
+          subscribe.datafeedSubId,
+        );
         this.connectionService.removeExchangeTickerSubscriber(client.user.id, subscribe.datafeedSubId);
 
         return {
