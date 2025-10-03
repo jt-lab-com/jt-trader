@@ -84,12 +84,12 @@ export class ScriptProcessContext extends ScriptProcessContextBase {
     }
 
     super.subscribeDataFeeds();
-    if (this.isTester()) return;
+    if (this.isTester() || !this.hasAPIKeys()) return;
 
-    const { connectionName, symbols } = this.args;
+    const { connectionName, symbols, marketType } = this.args;
     this.subscribers.set(
       'balance::all',
-      this.dataFeedFactory.subscribeBalance(connectionName, this.keys, (data) => {
+      this.dataFeedFactory.subscribeBalance(connectionName, marketType, this.keys, (data) => {
         this.balance = data;
         return this._callInstance('runOnBalanceChange', data, true);
       }),
@@ -103,7 +103,7 @@ export class ScriptProcessContext extends ScriptProcessContextBase {
     if (filteredSymbols.length && filteredSymbols.length > 0)
       this.subscribers.set(
         'positions::all',
-        this.dataFeedFactory.subscribePositions(connectionName, symbols, this.keys, (data) => {
+        this.dataFeedFactory.subscribePositions(connectionName, marketType, symbols, this.keys, (data) => {
           for (const position of data) {
             const index = this.positions.findIndex(
               (item) => item.symbol === position.symbol && item.side === position.side,
@@ -118,15 +118,23 @@ export class ScriptProcessContext extends ScriptProcessContextBase {
   }
 
   public unsubscribeDataFeeds() {
-    const { connectionName, symbols } = this.args;
+    const { connectionName, symbols, marketType } = this.args;
     super.unsubscribeDataFeeds();
-    this.dataFeedFactory.unsubscribeBalance(connectionName, this.keys, this.subscribers.get('balance::all'));
-    this.dataFeedFactory.unsubscribePositions(
-      connectionName,
-      symbols,
-      this.keys,
-      this.subscribers.get('positions::all'),
-    );
+    if (this.hasAPIKeys()) {
+      this.dataFeedFactory.unsubscribeBalance(
+        connectionName,
+        marketType,
+        this.keys,
+        this.subscribers.get('balance::all'),
+      );
+      this.dataFeedFactory.unsubscribePositions(
+        connectionName,
+        marketType,
+        symbols,
+        this.keys,
+        this.subscribers.get('positions::all'),
+      );
+    }
   }
 
   protected async _call<T>(method: string, args: any[]): Promise<T> {
@@ -266,7 +274,7 @@ export class ScriptProcessContext extends ScriptProcessContextBase {
     for (const symbol of symbols) {
       const item = assets[symbol];
       if (!item) throw new Error(`Invalid symbol ${symbol}`);
-      if (item.active !== true) throw new Error(`Inactive symbol ${symbol}`);
+      if (item.active !== undefined && item.active !== true) throw new Error(`Inactive symbol ${symbol}`);
     }
 
     for (const symbol of symbols) {

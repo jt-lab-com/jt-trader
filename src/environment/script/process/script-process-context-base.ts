@@ -60,6 +60,10 @@ export class ScriptProcessContextBase {
     this.updateReport({});
   }
 
+  protected hasAPIKeys() {
+    return !!this.keys?.apiKey && !!this.keys?.secret;
+  }
+
   public _log(level, ...args) {
     this.logger[level](args[1] ? args[1] : {}, args[0]);
     this.eventEmitter.emit('client.log', {
@@ -98,21 +102,24 @@ export class ScriptProcessContextBase {
   }
 
   public subscribeDataFeeds() {
-    const { symbols, connectionName, interval } = this.args;
+    const { symbols, connectionName, interval, marketType } = this.args;
     const [symbol] = symbols;
 
     symbols.map((item) => {
-      this.subscribers.set(
-        `orders::${item}`,
-        this.dataFeedFactory.subscribeOrders(connectionName, item, this.keys, (data) => {
-          if (data.length && data.length > 0) {
-            return this._callInstance('runOnOrderChange', data);
-          }
-        }),
-      );
+      if (this.hasAPIKeys()) {
+        this.subscribers.set(
+          `orders::${item}`,
+          this.dataFeedFactory.subscribeOrders(connectionName, marketType, item, this.keys, (data) => {
+            if (data.length && data.length > 0) {
+              return this._callInstance('runOnOrderChange', data);
+            }
+          }),
+        );
+      }
+
       this.subscribers.set(
         `ticker::${item}`,
-        this.dataFeedFactory.subscribeTicker(connectionName, item, (data) => {
+        this.dataFeedFactory.subscribeTicker(connectionName, marketType, item, (data) => {
           this._tickerUpdate(item, data);
           if (item !== symbol) return;
 
@@ -128,7 +135,7 @@ export class ScriptProcessContextBase {
       );
       this.subscribers.set(
         `orders-book::${item}`,
-        this.dataFeedFactory.subscribeOrdersBook(connectionName, item, (data) => {
+        this.dataFeedFactory.subscribeOrdersBook(connectionName, marketType, item, (data) => {
           this.ordersBook[item] = {
             bids: data.bids.slice(0, 5),
             asks: data.asks.slice(0, 5),
@@ -141,11 +148,27 @@ export class ScriptProcessContextBase {
   public unsubscribeDataFeeds() {
     this.setTimeouts.filter((timeout) => timeout._destroyed === false).map(clearTimeout);
 
-    const { symbols, connectionName } = this.args;
+    const { symbols, connectionName, marketType } = this.args;
     symbols.map((item) => {
-      this.dataFeedFactory.unsubscribeOrders(connectionName, item, this.keys, this.subscribers.get(`orders::${item}`));
-      this.dataFeedFactory.unsubscribeTicker(connectionName, item, this.subscribers.get(`ticker::${item}`));
-      this.dataFeedFactory.unsubscribeOrdersBook(connectionName, item, this.subscribers.get(`orders-book::${item}`));
+      if (this.hasAPIKeys()) {
+        this.dataFeedFactory.unsubscribeOrders(
+          connectionName,
+          marketType,
+          item,
+          this.keys,
+          this.subscribers.get(`orders::${item}`),
+        );
+      }
+
+      const tickerSubscribeId = this.subscribers.get(`ticker::${item}`);
+      const ordersBooksSubscribeId = this.subscribers.get(`orders-book::${item}`);
+
+      if (tickerSubscribeId) {
+        this.dataFeedFactory.unsubscribeTicker(connectionName, marketType, item, tickerSubscribeId);
+      }
+      if (ordersBooksSubscribeId) {
+        this.dataFeedFactory.unsubscribeOrdersBook(connectionName, marketType, item, ordersBooksSubscribeId);
+      }
     });
   }
 

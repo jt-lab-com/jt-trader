@@ -5,6 +5,7 @@ import { InjectPinoLogger, PinoLogger } from 'nestjs-pino';
 import { CCXTService } from '../exchange/ccxt.service';
 import { ExchangeKeysType } from '../../common/interface/exchange-sdk.interface';
 import { CacheService } from '../../common/cache/cache.service';
+import { MarketType } from '@packages/types';
 
 type DataFeedType = OrderBook | Trade | Ticker | Order[] | Balance | Position[];
 const MAX_RECEIVED_TIMEOUT = 5 * 60000;
@@ -31,9 +32,9 @@ export class DataFeedFactory {
   }
 
   private selectDataFeed(
-    args: [string, string, string | string[], string, string, string, ...any],
+    args: [string, MarketType, string, string | string[], string, string, string, ...any],
   ): DataFeed<DataFeedType> {
-    const [exchange, method, symbol, apiKey, secret, password, sandboxMode, ...rest] = args;
+    const [exchange, marketType, method, symbol, apiKey, secret, password, sandboxMode, ...rest] = args;
     const key: string = [exchange, method, Array.isArray(symbol) ? JSON.stringify(symbol) : symbol, apiKey].join('::');
 
     const isMock: boolean = exchange.endsWith('-mock');
@@ -49,7 +50,7 @@ export class DataFeedFactory {
     let dataFeed: DataFeed<DataFeedType> = this.dataFeeds.get(key);
     if (!dataFeed) {
       dataFeed = new DataFeed<DataFeedType>(
-        this.sdk.getSDK(exchange, 'swap', { apiKey, secret, password, sandboxMode }),
+        this.sdk.getSDK(exchange, marketType, { apiKey, secret, password, sandboxMode }),
         [method, symbol, ...rest],
         this.logger,
         dataFlow,
@@ -60,12 +61,17 @@ export class DataFeedFactory {
     return dataFeed;
   }
 
-  public subscribeTicker(exchange: string, symbol: string, subscriber: (data: Ticker) => void): number {
+  public subscribeTicker(
+    exchange: string,
+    marketType: MarketType,
+    symbol: string,
+    subscriber: (data: Ticker) => void,
+  ): number {
     if (!this.dataProxyMode) {
-      return this.subscribeTickerNative(exchange, symbol, subscriber);
+      return this.subscribeTickerNative(exchange, marketType, symbol, subscriber);
     }
 
-    const key = `${exchange.toUpperCase()}::TICKER::${symbol.toUpperCase()}`;
+    const key = `${exchange.toUpperCase()}::${marketType.toUpperCase()}::TICKER::${symbol.toUpperCase()}`;
     const id = this.cacheService.subscribe(key, (data) => {
       subscriber(JSON.parse(data));
     });
@@ -75,30 +81,40 @@ export class DataFeedFactory {
     return id;
   }
 
-  public subscribeTickerNative(exchange: string, symbol: string, subscriber: (data: Ticker) => void): number {
-    const dataFeed = this.selectDataFeed([exchange, 'watchTicker', symbol, '', '', '', false]);
+  public subscribeTickerNative(
+    exchange: string,
+    marketType: MarketType,
+    symbol: string,
+    subscriber: (data: Ticker) => void,
+  ): number {
+    const dataFeed = this.selectDataFeed([exchange, marketType, 'watchTicker', symbol, '', '', '', false]);
     return dataFeed.subscribe(subscriber);
   }
 
-  public unsubscribeTickerNative(exchange: string, symbol: string, subscriberId: number): void {
-    const dataFeed = this.selectDataFeed([exchange, 'watchTicker', symbol, '', '', '', false]);
+  public unsubscribeTickerNative(exchange: string, marketType: MarketType, symbol: string, subscriberId: number): void {
+    const dataFeed = this.selectDataFeed([exchange, marketType, 'watchTicker', symbol, '', '', '', false]);
     dataFeed.unsubscribe(subscriberId);
   }
 
-  public unsubscribeTicker(exchange: string, symbol: string, subscriberId: number): void {
+  public unsubscribeTicker(exchange: string, marketType: MarketType, symbol: string, subscriberId: number): void {
     if (!this.dataProxyMode) {
-      return this.unsubscribeTickerNative(exchange, symbol, subscriberId);
+      return this.unsubscribeTickerNative(exchange, marketType, symbol, subscriberId);
     }
 
     this.cacheService.unsubscribe(subscriberId);
   }
 
-  public subscribeOrdersBook(exchange: string, symbol: string, subscriber: (data: OrderBook) => void): number {
+  public subscribeOrdersBook(
+    exchange: string,
+    marketType: MarketType,
+    symbol: string,
+    subscriber: (data: OrderBook) => void,
+  ): number {
     if (!this.dataProxyMode) {
-      return this.subscribeOrdersBookNative(exchange, symbol, subscriber);
+      return this.subscribeOrdersBookNative(exchange, marketType, symbol, subscriber);
     }
 
-    const key = `${exchange.toUpperCase()}::ORDERS-BOOK::${symbol.toUpperCase()}`;
+    const key = `${exchange.toUpperCase()}::${marketType.toUpperCase()}::ORDERS-BOOK::${symbol.toUpperCase()}`;
     const id = this.cacheService.subscribe(key, (data) => {
       subscriber(JSON.parse(data));
     });
@@ -108,34 +124,44 @@ export class DataFeedFactory {
     return id;
   }
 
-  public subscribeOrdersBookNative(exchange: string, symbol: string, subscriber: (data: OrderBook) => void): number {
-    const dataFeed = this.selectDataFeed([exchange, 'watchOrderBook', symbol, '', '', '', false]);
+  public subscribeOrdersBookNative(
+    exchange: string,
+    marketType: MarketType,
+    symbol: string,
+    subscriber: (data: OrderBook) => void,
+  ): number {
+    const dataFeed = this.selectDataFeed([exchange, marketType, 'watchOrderBook', symbol, '', '', '', false]);
     return dataFeed.subscribe(subscriber);
   }
 
-  public unsubscribeOrdersBook(exchange: string, symbol: string, subscriberId: number): void {
+  public unsubscribeOrdersBook(exchange: string, marketType: MarketType, symbol: string, subscriberId: number): void {
     if (!this.dataProxyMode) {
-      return this.unsubscribeOrdersBookNative(exchange, symbol, subscriberId);
+      return this.unsubscribeOrdersBookNative(exchange, marketType, symbol, subscriberId);
     }
 
     this.cacheService.unsubscribe(subscriberId);
   }
 
-  public unsubscribeOrdersBookNative(exchange: string, symbol: string, subscriberId: number): void {
-    const dataFeed = this.selectDataFeed([exchange, 'watchOrderBook', symbol, '', '', '', false]);
+  public unsubscribeOrdersBookNative(
+    exchange: string,
+    marketType: MarketType,
+    symbol: string,
+    subscriberId: number,
+  ): void {
+    const dataFeed = this.selectDataFeed([exchange, marketType, 'watchOrderBook', symbol, '', '', '', false]);
     dataFeed.unsubscribe(subscriberId);
   }
 
   public subscribeOrders(
     exchange: string,
+    marketType: MarketType,
     symbol: string,
     keys: ExchangeKeysType | null,
     subscriber: (data: Order[]) => void,
   ): number {
-    if (!keys) return;
-
     const dataFeed = this.selectDataFeed([
       exchange,
+      marketType,
       'watchOrders',
       symbol,
       keys.apiKey,
@@ -148,14 +174,14 @@ export class DataFeedFactory {
 
   public unsubscribeOrders(
     exchange: string,
+    marketType: MarketType,
     symbol: string,
     keys: ExchangeKeysType | null,
     subscriberId: number,
   ): void {
-    if (!keys) return;
-
     const dataFeed = this.selectDataFeed([
       exchange,
+      marketType,
       'watchOrders',
       symbol,
       keys.apiKey,
@@ -168,13 +194,13 @@ export class DataFeedFactory {
 
   public subscribeBalance(
     exchange: string,
+    marketType: MarketType,
     keys: ExchangeKeysType | null,
     subscriber: (data: Balance) => void,
   ): number {
-    if (!keys) return;
-
     const dataFeed = this.selectDataFeed([
       exchange,
+      marketType,
       'watchBalance',
       '',
       keys.apiKey,
@@ -185,11 +211,15 @@ export class DataFeedFactory {
     return dataFeed.subscribe(subscriber);
   }
 
-  public unsubscribeBalance(exchange: string, keys: ExchangeKeysType | null, subscriberId: number): void {
-    if (!keys) return;
-
+  public unsubscribeBalance(
+    exchange: string,
+    marketType: MarketType,
+    keys: ExchangeKeysType | null,
+    subscriberId: number,
+  ): void {
     const dataFeed = this.selectDataFeed([
       exchange,
+      marketType,
       'watchBalance',
       '',
       keys.apiKey,
@@ -202,14 +232,14 @@ export class DataFeedFactory {
 
   public subscribePositions(
     exchange: string,
+    marketType: MarketType,
     symbols: string[],
     keys: ExchangeKeysType | null,
     subscriber: (data: Position[]) => void,
   ): number {
-    if (!keys) return;
-
     const dataFeed = this.selectDataFeed([
       exchange,
+      marketType,
       'watchPositions',
       symbols,
       keys.apiKey,
@@ -222,14 +252,14 @@ export class DataFeedFactory {
 
   public unsubscribePositions(
     exchange: string,
+    marketType: MarketType,
     symbols: string[],
     keys: ExchangeKeysType | null,
     subscriberId: number,
   ): void {
-    if (!keys) return;
-
     const dataFeed = this.selectDataFeed([
       exchange,
+      marketType,
       'watchPositions',
       symbols,
       keys.apiKey,
