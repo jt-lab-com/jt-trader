@@ -78,7 +78,7 @@ export class CCXTService implements ExchangeSDKInterface {
         values.push(mergedData);
       }
 
-      await this.cacheService.set(key, JSON.stringify(values), 60 * 60);
+      await this.cacheService.set(key, JSON.stringify(values), 8 * 60 * 60);
 
       return values;
     } else {
