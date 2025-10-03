@@ -64,6 +64,7 @@
     "nestjs-pino": "^3.2.0",
     "papaparse": "^5.5.2",
     "pino-http": "^8.3.3",
+    "protobufjs": "^7.5.4",
     "reflect-metadata": "^0.1.13",
     "rollup": "^3.29.0",
     "rollup-plugin-virtual": "^1.0.1",
