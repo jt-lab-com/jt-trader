@@ -2,8 +2,9 @@ import * as fs from 'fs';
 import { config } from 'dotenv';
 import * as ccxt from 'ccxt';
 import * as path from 'path';
+import { EXCHANGE_LIST } from '../shared/const/exchanges';
 
-const EXCHANGE_LIST = ['gateio', 'bybit', 'kucoin', 'okx'];
+const EXCHANGE_CODES = EXCHANGE_LIST.map((exchange) => exchange.code);
 
 config();
 
@@ -16,7 +17,7 @@ function ensureMarketsDir() {
 async function downloadMarkets() {
   ensureMarketsDir();
 
-  for (const code of EXCHANGE_LIST) {
+  for (const code of EXCHANGE_CODES) {
     if (code.includes('-testnet') || code.includes('-mock')) continue;
     const filePath = path.join(process.env.MARKETS_DIR_PATH, `${code}.json`);
     if (fs.existsSync(filePath)) continue;

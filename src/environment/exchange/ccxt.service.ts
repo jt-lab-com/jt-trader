@@ -5,7 +5,7 @@ import { SocksProxyAgent } from 'socks-proxy-agent';
 import { ExchangeSdkFactory } from './ccxt-sdk.factory';
 import { InjectPinoLogger, PinoLogger } from 'nestjs-pino';
 import { CacheService } from '../../common/cache/cache.service';
-import { BINANCE_USDM_HARDCODED_LEVERAGES } from './exchange-connector/const';
+import { BINANCE_USDM_HARDCODED_LEVERAGES } from '@packages/const/exchanges';
 import { ExtendedExchange } from './interface/exchange.interface';
 import { MarketType } from '@packages/types';
 

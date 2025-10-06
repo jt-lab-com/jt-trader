@@ -1,13 +1,22 @@
 import { Injectable } from '@nestjs/common';
 import { ConfigParamType, ConfigService } from '../../config/config.service';
-import { EXCHANGE_LIST } from './const';
+import { EXCHANGE_LIST } from '@packages/const/exchanges';
 import { Exchange, ExchangeField, SaveExchangeConfigParams } from '@packages/types';
 import { ExchangeKeysType } from '../../../common/interface/exchange-sdk.interface';
 import * as ccxt from 'ccxt';
+import * as fs from 'fs';
 
 @Injectable()
 export class ExchangeConnectorService {
-  constructor(private readonly configService: ConfigService) {}
+  private readonly allowedAdditionalExchanges: string[];
+
+  constructor(private readonly configService: ConfigService) {
+    this.allowedAdditionalExchanges = fs
+      .readFileSync(process.env.EXCHANGE_LIST_FILE_PATH, 'utf-8')
+      .split('\n')
+      .map((line) => line.trim())
+      .filter((line) => !line.startsWith('#'));
+  }
 
   async getExchangeList(accountId: string): Promise<{
     main: Array<Exchange & { connected: boolean }>;
@@ -50,6 +59,7 @@ export class ExchangeConnectorService {
     // @ts-ignore
     return ccxt.pro.exchanges
       .filter((exchangeName: string) => !EXCHANGE_LIST.find(({ code }) => exchangeName === code))
+      .filter((exchangeName: string) => this.allowedAdditionalExchanges.find((code) => exchangeName === code))
       .map((exchangeName: string): Exchange & { connected: boolean; added: boolean } => {
         const requiredCredentials = new ccxt.pro[exchangeName]().describe()?.requiredCredentials;
         const exchangeFields = Object.keys(requiredCredentials)

@@ -4,7 +4,7 @@ import { ScriptService } from './script.service';
 import { SiteApi } from '../../common/api/site-api';
 import { StrategyItem } from './types';
 import { nanoid } from 'nanoid';
-import { EXCHANGE_LIST } from '../exchange/exchange-connector/const';
+import { EXCHANGE_LIST } from '@packages/const/exchanges';
 
 @Controller()
 export class ScriptController {
