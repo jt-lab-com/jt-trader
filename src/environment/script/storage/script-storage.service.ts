@@ -5,11 +5,10 @@ import { Runtime as PrismaRuntime, Scenario as PrismaScenario } from '@prisma/cl
 import { ScriptArtifactsService } from '../artifacts/script-artifacts.service';
 import { nanoid } from 'nanoid';
 import { StrategyItem, StrategyItemType } from '../types';
-import { Strategy as ServerResponseStrategy, StrategyDefinedArg } from '@packages/types';
+import { MarketType, Strategy as ServerResponseStrategy, StrategyDefinedArg } from '@packages/types';
 import { parseDefinedArgs } from '../utils/parse-defined-args';
 import { InjectPinoLogger, PinoLogger } from 'nestjs-pino';
 import { PrismaService } from '../../../common/prisma/prisma.service';
-import { MarketType } from 'ccxt';
 
 type Runtime = {
   id?: number;

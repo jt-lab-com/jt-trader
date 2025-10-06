@@ -28,6 +28,14 @@ export class CacheService {
     return this.driver.delete(this.formatKey(key));
   }
 
+  public setPublic(key: string, data: string, ttl: number = DEFAULT_TTL): Promise<void> {
+    return this.driver.set(key, data, ttl);
+  }
+
+  public getPublic(key: string) {
+    return this.driver.get(key);
+  }
+
   public async deleteAllHostKeys(): Promise<void> {
     const keys = await this.keys('');
     if (!keys.length) return;

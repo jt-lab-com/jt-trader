@@ -7,7 +7,6 @@ import { DataFeedFactory } from '../../data-feed/data-feed.factory';
 import { CCXTService } from '../../exchange/ccxt.service';
 import { ScriptExchangeKeysService } from '../storage/script-exchange-keys.service';
 import { EventEmitter2 } from '@nestjs/event-emitter';
-import * as fs from 'fs';
 import { CacheService } from '../../../common/cache/cache.service';
 import { Runtime } from '@prisma/client';
 import { ScriptArtifactsService } from '../artifacts/script-artifacts.service';
@@ -21,6 +20,7 @@ import { ACCOUNT_DEVELOPER_ACCESS, ACCOUNT_LIMIT_API_CALL_PER_SEC, ACCOUNT_LIMIT
 import { StrategyItem } from '../types';
 import { nanoid } from 'nanoid';
 import { StrategyArgsType } from '../../exchange/interface/strategy.interface';
+import { MarketsService } from '../../exchange/markets.service';
 
 interface Process {
   process: ScriptProcess;
@@ -35,7 +35,6 @@ export interface ProcessMeta extends Runtime {
 @Injectable()
 export class ScriptProcessFactory {
   private readonly processes: Map<number, Process>;
-  private readonly markets: Record<string, any[]>;
   static readonly monitoringInterval: number = 5000;
   private readonly runtimeLogger: Map<string, Logger>;
 
@@ -49,25 +48,12 @@ export class ScriptProcessFactory {
     private readonly cacheService: CacheService,
     private readonly artifactsService: ScriptArtifactsService,
     private readonly accountService: AccountService,
+    private readonly marketsService: MarketsService,
     @InjectPinoLogger(ScriptProcessFactory.name) private readonly logger: PinoLogger,
   ) {
     this.processes = new Map([]);
     this.runtimeLogger = new Map([]);
-    this.markets = {};
-
-    const marketsDirPath = process.env.MARKETS_DIR_PATH;
-    const files = fs.readdirSync(marketsDirPath);
-    const jsonFiles = files
-      .filter((file) => path.extname(file).toLowerCase() === '.json')
-      .map((file) => path.basename(file, '.json'));
-    jsonFiles.forEach((file) => {
-      this.markets[file] = JSON.parse(fs.readFileSync(path.join(marketsDirPath, `${file}.json`)).toString());
-    });
   }
-
-  getSymbolInfo = (symbol: string, exchange: string) => {
-    return this.markets[exchange]?.find((market) => market.symbol === symbol);
-  };
 
   private async processesLimit(accountId: string): Promise<boolean> {
     const enabledProcessesLimit: number = parseInt(
@@ -115,6 +101,10 @@ export class ScriptProcessFactory {
     );
     const developerAccess: boolean =
       (await this.accountService.getParam(meta.accountId, ACCOUNT_DEVELOPER_ACCESS)) === 'true';
+
+    const markets = await this.marketsService.getExchangeMarkets(meta.exchange, meta.marketType);
+    const getSymbolInfo = (symbol: string) => markets.find((market) => market.symbol === symbol);
+
     try {
       const context = new ScriptProcessContext(
         meta.accountId,
@@ -126,7 +116,7 @@ export class ScriptProcessFactory {
         this.eventEmitter,
         this.cacheService,
         this.artifactsService,
-        this.getSymbolInfo,
+        getSymbolInfo,
         bundle,
         key.toString(),
         meta.prefix,
@@ -142,10 +132,9 @@ export class ScriptProcessFactory {
         const orderService = sdk.getMockOrderService();
         const symbolsArgs = Array.isArray(meta.args) ? meta.args.find((arg) => arg.key === 'symbols') : [];
         const symbols = !Array.isArray(symbolsArgs) ? symbolsArgs.value.toString().split(',') : [];
-        await sdk.loadMarkets(false);
 
         for (const symbol of symbols) {
-          const data = sdk.markets[symbol];
+          const data = markets[symbol];
           const pricePrecision = data.precision.price.toString().split('.')[1]?.length;
           orderService.updateConfig({ balance: 1000, pricePrecision, contractSize: data.contractSize }, symbol);
         }
@@ -179,6 +168,8 @@ export class ScriptProcessFactory {
     const apiCallLimitPerSecond: number = parseInt(
       await this.accountService.getParam(accountId, ACCOUNT_LIMIT_API_CALL_PER_SEC),
     );
+    const markets = await this.marketsService.getExchangeMarkets('binanceusdm', 'swap');
+    const getSymbolInfo = (symbol: string) => markets.find((market) => market.symbol === symbol);
     const context = new ScriptProcessContext(
       accountId,
       this.dataFeedFactory,
@@ -189,7 +180,7 @@ export class ScriptProcessFactory {
       this.eventEmitter,
       this.cacheService,
       this.artifactsService,
-      this.getSymbolInfo,
+      getSymbolInfo,
       bundle,
       key.toString(),
       prefix,
@@ -220,6 +211,11 @@ export class ScriptProcessFactory {
       this.logger.warn(bundle.warn);
     }
 
+    const metaArgs = JSON.parse(meta.args);
+    const exchange = metaArgs.find(({ key }) => key === 'exchange')?.value ?? 'binanceusdm';
+    const markets = await this.marketsService.getExchangeMarkets(exchange, 'swap');
+    const getSymbolInfo = (symbol: string) => markets.find((market) => market.symbol === symbol);
+
     const ContextClass = process.env.NODE_ENV === 'tester-sync' ? ScriptProcessContextSync : ScriptProcessContext;
     try {
       const context = new ContextClass(
@@ -232,7 +228,7 @@ export class ScriptProcessFactory {
         this.eventEmitter,
         this.cacheService,
         this.artifactsService,
-        this.getSymbolInfo,
+        getSymbolInfo,
         bundle,
         id.toString(),
         id.toString(),

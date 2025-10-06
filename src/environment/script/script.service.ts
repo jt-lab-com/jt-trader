@@ -9,7 +9,7 @@ import { ExceptionReasonType } from '../../exception/types';
 import { CacheService } from '../../common/cache/cache.service';
 import { EventEmitter2 } from '@nestjs/event-emitter';
 import { ScriptArtifactsService } from './artifacts/script-artifacts.service';
-import { MarketType } from 'ccxt';
+import { MarketType } from '@packages/types';
 
 const ENABLED_RUNTIME_PREFIX = 'ENABLED_RUNTIME_PREFIX::';
 

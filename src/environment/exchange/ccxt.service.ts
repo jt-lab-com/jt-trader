@@ -4,8 +4,6 @@ import { SystemParamsInterface } from '../script/scenario/script-scenario.servic
 import { SocksProxyAgent } from 'socks-proxy-agent';
 import { ExchangeSdkFactory } from './ccxt-sdk.factory';
 import { InjectPinoLogger, PinoLogger } from 'nestjs-pino';
-import { CacheService } from '../../common/cache/cache.service';
-import { BINANCE_USDM_HARDCODED_LEVERAGES } from '@packages/const/exchanges';
 import { ExtendedExchange } from './interface/exchange.interface';
 import { MarketType } from '@packages/types';
 
@@ -16,7 +14,6 @@ export class CCXTService implements ExchangeSDKInterface {
 
   constructor(
     private readonly sdkFactory: ExchangeSdkFactory,
-    private readonly cacheService: CacheService,
     @InjectPinoLogger(CCXTService.name) private readonly logger: PinoLogger,
   ) {
     this.sdk = new Map();
@@ -52,38 +49,6 @@ export class CCXTService implements ExchangeSDKInterface {
       this.sdk.set(key, exchange);
     }
     return exchange as ExtendedExchange;
-  }
-
-  public async getExchangeMarkets(name: string, marketType: MarketType): Promise<any[]> {
-    const key = `EXCHANGE_MARKETS_${name}_${marketType}`;
-
-    const data = await this.cacheService.get(key);
-    if (!data) {
-      const sdk = this.getSDK(name, marketType, { apiKey: '', secret: '' });
-      await sdk.loadMarkets(true);
-      const tickers = await sdk.fetchTickers();
-      const markets = Object.values(sdk.markets);
-      const values = [];
-
-      for (let i = 0; i < markets.length; i++) {
-        const market = markets[i];
-        if (!market[marketType]) continue;
-        if (marketType === 'swap' && !market.linear) continue;
-
-        const mergedData = { ...market, ...tickers[market.symbol] };
-        if (name === 'binanceusdm') {
-          const leverage = { max: BINANCE_USDM_HARDCODED_LEVERAGES[market.symbol], min: undefined };
-          mergedData['limits'] ? (mergedData['limits']['leverage'] = leverage) : (mergedData['limits'] = { leverage });
-        }
-        values.push(mergedData);
-      }
-
-      await this.cacheService.set(key, JSON.stringify(values), 8 * 60 * 60);
-
-      return values;
-    } else {
-      return JSON.parse(data);
-    }
   }
 
   async setSource(dir: string, key: string, startDate: Date, endDate: Date) {

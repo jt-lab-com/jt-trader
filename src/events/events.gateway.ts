@@ -33,6 +33,7 @@ import { TESTER_SCENARIO_DEFAULTS } from '../environment/account/const';
 import { HistoryBarsService } from '../environment/history-bars/history-bars.service';
 import { MonitoringService } from '../monitoring/monitoring.service';
 import { SiteApi } from '../common/api/site-api';
+import { MarketsService } from '../environment/exchange/markets.service';
 
 @WebSocketGateway()
 export class EventsGateway implements OnGatewayDisconnect, OnGatewayConnection {
@@ -53,6 +54,7 @@ export class EventsGateway implements OnGatewayDisconnect, OnGatewayConnection {
     private readonly dataFeedFactory: DataFeedFactory,
     private readonly connectionService: ConnectionService,
     private readonly ccxtService: CCXTService,
+    private readonly marketsService: MarketsService,
     private readonly accountService: AccountService,
     private readonly scriptBundlerService: ScriptBundlerService,
     private readonly monitoringService: MonitoringService,
@@ -649,7 +651,7 @@ export class EventsGateway implements OnGatewayDisconnect, OnGatewayConnection {
 
       case WS_CLIENT_EVENTS.EXCHANGE_MARKETS_REQUEST: {
         const data = payload as WS_CLIENT_EVENT_PAYLOAD[WS_CLIENT_EVENTS.EXCHANGE_MARKETS_REQUEST];
-        const markets = await this.ccxtService.getExchangeMarkets(data.exchange, data.marketType);
+        const markets = await this.marketsService.getExchangeMarkets(data.exchange, data.marketType);
         return {
           event: WS_SERVER_EVENTS.EXCHANGE_MARKETS_RESPONSE,
           payload: {
