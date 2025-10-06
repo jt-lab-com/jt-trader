@@ -100,7 +100,7 @@ export const EditorModal: FC<EditorModalProps> = (props) => {
         setValue("symbols", jobSymbols);
       }
 
-      const args = job.args.filter((arg) => arg.key !== "symbols");
+      const args = job.args.filter((arg) => arg.key !== "symbols" && arg.key !== "marketType");
 
       setValue("args", args);
       return;
