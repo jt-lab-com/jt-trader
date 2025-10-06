@@ -30,10 +30,12 @@ export const AddAdditionalExchange: FC<AddAdditionalExchangeProps> = () => {
   const [exchangeFields, setExchangeFields] = useState<ExchangeField[]>([]);
 
   useEffect(() => {
-    if (!additional) return;
+    if (!additional || !additional.length) return;
     setSelectedExchange(additional[0].name);
     setExchangeFields(additional[0].fields);
   }, [additional]);
+
+  if (!additional?.length) return null;
 
   const handleExchangeChange = (e: ChangeEvent<HTMLInputElement>) => {
     setSelectedExchange(e.target.value);
