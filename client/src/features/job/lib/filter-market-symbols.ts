@@ -10,10 +10,8 @@ export const filterMarketSymbols = (markets: ExchangeMarkets[], filters: SymbolF
   const { search, minVolume, minLeverage } = filters;
 
   return markets.filter((row) => {
-    return (
-      row.symbol.includes(search.toUpperCase()) &&
-      row.quoteVolume >= minVolume &&
-      row.limits.leverage.max >= minLeverage
-    );
+    return row.symbol.includes(search.toUpperCase()) && row.quoteVolume
+      ? row.quoteVolume >= minVolume
+      : row.limits.leverage.max >= minLeverage;
   });
 };

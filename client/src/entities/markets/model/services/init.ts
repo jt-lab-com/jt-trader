@@ -15,6 +15,7 @@ export const initMarkets = createAsyncThunk<void, void, ThunkConfig<void>>("mark
     dispatch(
       marketsActions.setMarkets({
         exchange: payload.exchange,
+        marketType: payload.marketType,
         data: payload.data.map((market) => ({
           ...market,
           minSizeUSDT: market.contractSize * market.close * market.precision.amount,

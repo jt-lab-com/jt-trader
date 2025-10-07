@@ -1,6 +1,5 @@
 {
   "exclude": ["./client"],
-  "types": ["./shared/types/user-source-code/global.d.ts"],
   "compilerOptions": {
     "module": "commonjs",
     "declaration": true,

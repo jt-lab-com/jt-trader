@@ -5,8 +5,8 @@ import { ScriptProcessContextBase } from './script-process-context-base';
 
 export class ScriptProcessContextSync extends ScriptProcessContextBase {
   public updateArgs(instance: BaseScriptInterface) {
-    const { symbols, connectionName, interval } = instance;
-    this.args = { symbols, connectionName, interval };
+    const { symbols, connectionName, interval, marketType = 'swap' } = instance;
+    this.args = { symbols, connectionName, interval, marketType };
     this.keys = { apiKey: 'xxxxx', secret: 'yyyyy' };
     this._callInstance = (method, data = undefined) => {
       try {

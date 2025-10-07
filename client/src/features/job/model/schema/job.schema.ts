@@ -33,6 +33,7 @@ export const jobSchema = Yup.object().shape({
   prefix: Yup.string().required("Prefix name is required").min(8, "Min length 8 characters").trim(),
   runtimeType: Yup.string().required("Runtime type required").oneOf(["market", "system"]),
   exchange: Yup.string().required("Select exchange"),
+  marketType: Yup.string().required("Select market type").oneOf(["spot", "swap"]),
   symbols: Yup.array().of(Yup.string()).notRequired(),
   args: argsSchema,
 });
@@ -46,6 +47,7 @@ export const getJobDefaultValues = (job?: Job | null, isCopy?: boolean): JobSche
     selectedStrategy: job?.strategy ?? null,
     jobName: isCopy ? `${job?.name} (copy)` : job?.name ?? "",
     exchange: job?.exchange ?? "",
+    marketType: job?.marketType ?? "swap",
     runtimeType: job?.runtimeType ?? "market",
     symbols: [],
     args: [{ ...defaultArgParam }],

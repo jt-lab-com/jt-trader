@@ -1,4 +1,4 @@
-import { ExchangeMarkets as WSExchangeMarkets } from "@packages/types";
+import { ExchangeMarkets as WSExchangeMarkets, MarketType } from "@packages/types";
 
 type ExchangeName = string;
 
@@ -11,7 +11,9 @@ export interface MarketsSchema {
   data: Record<ExchangeName, ExchangeMarketsData>;
 }
 
-interface ExchangeMarketsData {
+type ExchangeMarketsData = Record<MarketType, MarketData>;
+
+interface MarketData {
   tms: number;
   markets: ExchangeMarkets[];
 }

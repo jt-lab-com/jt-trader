@@ -3,6 +3,7 @@ import { InjectPinoLogger, PinoLogger } from 'nestjs-pino';
 import { pro as ccxt } from 'ccxt';
 import { CacheService } from '../../common/cache/cache.service';
 import { DataFeedFactory } from '../../environment/data-feed/data-feed.factory';
+import { MarketType } from '@packages/types';
 
 type DataType = 'ticker' | 'orders-book';
 
@@ -26,31 +27,41 @@ export class DataSourceService {
       const values = key.split('::');
       if (
         !values ||
-        values.length < 3 ||
+        values.length < 4 ||
         !ccxt[values[0].toLowerCase().replace('-testnet', '')] ||
-        ['ticker', 'orders-book'].indexOf(values[1].toLowerCase()) === -1
+        ['ticker', 'orders-book'].indexOf(values[2].toLowerCase()) === -1
       ) {
         logger.error({ key }, 'Invalid DataSource');
         return;
       }
 
-      this.addSource(values[0].toLowerCase(), values[1].toLowerCase() as DataType, values[2]);
+      this.addSource(
+        values[0].toLowerCase(),
+        values[1].toLowerCase() as MarketType,
+        values[2].toLowerCase() as DataType,
+        values[3],
+      );
     });
   }
 
-  private addSource = (exchange: string, type: DataType, asset: string) => {
-    const key = `${exchange.toUpperCase()}::${type.toUpperCase()}::${asset.toUpperCase()}`;
+  private addSource = (exchange: string, marketType: MarketType, type: DataType, asset: string) => {
+    const key = `${exchange.toUpperCase()}::${marketType}::${type.toUpperCase()}::${asset.toUpperCase()}`;
     switch (type) {
       case 'ticker': {
-        this.sources[key] = this.dataFeedFactory.subscribeTickerNative(exchange, asset, async (data) => {
+        this.sources[key] = this.dataFeedFactory.subscribeTickerNative(exchange, marketType, asset, async (data) => {
           this.listeners[key] = await this.cacheService.publish(key, data, true);
         });
         break;
       }
       case 'orders-book': {
-        this.sources[key] = this.dataFeedFactory.subscribeOrdersBookNative(exchange, asset, async (data) => {
-          this.listeners[key] = await this.cacheService.publish(key, data, true);
-        });
+        this.sources[key] = this.dataFeedFactory.subscribeOrdersBookNative(
+          exchange,
+          marketType,
+          asset,
+          async (data) => {
+            this.listeners[key] = await this.cacheService.publish(key, data, true);
+          },
+        );
         break;
       }
       default: {
@@ -68,13 +79,23 @@ export class DataSourceService {
   private removeSource = (key: string) => {
     const values = key.split('::');
 
-    switch (values[1].toLowerCase()) {
+    switch (values[2].toLowerCase()) {
       case 'ticker': {
-        this.dataFeedFactory.unsubscribeTickerNative(values[0].toLowerCase(), values[2], this.sources[key]);
+        this.dataFeedFactory.unsubscribeTickerNative(
+          values[0].toLowerCase(),
+          values[1].toLowerCase() as MarketType,
+          values[2],
+          this.sources[key],
+        );
         break;
       }
       case 'orders-book': {
-        this.dataFeedFactory.unsubscribeOrdersBookNative(values[0].toLowerCase(), values[2], this.sources[key]);
+        this.dataFeedFactory.unsubscribeOrdersBookNative(
+          values[0].toLowerCase(),
+          values[1].toLowerCase() as MarketType,
+          values[2],
+          this.sources[key],
+        );
         break;
       }
       default: {

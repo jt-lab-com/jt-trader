@@ -8,7 +8,7 @@ const DB_PATH = path.join(ROOT_PATH, 'storage.db');
 const ENV_DEFAULTS: Record<string, string> = {
   PORT: '8080',
   STRATEGY_FILES_PATH: path.join(ROOT_PATH, 'strategy-source', 'src'),
-  MARKETS_DIR_PATH: path.join(ROOT_PATH, 'markets'),
+  EXCHANGE_LIST_FILE_PATH: path.join(ROOT_PATH, 'exchanges.txt'),
   ARTIFACTS_DIR_PATH: path.join(ROOT_PATH, 'artifacts'),
   LOGS_DIR_PATH: path.join(ROOT_PATH, 'artifacts'),
   HISTORY_BARS_PATH: path.join(ROOT_PATH, 'downloaded-history-bars'),

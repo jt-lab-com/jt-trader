@@ -9,6 +9,7 @@ import { ExceptionReasonType } from '../../exception/types';
 import { CacheService } from '../../common/cache/cache.service';
 import { EventEmitter2 } from '@nestjs/event-emitter';
 import { ScriptArtifactsService } from './artifacts/script-artifacts.service';
+import { MarketType } from '@packages/types';
 
 const ENABLED_RUNTIME_PREFIX = 'ENABLED_RUNTIME_PREFIX::';
 
@@ -89,16 +90,6 @@ export class ScriptService {
 
   getStrategyContent = this.storage.getContent;
 
-  getSourceFileTree = this.storage.getFileTree;
-
-  getFileTreeStrategyContent = this.storage.getFileTreeStrategyContent;
-
-  saveStrategy = this.storage.saveStrategy;
-
-  removeStrategy = this.storage.removeStrategy;
-
-  renameStrategy = this.storage.renameStrategy;
-
   getRuntimeList = async (accountId: string) =>
     (await this.storage.getRuntimeList(accountId)).map((item) => ({
       ...item,
@@ -113,6 +104,7 @@ export class ScriptService {
     args: { key: string; value: string | number }[],
     runtimeType: 'market' | 'system',
     exchange: string,
+    marketType: MarketType,
   ): Promise<number> => {
     return await this.storage.saveRuntime({
       accountId,
@@ -125,6 +117,7 @@ export class ScriptService {
       strategyPath: strategy.path,
       args,
       runtimeType,
+      marketType,
     });
   };
 
@@ -137,6 +130,7 @@ export class ScriptService {
     args: { key: string; value: string | number }[],
     runtimeType: 'market' | 'system',
     exchange: string,
+    marketType: MarketType,
   ): Promise<void> => {
     await this.storage.saveRuntime({
       accountId,
@@ -150,6 +144,7 @@ export class ScriptService {
       strategyPath: strategy.path,
       args,
       runtimeType,
+      marketType,
     });
 
     if (this.factory.check(id)) {

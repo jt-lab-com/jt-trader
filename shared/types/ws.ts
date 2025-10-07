@@ -1,4 +1,4 @@
-import type { Exchange } from './exchange';
+import { Exchange, MarketType } from './exchange';
 import { ExchangeField } from './exchange';
 import { Ticker } from 'ccxt';
 
@@ -34,17 +34,12 @@ export enum WS_CLIENT_EVENTS {
   REMOTE_STRATEGY_LIST_REQUEST = 'remote-strategy-list-request',
   STRATEGY_CONTENT_REQUEST = 'strategy-content-request',
 
-  /* CODE EDITOR */
-  CODE_EDITOR_FILE_TREE_REQUEST = 'code-editor-file-tree-request',
-  CODE_EDITOR_FILE_CONTENT_REQUEST = 'code-editor-file-content-request',
-  CODE_EDITOR_FILE_SAVE_REQUEST = 'code-editor-file-save-request',
-  CODE_EDITOR_FILE_REMOVE_REQUEST = 'code-editor-file-remove-request',
-  CODE_EDITOR_FILE_RENAME_REQUEST = 'code-editor-file-rename-request',
-  CODE_EDITOR_BUILD_BUNDLE_REQUEST = 'code-editor-build-bundle-request',
+  BUILD_BUNDLE_REQUEST = 'build-bundle-request',
 
   /* EXCHANGE CONFIG */
   EXCHANGE_CONFIG_REQUEST = 'exchange-config-request',
   EXCHANGE_CONFIG_SAVE = 'exchange-config-save',
+  EXCHANGE_CONFIG_DELETE = 'exchange-config-delete',
 
   EXCHANGE_MARKETS_REQUEST = 'exchange-markets-request',
 
@@ -86,16 +81,13 @@ export type WS_CLIENT_EVENT_PAYLOAD = {
   [WS_CLIENT_EVENTS.REMOTE_STRATEGY_LIST_REQUEST]: undefined;
   [WS_CLIENT_EVENTS.STRATEGY_CONTENT_REQUEST]: string;
 
-  [WS_CLIENT_EVENTS.CODE_EDITOR_FILE_TREE_REQUEST]: undefined;
-  [WS_CLIENT_EVENTS.CODE_EDITOR_FILE_CONTENT_REQUEST]: string[];
-  [WS_CLIENT_EVENTS.CODE_EDITOR_FILE_SAVE_REQUEST]: SaveFileParams;
-  [WS_CLIENT_EVENTS.CODE_EDITOR_FILE_REMOVE_REQUEST]: string[];
-  [WS_CLIENT_EVENTS.CODE_EDITOR_FILE_RENAME_REQUEST]: RenameFileParams;
-  [WS_CLIENT_EVENTS.CODE_EDITOR_BUILD_BUNDLE_REQUEST]: BuildBundleParams;
+  [WS_CLIENT_EVENTS.BUILD_BUNDLE_REQUEST]: BuildBundleParams;
 
   [WS_CLIENT_EVENTS.EXCHANGE_CONFIG_REQUEST]: undefined;
+  [WS_CLIENT_EVENTS.EXCHANGE_CONFIG_SAVE]: SaveExchangeConfigParams;
+  [WS_CLIENT_EVENTS.EXCHANGE_CONFIG_DELETE]: string[];
 
-  [WS_CLIENT_EVENTS.EXCHANGE_MARKETS_REQUEST]: string;
+  [WS_CLIENT_EVENTS.EXCHANGE_MARKETS_REQUEST]: ExchangeMarketsRequestParams;
 
   [WS_CLIENT_EVENTS.LOGS_LIST_REQUEST]: string;
 
@@ -112,8 +104,6 @@ export type WS_CLIENT_EVENT_PAYLOAD = {
 
   [WS_CLIENT_EVENTS.SUBSCRIBE_REALTIME_TICKER_REQUEST]: SubscribeRealtimeTickerRequestParams;
   [WS_CLIENT_EVENTS.UNSUBSCRIBE_REALTIME_TICKER_REQUEST]: UnsubscribeRealtimeTickerRequestParams;
-
-  [WS_CLIENT_EVENTS.EXCHANGE_CONFIG_SAVE]: SaveExchangeConfigParams;
 
   [WS_CLIENT_EVENTS.REPORT_ACTION_REQUEST]: ReportActionButtonRequestPayload;
 };
@@ -277,7 +267,8 @@ export interface TesterDefaultArgs {
 }
 
 export interface ExchangeConfigResponsePayload {
-  exchanges: Exchange[];
+  main: Exchange[];
+  additional?: Exchange[];
 }
 
 export interface PullUserSourceCodeResponsePayload {
@@ -459,6 +450,7 @@ export interface Job {
   strategy: Strategy;
   runtimeType: JobRuntimeType;
   exchange: string;
+  marketType?: MarketType;
   artifacts: string;
   args: StrategyArg[];
   createdAt: string;
@@ -499,17 +491,6 @@ export interface ScenarioSetArg {
   value: string;
 }
 
-export interface RenameFileParams {
-  oldPath: string[];
-  newPath: string[];
-  content?: string;
-}
-
-export interface SaveFileParams {
-  filePath: string[];
-  content: string;
-}
-
 export interface BuildBundleParams {
   filePath: string;
 }
@@ -547,11 +528,17 @@ export interface SaveJobParams {
   name: string;
   strategy: Strategy;
   exchange: string;
+  marketType: MarketType;
   args: StrategyArg[];
   runtimeType: 'market' | 'system';
 }
 
 export type CopyJobParams = Omit<SaveJobParams, 'id'>;
+
+export interface ExchangeMarketsRequestParams {
+  exchange: string;
+  marketType: MarketType;
+}
 
 export interface HistoricalTesterBarsRequestParams {
   requestId?: string;
@@ -572,6 +559,7 @@ interface HistoricalRuntimeBarsRequestParams {
 
 interface SubscribeRealtimeTickerRequestParams {
   exchange: string;
+  marketType: MarketType;
   symbol: string;
   listenerId: string;
 }
@@ -598,6 +586,7 @@ export interface ReportActionButtonResponsePayload {
 
 export interface ExchangeMarketsResponsePayload {
   exchange: string;
+  marketType: MarketType;
   data: ExchangeMarkets[];
 }
 

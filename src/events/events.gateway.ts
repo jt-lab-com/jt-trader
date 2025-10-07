@@ -33,6 +33,7 @@ import { TESTER_SCENARIO_DEFAULTS } from '../environment/account/const';
 import { HistoryBarsService } from '../environment/history-bars/history-bars.service';
 import { MonitoringService } from '../monitoring/monitoring.service';
 import { SiteApi } from '../common/api/site-api';
+import { MarketsService } from '../environment/exchange/markets.service';
 
 @WebSocketGateway()
 export class EventsGateway implements OnGatewayDisconnect, OnGatewayConnection {
@@ -53,6 +54,7 @@ export class EventsGateway implements OnGatewayDisconnect, OnGatewayConnection {
     private readonly dataFeedFactory: DataFeedFactory,
     private readonly connectionService: ConnectionService,
     private readonly ccxtService: CCXTService,
+    private readonly marketsService: MarketsService,
     private readonly accountService: AccountService,
     private readonly scriptBundlerService: ScriptBundlerService,
     private readonly monitoringService: MonitoringService,
@@ -85,8 +87,8 @@ export class EventsGateway implements OnGatewayDisconnect, OnGatewayConnection {
     const userConnections = this.connectionService.getUserConnections(client.user?.id);
 
     if (userConnections?.socketClients.length === 1) {
-      userConnections.exchangeTickerSubscribes.forEach(({ exchange, symbol, datafeedSubId }) => {
-        this.dataFeedFactory.unsubscribeTicker(exchange, symbol, datafeedSubId);
+      userConnections.exchangeTickerSubscribes.forEach(({ exchange, symbol, marketType, datafeedSubId }) => {
+        this.dataFeedFactory.unsubscribeTicker(exchange, marketType, symbol, datafeedSubId);
       });
 
       this.connectionService.removeConnection(client.id, client.user?.id);
@@ -337,46 +339,6 @@ export class EventsGateway implements OnGatewayDisconnect, OnGatewayConnection {
           };
         }
       }
-      case WS_CLIENT_EVENTS.CODE_EDITOR_FILE_SAVE_REQUEST: {
-        const data = payload as WS_CLIENT_EVENT_PAYLOAD[WS_CLIENT_EVENTS.CODE_EDITOR_FILE_SAVE_REQUEST];
-        this.scriptService.saveStrategy(data.filePath, data.content);
-
-        return {
-          event: WS_SERVER_EVENTS.CODE_EDITOR_FILE_SAVE_RESPONSE,
-          payload: {
-            error: false,
-          },
-        };
-      }
-      case WS_CLIENT_EVENTS.CODE_EDITOR_FILE_REMOVE_REQUEST: {
-        const data = payload as WS_CLIENT_EVENT_PAYLOAD[WS_CLIENT_EVENTS.CODE_EDITOR_FILE_REMOVE_REQUEST];
-        this.scriptService.removeStrategy(data);
-        break;
-      }
-      case WS_CLIENT_EVENTS.CODE_EDITOR_FILE_RENAME_REQUEST: {
-        const data = payload as WS_CLIENT_EVENT_PAYLOAD[WS_CLIENT_EVENTS.CODE_EDITOR_FILE_RENAME_REQUEST];
-        this.scriptService.renameStrategy(data.oldPath, data.newPath, data.content);
-
-        return {
-          event: WS_SERVER_EVENTS.CODE_EDITOR_FILE_RENAME_RESPONSE,
-          payload: {
-            error: false,
-          },
-        };
-      }
-      case WS_CLIENT_EVENTS.CODE_EDITOR_FILE_TREE_REQUEST: {
-        return {
-          event: WS_SERVER_EVENTS.CODE_EDITOR_FILE_TREE_RESPONSE,
-          payload: this.scriptService.getSourceFileTree(),
-        };
-      }
-      case WS_CLIENT_EVENTS.CODE_EDITOR_FILE_CONTENT_REQUEST: {
-        const data = payload as WS_CLIENT_EVENT_PAYLOAD[WS_CLIENT_EVENTS.CODE_EDITOR_FILE_CONTENT_REQUEST];
-        return {
-          event: WS_SERVER_EVENTS.CODE_EDITOR_FILE_CONTENT_RESPONSE,
-          payload: this.scriptService.getFileTreeStrategyContent(data),
-        };
-      }
       case WS_CLIENT_EVENTS.REBOOT_SYSTEM_REQUEST: {
         process.emit('SIGINT');
       }
@@ -408,6 +370,7 @@ export class EventsGateway implements OnGatewayDisconnect, OnGatewayConnection {
             data.args,
             data.runtimeType,
             data.exchange,
+            data.marketType,
           );
         } else {
           await this.scriptService.addRuntime(
@@ -418,6 +381,7 @@ export class EventsGateway implements OnGatewayDisconnect, OnGatewayConnection {
             data.args,
             data.runtimeType,
             data.exchange,
+            data.marketType,
           );
         }
         return await this.processMessage(client, WS_CLIENT_EVENTS.BACKGROUND_JOBS_LIST_REQUEST, null);
@@ -498,7 +462,7 @@ export class EventsGateway implements OnGatewayDisconnect, OnGatewayConnection {
       case WS_CLIENT_EVENTS.RUNTIME_HISTORICAL_BARS_REQUEST: {
         const data = payload as WS_CLIENT_EVENT_PAYLOAD[WS_CLIENT_EVENTS.RUNTIME_HISTORICAL_BARS_REQUEST];
         try {
-          const exchange = this.ccxtService.getSDK(data.exchange, { apiKey: '', secret: '', password: '' });
+          const exchange = this.ccxtService.getSDK(data.exchange, 'spot', { apiKey: '', secret: '', password: '' });
           const ohlcv = await exchange.fetchOHLCV(data.symbol, data.timeframe.toString(), data.startTime, data.limit);
           const bars = ohlcv.map(([time, open, high, low, close, volume]) => ({
             time,
@@ -533,18 +497,24 @@ export class EventsGateway implements OnGatewayDisconnect, OnGatewayConnection {
       }
       case WS_CLIENT_EVENTS.SUBSCRIBE_REALTIME_TICKER_REQUEST: {
         const data = payload as WS_CLIENT_EVENT_PAYLOAD[WS_CLIENT_EVENTS.SUBSCRIBE_REALTIME_TICKER_REQUEST];
-        const subId = this.dataFeedFactory.subscribeTicker(data.exchange, data.symbol, (ticker: Ticker) => {
-          client.emit('message', {
-            event: WS_SERVER_EVENTS.REALTIME_TICKER,
-            payload: {
-              ...data,
-              ticker,
-            },
-          });
-        });
+        const subId = this.dataFeedFactory.subscribeTicker(
+          data.exchange,
+          data.marketType,
+          data.symbol,
+          (ticker: Ticker) => {
+            client.emit('message', {
+              event: WS_SERVER_EVENTS.REALTIME_TICKER,
+              payload: {
+                ...data,
+                ticker,
+              },
+            });
+          },
+        );
 
         this.connectionService.addExchangeTickerSubscriber(client.user.id, {
           exchange: data.exchange,
+          marketType: data.marketType,
           symbol: data.symbol,
           datafeedSubId: subId,
           clientListenerId: data.listenerId,
@@ -566,7 +536,12 @@ export class EventsGateway implements OnGatewayDisconnect, OnGatewayConnection {
 
         if (!subscribe) return;
 
-        this.dataFeedFactory.unsubscribeTicker(subscribe.exchange, subscribe.symbol, subscribe.datafeedSubId);
+        this.dataFeedFactory.unsubscribeTicker(
+          subscribe.exchange,
+          subscribe.marketType,
+          subscribe.symbol,
+          subscribe.datafeedSubId,
+        );
         this.connectionService.removeExchangeTickerSubscriber(client.user.id, subscribe.datafeedSubId);
 
         return {
@@ -577,14 +552,17 @@ export class EventsGateway implements OnGatewayDisconnect, OnGatewayConnection {
       case WS_CLIENT_EVENTS.EXCHANGE_CONFIG_REQUEST: {
         return {
           event: WS_SERVER_EVENTS.EXCHANGE_CONFIG_RESPONSE,
-          payload: {
-            exchanges: await this.exchangeConnectorService.getExchangeList(client.user.id),
-          },
+          payload: await this.exchangeConnectorService.getExchangeList(client.user.id),
         };
       }
       case WS_CLIENT_EVENTS.EXCHANGE_CONFIG_SAVE: {
         const data = payload as WS_CLIENT_EVENT_PAYLOAD[WS_CLIENT_EVENTS.EXCHANGE_CONFIG_SAVE];
         await this.exchangeConnectorService.updateExchangeConfig(client.user.id, data);
+        return this.processMessage(client, WS_CLIENT_EVENTS.EXCHANGE_CONFIG_REQUEST);
+      }
+      case WS_CLIENT_EVENTS.EXCHANGE_CONFIG_DELETE: {
+        const data = payload as WS_CLIENT_EVENT_PAYLOAD[WS_CLIENT_EVENTS.EXCHANGE_CONFIG_DELETE];
+        await this.exchangeConnectorService.deleteExchangeFields(client.user.id, data);
         return this.processMessage(client, WS_CLIENT_EVENTS.EXCHANGE_CONFIG_REQUEST);
       }
       case WS_CLIENT_EVENTS.PULL_USER_SOURCE_CODE_REQUEST: {
@@ -601,10 +579,10 @@ export class EventsGateway implements OnGatewayDisconnect, OnGatewayConnection {
           payload,
         };
       }
-      case WS_CLIENT_EVENTS.CODE_EDITOR_BUILD_BUNDLE_REQUEST: {
+      case WS_CLIENT_EVENTS.BUILD_BUNDLE_REQUEST: {
         try {
           await this.scriptBundlerService.buildAndSaveToStore(
-            (payload as WS_CLIENT_EVENT_PAYLOAD[WS_CLIENT_EVENTS.CODE_EDITOR_BUILD_BUNDLE_REQUEST]).filePath,
+            (payload as WS_CLIENT_EVENT_PAYLOAD[WS_CLIENT_EVENTS.BUILD_BUNDLE_REQUEST]).filePath,
             client.user.id,
           );
 
@@ -672,13 +650,14 @@ export class EventsGateway implements OnGatewayDisconnect, OnGatewayConnection {
       }
 
       case WS_CLIENT_EVENTS.EXCHANGE_MARKETS_REQUEST: {
-        const exchange = payload as WS_CLIENT_EVENT_PAYLOAD[WS_CLIENT_EVENTS.EXCHANGE_MARKETS_REQUEST];
-        const data = await this.ccxtService.getExchangeMarkets(exchange);
+        const data = payload as WS_CLIENT_EVENT_PAYLOAD[WS_CLIENT_EVENTS.EXCHANGE_MARKETS_REQUEST];
+        const markets = await this.marketsService.getExchangeMarkets(data.exchange, data.marketType);
         return {
           event: WS_SERVER_EVENTS.EXCHANGE_MARKETS_RESPONSE,
           payload: {
-            exchange,
-            data,
+            exchange: data.exchange,
+            marketType: data.marketType,
+            data: markets,
           },
         };
       }

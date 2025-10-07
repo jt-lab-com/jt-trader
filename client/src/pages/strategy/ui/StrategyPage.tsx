@@ -25,7 +25,10 @@ const StrategyPage: FC<StrategyPageProps> = (props) => {
 
   const dispatch = useAppDispatch();
   const jobs = useJobs();
-  const { exchangeList } = useConfig();
+  const {
+    exchanges: { main, additional },
+  } = useConfig();
+  const exchangeList = additional ? [...main, ...additional] : main;
 
   const [processes, setProcesses] = useState<LogProcess[]>([]);
 

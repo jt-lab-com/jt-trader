@@ -18,12 +18,20 @@ const marketsSlice = createSlice({
       state,
       action: PayloadAction<Omit<ExchangeMarketsResponsePayload, "data"> & { data: ExchangeMarkets[] }>
     ) => {
-      const { exchange, data } = action.payload;
+      const { exchange, data, marketType } = action.payload;
 
       state.data[exchange] = {
-        tms: Date.now(),
-        markets: data,
+        ...state.data[exchange],
+        [marketType]: {
+          tms: Date.now(),
+          markets: data,
+        },
       };
+
+      // state.data[exchange] = {
+      //   tms: Date.now(),
+      //   markets: data,
+      // };
     },
   },
 });

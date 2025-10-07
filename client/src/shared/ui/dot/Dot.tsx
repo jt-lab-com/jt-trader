@@ -10,5 +10,5 @@ interface DotProps {
 export const Dot: FC<DotProps> = (props) => {
   const { color, sx } = props;
 
-  return <Box sx={{ ...sx, width: 10, height: 10, background: color, borderRadius: "50%" }} />;
+  return <Box sx={{ width: 10, height: 10, background: color, borderRadius: "50%", ...sx }} />;
 };

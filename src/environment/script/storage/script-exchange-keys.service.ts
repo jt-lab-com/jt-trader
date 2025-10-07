@@ -6,9 +6,6 @@ export class ScriptExchangeKeysService {
   constructor(private readonly exchangeConnector: ExchangeConnectorService) {}
 
   async selectKeys(exchange: string, accountId: string): Promise<ExchangeKeysType> {
-    const keys = await this.exchangeConnector.getExchangeConfig(accountId, exchange);
-    if (!keys) throw new Error(`no keys found for connectionName: ${exchange}`);
-
-    return keys;
+    return this.exchangeConnector.getExchangeConfig(accountId, exchange);
   }
 }

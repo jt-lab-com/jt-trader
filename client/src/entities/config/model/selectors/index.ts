@@ -1,7 +1,8 @@
 import { StateSchema } from "@/shared/types/store";
 
 export const isConfigInited = (state: StateSchema) => state.config.__inited;
-export const getExchangesList = (state: StateSchema) => state.config.exchangeList;
+export const getMainExchangeList = (state: StateSchema) => state.config.exchanges.main;
+export const getAdditionalExchangeList = (state: StateSchema) => state.config.exchanges.additional;
 export const getEngineVersion = (state: StateSchema) => state.config.engineVersion;
 export const getEngineMode = (state: StateSchema) => state.config.engineMode;
 export const getTesterDefaults = (state: StateSchema) => state.config.testerDefaults;

@@ -15,7 +15,7 @@ export const initConfig = createAsyncThunk<void, void, ThunkConfig<void>>(
     if (isInited) return;
 
     subscribe(WS_SERVER_EVENTS.EXCHANGE_CONFIG_RESPONSE, (payload) => {
-      dispatch(configActions.setExchangeList(payload.exchanges));
+      dispatch(configActions.setExchangeList(payload));
     });
 
     subscribe(WS_SERVER_EVENTS.ENGINE_CONFIG_RESPONSE, (payload) => {

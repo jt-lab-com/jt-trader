@@ -13,3 +13,5 @@ export interface ExchangeField {
   type: 'string' | 'boolean';
   value?: string | boolean;
 }
+
+export type MarketType = 'swap' | 'spot';

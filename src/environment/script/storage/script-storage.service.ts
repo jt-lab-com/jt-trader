@@ -5,7 +5,7 @@ import { Runtime as PrismaRuntime, Scenario as PrismaScenario } from '@prisma/cl
 import { ScriptArtifactsService } from '../artifacts/script-artifacts.service';
 import { nanoid } from 'nanoid';
 import { StrategyItem, StrategyItemType } from '../types';
-import { Strategy as ServerResponseStrategy, StrategyDefinedArg } from '@packages/types';
+import { MarketType, Strategy as ServerResponseStrategy, StrategyDefinedArg } from '@packages/types';
 import { parseDefinedArgs } from '../utils/parse-defined-args';
 import { InjectPinoLogger, PinoLogger } from 'nestjs-pino';
 import { PrismaService } from '../../../common/prisma/prisma.service';
@@ -21,6 +21,7 @@ type Runtime = {
   strategy: StrategyItem;
   artifacts: string;
   exchange: string;
+  marketType: MarketType;
   args: KeyValueType[] | string;
   createdAt?: Date;
   updatedAt?: Date;
@@ -37,6 +38,7 @@ export type StrategyTypeDTO = {
   strategyType: StrategyItemType;
   strategyPath?: string;
   exchange?: string;
+  marketType?: MarketType;
   runtimeType: 'market' | 'system';
   args: KeyValueType[] | string;
 };
@@ -83,7 +85,7 @@ export class ScriptStorageService {
         definedArgs = parseDefinedArgs(content, file.filename.endsWith('.ts'));
       } catch (e) {
         this.logger.warn(
-          { message: e.message, stack: e.stack?.split("\n") },
+          { message: e.message, stack: e.stack?.split('\n') },
           `an error occurred while parsing definedArgs (${file.filename})`,
         );
       }
@@ -131,7 +133,9 @@ export class ScriptStorageService {
 
   saveRuntime = async (raw: StrategyTypeDTO): Promise<number> => {
     let item: PrismaRuntime;
-    const args: KeyValueType[] = Array.isArray(raw.args) ? [...raw.args.filter(({ key }) => key !== 'exchange')] : [];
+    const args: KeyValueType[] = Array.isArray(raw.args)
+      ? [...raw.args.filter(({ key }) => key !== 'exchange' && key !== 'marketType')]
+      : [];
 
     if (!raw.prefix) {
       raw.prefix = nanoid(6);
@@ -139,6 +143,10 @@ export class ScriptStorageService {
     if (raw.exchange) {
       args.push({ key: 'exchange', value: raw.exchange });
       delete raw['exchange'];
+    }
+    if (raw.marketType) {
+      args.push({ key: 'marketType', value: raw.marketType });
+      delete raw['marketType'];
     }
 
     if (!raw.id) {
@@ -160,71 +168,6 @@ export class ScriptStorageService {
     await this.prisma.runtime.delete({ where: { id } });
   };
 
-  getFileTree = () => {
-    const generateFileTree = (sourcePath: string) => {
-      return fs.readdirSync(sourcePath, { withFileTypes: true }).map((file) => {
-        const filePath = path.join(sourcePath, file.name).replace(this.sourcePath, '').replace(/\\/g, '/');
-        if (file.isFile()) {
-          const content = fs.readFileSync(path.join(sourcePath, file.name), { encoding: 'utf-8' });
-
-          return {
-            type: 'file',
-            path: filePath,
-            name: file.name,
-            content,
-          };
-        }
-
-        return {
-          type: 'dir',
-          name: file.name,
-          path: filePath,
-          children: generateFileTree(path.join(sourcePath, file.name)),
-        };
-      });
-    };
-
-    return generateFileTree(this.sourcePath);
-  };
-
-  getFileTreeStrategyContent = (filePath: string[]) => {
-    return {
-      path: filePath.join('/'),
-      filename: filePath[filePath.length - 1],
-      content: fs.readFileSync(path.join(this.sourcePath, ...filePath)).toString(),
-    };
-  };
-
-  saveStrategy = (filePath: string[], content: string) => {
-    let sourcePath = this.sourcePath;
-    filePath.forEach((pathPiece) => {
-      if (!/\.\w+$/g.test(pathPiece)) {
-        if (!fs.existsSync(path.join(sourcePath, pathPiece))) {
-          fs.mkdirSync(path.join(sourcePath, pathPiece));
-        }
-
-        sourcePath = path.join(sourcePath, pathPiece);
-      }
-    });
-
-    fs.writeFileSync(path.join(this.sourcePath, ...filePath), content);
-  };
-
-  removeStrategy = (filePath: string[]) => {
-    const stats = fs.statSync(path.join(this.sourcePath, ...filePath));
-    fs.rmSync(path.join(this.sourcePath, ...filePath), { recursive: stats.isDirectory() });
-  };
-
-  renameStrategy = (filePath: string[], newFilePath: string[], content?: string) => {
-    if (!content) {
-      fs.renameSync(path.join(this.sourcePath, ...filePath), path.join(this.sourcePath, ...newFilePath));
-      return;
-    }
-
-    fs.writeFileSync(path.join(this.sourcePath, ...filePath), content);
-    fs.renameSync(path.join(this.sourcePath, ...filePath), path.join(this.sourcePath, ...newFilePath));
-  };
-
   private formatRuntime = (runtime: StrategyTypeDTO): Runtime => {
     const args: KeyValueType[] = JSON.parse(runtime.args as string);
 
@@ -237,6 +180,7 @@ export class ScriptStorageService {
         path: runtime.strategyPath,
       },
       exchange: args.find(({ key }) => key === 'exchange')?.value.toString(),
+      marketType: (args.find(({ key }) => key === 'marketType')?.value.toString() ?? 'swap') as MarketType,
       args: args.filter(({ key }) => key !== 'exchange'),
       artifacts: ScriptArtifactsService.createArtifactsKey([runtime.id, 'runtime']),
     };

@@ -1,6 +1,9 @@
+import { MarketType } from '@packages/types';
+
 export interface BaseScriptInterface {
   symbols: string[];
   connectionName: string;
+  marketType?: MarketType;
   interval: number;
   runOnTick: (data) => Promise<void>;
   runOnTimer: () => Promise<void>;
