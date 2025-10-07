@@ -16,7 +16,7 @@ export class MarketsService {
       const sdk: ccxt.Exchange = new ccxt[name]({
         enableRateLimit: true,
         options: {
-          defaultType: 'future',
+          defaultType: marketType,
         },
       });
       await sdk.loadMarkets(true);
