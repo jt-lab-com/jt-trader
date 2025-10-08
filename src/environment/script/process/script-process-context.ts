@@ -295,26 +295,6 @@ export class ScriptProcessContext extends ScriptProcessContextBase {
     });
   }
 
-  public async subscribeChannel(channel: string, callback: VoidFunction) {
-    const subscribeId = this.cacheService.subscribeChannel(channel, callback);
-    this.redisSubscribers.set(channel, subscribeId);
-  }
-
-  public async publishChannel(channel: string, data: unknown, toJSON = false) {
-    await this.cacheService.publishChannel(channel, data, toJSON);
-  }
-
-  public async unsubscribeChannel(channel: string) {
-    const subscribeId = this.redisSubscribers.get(channel);
-    this.cacheService.unsubscribeChannel(subscribeId);
-  }
-
-  public unsubscribeAllChannels() {
-    for (const subscribeId of this.redisSubscribers.values()) {
-      this.cacheService.unsubscribe(subscribeId);
-    }
-  }
-
   //---------
   //ask()
   //bid()

@@ -86,13 +86,13 @@ export class ScriptProcessContextSync extends ScriptProcessContextBase {
     return this._call('fetchClosedOrders', [symbol, ...rest]);
   }
 
-  public subscribeChannel(channel: string, callback: VoidFunction) {}
+  public async subscribeChannel(channel: string, callback: VoidFunction) {}
 
-  public publishChannel(channel: string, data: unknown, toJSON = false) {}
+  public async publishChannel(channel: string, data: unknown, toJSON = false) {}
 
-  public unsubscribeChannel(channel: string) {}
+  public async unsubscribeChannel(channel: string) {}
 
-  public unsubscribeAllChannels() {}
+  public async unsubscribeAllChannels() {}
 
   getOrder(...args: any[]): OrderInterface {
     const [orderId, ...rest] = args;
