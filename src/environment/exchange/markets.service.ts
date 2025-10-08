@@ -9,6 +9,7 @@ export class MarketsService {
   constructor(private readonly cacheService: CacheService) {}
 
   public async getExchangeMarkets(name: string, marketType: MarketType): Promise<any[]> {
+    name = name.replace('-mock', '').replace('-testnet', '');
     const key = `EXCHANGE_MARKETS_${name.toUpperCase()}_${marketType.toUpperCase()}`;
 
     const data = await this.cacheService.getPublic(key);
