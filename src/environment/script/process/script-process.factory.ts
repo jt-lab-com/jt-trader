@@ -134,9 +134,9 @@ export class ScriptProcessFactory {
         const symbols = !Array.isArray(symbolsArgs) ? symbolsArgs.value.toString().split(',') : [];
 
         for (const symbol of symbols) {
-          const data = markets[symbol];
-          const pricePrecision = data.precision.price.toString().split('.')[1]?.length;
-          orderService.updateConfig({ balance: 1000, pricePrecision, contractSize: data.contractSize }, symbol);
+          const data = markets.find((market) => market.symbol === symbol);
+          const pricePrecision = data?.precision.price.toString().split('.')[1]?.length ?? 2;
+          orderService.updateConfig({ balance: 1000, pricePrecision, contractSize: data?.contractSize ?? 1 }, symbol);
         }
       }
 
