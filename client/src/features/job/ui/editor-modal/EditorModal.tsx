@@ -106,6 +106,8 @@ export const EditorModal: FC<EditorModalProps> = (props) => {
       return;
     }
 
+    setValue("jobName", selectedStrategy.name.replace(".ts", ""));
+
     const symbols =
       definedSymbols?.defaultValue?.split(",").map((symbol: string) => symbol.trim().toUpperCase()) ?? [];
 
@@ -132,7 +134,7 @@ export const EditorModal: FC<EditorModalProps> = (props) => {
           options,
         })) ?? [{ ...defaultArgParam }]
     );
-  }, [selectedStrategy, exchange, definedArgs, definedSymbols, markets]);
+  }, [selectedStrategy, definedArgs, definedSymbols, markets]);
 
   const onSubmit = handleSubmit(
     (data: JobSchema) => {
