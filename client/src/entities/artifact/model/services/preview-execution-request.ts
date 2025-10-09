@@ -40,7 +40,7 @@ export const previewExecutionRequest = createAsyncThunk<
     const timeout = setTimeout(() => {
       unsub();
       rej();
-    }, 20000);
+    }, 15000);
 
     emitSocketEvent({
       event: WS_CLIENT_EVENTS.PREVIEW_EXECUTION_REQUEST,

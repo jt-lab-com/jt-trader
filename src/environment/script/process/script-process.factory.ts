@@ -160,11 +160,14 @@ export class ScriptProcessFactory {
     }
   }
 
-  async createPreviewExecution(accountId: string, strategy: StrategyItem, args: object): Promise<string> {
+  async createPreviewExecution(accountId: string, strategy: StrategyItem, args: object): Promise<string | null> {
     const key = nanoid(8);
+    const bundle = await this.scriptBundler.generatePreviewExecutionBundle(accountId, key, strategy);
+
+    if (!bundle.hasPreview) return null;
+
     const prefix = `${key}-preview`;
     const logger = this.getRuntimeLogger(key.toString());
-    const bundle = await this.scriptBundler.generatePreviewExecutionBundle(accountId, key, strategy);
     const apiCallLimitPerSecond: number = parseInt(
       await this.accountService.getParam(accountId, ACCOUNT_LIMIT_API_CALL_PER_SEC),
     );

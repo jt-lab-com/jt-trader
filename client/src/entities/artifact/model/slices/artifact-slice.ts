@@ -33,7 +33,9 @@ const artifactSlice = createSlice({
     });
     builder.addCase(previewExecutionRequest.fulfilled, (state, action) => {
       const { key, data } = action.payload;
-      state.preview[key] = data;
+      if (data) {
+        state.preview[key] = data;
+      }
       state.isLoading = false;
     });
     builder.addCase(previewExecutionRequest.rejected, (state) => {

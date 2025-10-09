@@ -232,7 +232,7 @@ export interface PreviewExecutionRequestPayload {
 
 export interface PreviewExecutionResponsePayload {
   key: string;
-  data: any;
+  data: any | null;
 }
 
 interface ClientNotificationPayload {
