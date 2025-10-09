@@ -73,6 +73,15 @@ cd jt-trader && yarn
 
 ## ⚙️ Configuration
 
+### Automatic configuration
+
+Run the following command to automatically generate a `.env` file with all required environment variables:
+```bash
+ts-node scripts/setup-environment.ts
+```
+
+### Manual configuration
+
 Create a `.env` file in the project root directory by copying `.env.example` and set the following environment variables:
 
 ```env
