@@ -4,7 +4,6 @@ import { InjectRedis } from '@liaoliaots/nestjs-redis';
 import Redis from 'ioredis';
 import { InjectPinoLogger, PinoLogger } from 'nestjs-pino';
 import { promisify } from 'util';
-import * as os from 'os';
 
 @Injectable()
 export class RedisDriver implements CacheDriverInterface {
@@ -50,7 +49,7 @@ export class RedisDriver implements CacheDriverInterface {
     });
 
   set = async (key: string, data: string, ttl: number): Promise<void> => {
-    return await this.setter(`${os.hostname()}::${key}`, data, 'EX', ttl);
+    return await this.setter(key, data, 'EX', ttl);
   };
 
   delete = (key: string): Promise<void> =>
