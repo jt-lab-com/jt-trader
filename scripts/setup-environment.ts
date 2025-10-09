@@ -16,6 +16,7 @@ const ENV_DEFAULTS: Record<string, string> = {
   SITE_API_HOST: 'https://jt-lab.com',
   ROLLUP_TS_CONFIG: path.join(ROOT_PATH, 'tsconfig.bundler.json'),
   ENGINE_MODE: 'both',
+  STANDALONE_APP: '1',
 };
 
 function ensureEnvFile() {
