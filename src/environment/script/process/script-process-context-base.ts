@@ -61,6 +61,9 @@ export class ScriptProcessContextBase {
   }
 
   protected hasAPIKeys() {
+    const { connectionName } = this.args;
+    const isMock = connectionName.includes('-mock');
+    if (isMock) return true;
     return !!this.keys?.apiKey && !!this.keys?.secret;
   }
 
