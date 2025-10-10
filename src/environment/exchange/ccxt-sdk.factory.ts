@@ -142,7 +142,6 @@ export class ExchangeSdkFactory {
         return this._superWsMethodCall('watchOrders', ...args);
       }
 
-      // TODO: mock implement
       watchBalance(...args) {
         if (this._isMock()) {
           return this._mockedWatch(() => {
