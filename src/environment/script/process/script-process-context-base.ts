@@ -6,7 +6,6 @@ import { CCXTService } from '../../exchange/ccxt.service';
 import { PinoLogger } from 'nestjs-pino';
 import { Logger } from 'pino';
 import { ScriptExchangeKeysService } from '../storage/script-exchange-keys.service';
-import { EventEmitter2 } from '@nestjs/event-emitter';
 import { CacheService } from '../../../common/cache/cache.service';
 import { ScriptArtifactsService } from '../artifacts/script-artifacts.service';
 import { StrategyBundle } from '../bundler/script-bundler.service';
@@ -14,6 +13,7 @@ import { ExceptionReasonType } from '../../../exception/types';
 import { OrderInterface } from '../../exchange/interface/order.interface';
 import axios, { AxiosRequestConfig } from 'axios';
 import { SocksProxyAgent } from 'socks-proxy-agent';
+import { EventBusService } from '../../../common/event-bus.service';
 
 export class ScriptProcessContextBase {
   protected args: StrategyArgsType;
@@ -40,7 +40,7 @@ export class ScriptProcessContextBase {
     protected readonly logger: PinoLogger | Logger,
     protected readonly systemLogger: PinoLogger,
     protected readonly keysStorage: ScriptExchangeKeysService,
-    protected readonly eventEmitter: EventEmitter2,
+    protected readonly eventBus: EventBusService,
     protected readonly cacheService: CacheService,
     protected readonly artifactsService: ScriptArtifactsService,
     protected readonly getSymbolInfo: (symbol: string, connectionName: string) => any,
@@ -66,7 +66,7 @@ export class ScriptProcessContextBase {
 
   public _log(level, ...args) {
     this.logger[level](args[1] ? args[1] : {}, args[0]);
-    this.eventEmitter.emit('client.log', {
+    this.eventBus.emit('client.log', {
       accountId: this.accountId,
       processId: `${this.key}`,
       artifacts: this.getArtifactsKey(),
@@ -418,7 +418,7 @@ export class ScriptProcessContextBase {
       return;
     }
 
-    this.eventEmitter.emit('process.force-stop', { id: parseInt(this.getId()), accountId: this.accountId });
+    this.eventBus.emit('process.force-stop', { id: parseInt(this.getId()), accountId: this.accountId });
   }
 
   tms(symbol: string = undefined) {
@@ -446,4 +446,24 @@ export class ScriptProcessContextBase {
   }
 
   loadTickers() {}
+
+  public async subscribeChannel(channel: string, callback: VoidFunction) {
+    const subscribeId = this.cacheService.subscribeChannel(channel, callback);
+    this.redisSubscribers.set(channel, subscribeId);
+  }
+
+  public async publishChannel(channel: string, data: unknown, toJSON = false) {
+    await this.cacheService.publishChannel(channel, data, toJSON);
+  }
+
+  public async unsubscribeChannel(channel: string) {
+    const subscribeId = this.redisSubscribers.get(channel);
+    this.cacheService.unsubscribeChannel(subscribeId);
+  }
+
+  public unsubscribeAllChannels() {
+    for (const subscribeId of this.redisSubscribers.values()) {
+      this.cacheService.unsubscribe(subscribeId);
+    }
+  }
 }

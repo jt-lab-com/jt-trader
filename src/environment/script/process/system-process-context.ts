@@ -1,17 +1,110 @@
-import { ScriptService } from '../script.service';
+import { nanoid } from 'nanoid';
+import { MarketType, Strategy as ServerResponseStrategy } from '@packages/types';
+import { StrategyItem } from '../types';
+import { ScriptProcessContext } from './script-process-context';
 
-export class SystemProcessContext {
-  constructor(private readonly scriptService: ScriptService) {}
-  //
-  // createScript = (name: string, strategy: string, args: object): string => {
-  //   return this.scriptService.addRuntime(name, strategy, JSON.stringify(args), 'market');
-  // };
-  //
-  // updateScript = (id: string, name: string, strategy: string, args: object): void => {
-  //   return this.scriptService.updateRuntime(id, name, strategy, JSON.stringify(args), 'market');
-  // };
-  //
-  // runScript = (id: string) => {
-  //   return this.scriptService.run(id);
-  // };
+export class SystemProcessContext extends ScriptProcessContext {
+  constructor(...args) {
+    // @ts-ignore
+    super(...args);
+  }
+
+  public async getStrategies(): Promise<StrategyItem[]> {
+    const result: StrategyItem[] = [];
+    const local = (await this.eventBus.emitAsync<ServerResponseStrategy[]>('system-script.get-strategies'))?.[0];
+
+    for (const strategy of local) {
+      result.push({
+        id: strategy.id,
+        name: strategy.name,
+        version: strategy.version,
+        type: 'local',
+        path: strategy.path,
+        mode: strategy.mode,
+      });
+    }
+
+    try {
+      const remote = (
+        await this.eventBus.emitAsync<{ bundles: ServerResponseStrategy[]; appBundles: ServerResponseStrategy[] }>(
+          'system-script.get-remote-bundles',
+        )
+      )?.[0];
+      const remoteStrategies = [...Object.values(remote.bundles), ...Object.values(remote.appBundles)];
+
+      for (const strategy of remoteStrategies) {
+        result.push({
+          id: strategy.id,
+          name: strategy.name,
+          version: strategy.version,
+          type: strategy.type,
+          path: strategy.path,
+          mode: strategy.mode,
+        });
+      }
+    } catch (e) {
+      this.logger.error(e);
+    }
+
+    return result;
+  }
+
+  createRuntime = async (
+    name: string,
+    strategy: StrategyItem,
+    exchange: string,
+    marketType: MarketType,
+    args: object,
+    prefix?: string,
+  ): Promise<string> => {
+    prefix = prefix ?? nanoid(8);
+    const result = await this.eventBus.emitAsync<string>(
+      'system-script.add-runtime',
+      this.accountId,
+      name,
+      prefix,
+      strategy,
+      args,
+      'market',
+      exchange,
+      marketType,
+    );
+
+    return result[0];
+  };
+
+  updateRuntime = (
+    id: string,
+    name: string,
+    strategy: StrategyItem,
+    exchange: string,
+    marketType: MarketType,
+    args: object,
+    prefix: string,
+  ): void => {
+    this.eventBus.emit(
+      'system-script.update-runtime',
+      this.accountId,
+      id,
+      name,
+      prefix,
+      strategy,
+      args,
+      'market',
+      exchange,
+      marketType,
+    );
+  };
+
+  startRuntime = (id: string) => {
+    this.eventBus.emit('system-script.run', id);
+  };
+
+  stopRuntime = (id: string) => {
+    this.eventBus.emit('system-script.stop', id, true);
+  };
+
+  getRuntimeList = async () => {
+    return (await this.eventBus.emitAsync('system-script.get-runtime-list'))?.[0];
+  };
 }

@@ -7,7 +7,7 @@ import { StrategyItem } from './types';
 import { StoreBundleResponse } from '../../common/api/types';
 import { ExceptionReasonType } from '../../exception/types';
 import { CacheService } from '../../common/cache/cache.service';
-import { EventEmitter2 } from '@nestjs/event-emitter';
+import { EventEmitter2, OnEvent } from '@nestjs/event-emitter';
 import { ScriptArtifactsService } from './artifacts/script-artifacts.service';
 import { MarketType } from '@packages/types';
 
@@ -32,6 +32,7 @@ export class ScriptService {
     // }, 5000);
   }
 
+  @OnEvent('system-script.run')
   async run(id: number) {
     if (this.runIsLocked) {
       const error: any = new Error('Process start is locked while another is starting');
@@ -49,6 +50,7 @@ export class ScriptService {
     }
   }
 
+  @OnEvent('system-script.stop')
   async stop(id: number, softMode = false) {
     await this.factory.stop(id);
     if (softMode) {
@@ -86,17 +88,23 @@ export class ScriptService {
     }
   }
 
-  getStrategiesList = this.storage.getStrategies;
+  @OnEvent('system-script.get-strategies')
+  getStrategiesList() {
+    return this.storage.getStrategies();
+  }
 
   getStrategyContent = this.storage.getContent;
 
-  getRuntimeList = async (accountId: string) =>
-    (await this.storage.getRuntimeList(accountId)).map((item) => ({
+  @OnEvent('system-script.get-runtime-list')
+  async getRuntimeList(accountId: string) {
+    return (await this.storage.getRuntimeList(accountId)).map((item) => ({
       ...item,
       isEnabled: this.factory.check(item.id),
     }));
+  }
 
-  addRuntime = async (
+  @OnEvent('system-script.add-runtime')
+  async addRuntime(
     accountId: string,
     name: string,
     prefix: string,
@@ -105,7 +113,7 @@ export class ScriptService {
     runtimeType: 'market' | 'system',
     exchange: string,
     marketType: MarketType,
-  ): Promise<number> => {
+  ): Promise<number> {
     return await this.storage.saveRuntime({
       accountId,
       name,
@@ -119,9 +127,10 @@ export class ScriptService {
       runtimeType,
       marketType,
     });
-  };
+  }
 
-  updateRuntime = async (
+  @OnEvent('system-script.update-runtime')
+  async updateRuntime(
     accountId: string,
     id: number,
     name: string,
@@ -131,7 +140,7 @@ export class ScriptService {
     runtimeType: 'market' | 'system',
     exchange: string,
     marketType: MarketType,
-  ): Promise<void> => {
+  ): Promise<void> {
     await this.storage.saveRuntime({
       accountId,
       id,
@@ -150,7 +159,7 @@ export class ScriptService {
     if (this.factory.check(id)) {
       await this.factory.forceUpdateProcessArgs(id);
     }
-  };
+  }
 
   submitReportAction = async (accountId: string, artifacts: string, action: string, payload: any): Promise<void> => {
     const item = (await this.getRuntimeList(accountId))?.find((runtime) => runtime.artifacts === artifacts);
@@ -167,6 +176,7 @@ export class ScriptService {
     await this.storage.removeRuntime(id);
   };
 
+  @OnEvent('system-script.get-remote-bundles')
   async getRemoteBundles(accountId: string) {
     const response = await this.siteApi.getBundles(accountId);
 

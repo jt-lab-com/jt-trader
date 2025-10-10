@@ -6,7 +6,6 @@ import { InjectPinoLogger, PinoLogger } from 'nestjs-pino';
 import { DataFeedFactory } from '../../data-feed/data-feed.factory';
 import { CCXTService } from '../../exchange/ccxt.service';
 import { ScriptExchangeKeysService } from '../storage/script-exchange-keys.service';
-import { EventEmitter2 } from '@nestjs/event-emitter';
 import { CacheService } from '../../../common/cache/cache.service';
 import { Runtime } from '@prisma/client';
 import { ScriptArtifactsService } from '../artifacts/script-artifacts.service';
@@ -21,6 +20,8 @@ import { StrategyItem } from '../types';
 import { nanoid } from 'nanoid';
 import { StrategyArgsType } from '../../exchange/interface/strategy.interface';
 import { MarketsService } from '../../exchange/markets.service';
+import { SystemProcessContext } from './system-process-context';
+import { EventBusService } from '../../../common/event-bus.service';
 
 interface Process {
   process: ScriptProcess;
@@ -44,7 +45,7 @@ export class ScriptProcessFactory {
     private readonly storage: ScriptStorageService,
     private readonly scriptBundler: ScriptBundlerService,
     private readonly keysStorage: ScriptExchangeKeysService,
-    private readonly eventEmitter: EventEmitter2,
+    private readonly eventBusService: EventBusService,
     private readonly cacheService: CacheService,
     private readonly artifactsService: ScriptArtifactsService,
     private readonly accountService: AccountService,
@@ -106,14 +107,15 @@ export class ScriptProcessFactory {
     const getSymbolInfo = (symbol: string) => markets.find((market) => market.symbol === symbol);
 
     try {
-      const context = new ScriptProcessContext(
+      const ContextClass = meta.runtimeType === 'market' ? ScriptProcessContext : SystemProcessContext;
+      const context = new ContextClass(
         meta.accountId,
         this.dataFeedFactory,
         this.exchange,
         logger,
         this.logger,
         this.keysStorage,
-        this.eventEmitter,
+        this.eventBusService,
         this.cacheService,
         this.artifactsService,
         getSymbolInfo,
@@ -150,9 +152,9 @@ export class ScriptProcessFactory {
       e.logger = logger;
       e.key = key;
 
-      this.eventEmitter.emit('client.notification', {
+      this.eventBusService.emit('client.notification', {
         accountId: meta.accountId,
-        message: 'Error starting bot. See logs for details.',
+        message: `Error starting bot. See logs for details.`,
         type: 'error',
       });
 
@@ -180,7 +182,7 @@ export class ScriptProcessFactory {
       logger,
       this.logger,
       this.keysStorage,
-      this.eventEmitter,
+      this.eventBusService,
       this.cacheService,
       this.artifactsService,
       getSymbolInfo,
@@ -228,7 +230,7 @@ export class ScriptProcessFactory {
         this.logger,
         this.logger,
         this.keysStorage,
-        this.eventEmitter,
+        this.eventBusService,
         this.cacheService,
         this.artifactsService,
         getSymbolInfo,
