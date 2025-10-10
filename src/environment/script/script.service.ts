@@ -195,8 +195,10 @@ export class ScriptService {
     };
   }
 
-  async previewExecution(accountId: string, strategy: StrategyItem, args: object): Promise<string> {
+  async previewExecution(accountId: string, strategy: StrategyItem, args: object): Promise<string | null> {
     const artifactsKey = await this.factory.createPreviewExecution(accountId, strategy, args);
+    if (!artifactsKey) return null;
+
     const artifacts = this.artifactsService.read(artifactsKey);
     this.artifactsService.delete(artifactsKey);
     return artifacts;

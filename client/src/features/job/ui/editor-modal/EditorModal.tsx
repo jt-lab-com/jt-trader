@@ -69,7 +69,10 @@ export const EditorModal: FC<EditorModalProps> = (props) => {
   const definedArgs = selectedStrategy
     ? getStrategyDefinedArgs(selectedStrategy.id, selectedStrategy.name, selectedStrategy.type)
     : null;
-  const definedSymbols = definedArgs?.find((arg: StrategyDefinedArg) => arg.key === "symbols");
+  const definedSymbols = definedArgs?.find((arg: StrategyDefinedArg) => {
+    if (arg.mode && arg.mode !== "runtime") return;
+    return arg.key === "symbols";
+  });
 
   useEffect(() => {
     clearErrors();
@@ -106,19 +109,23 @@ export const EditorModal: FC<EditorModalProps> = (props) => {
       return;
     }
 
-    const symbols =
-      definedSymbols?.defaultValue?.split(",").map((symbol: string) => symbol.trim().toUpperCase()) ?? [];
+    setValue("jobName", selectedStrategy.name.replace(".ts", ""));
 
-    if (markets) {
-      const availableSymbols = getAvailableMarketSymbols(symbols, markets, {
-        search: "",
-        minVolume: definedSymbols?.filters?.volume?.min ?? 0,
-        minLeverage: definedSymbols?.filters?.leverage?.min ?? 0,
-      });
+    if (!job) {
+      const symbols =
+        definedSymbols?.defaultValue?.split(",").map((symbol: string) => symbol.trim().toUpperCase()) ?? [];
 
-      setValue("symbols", availableSymbols);
-    } else {
-      setValue("symbols", symbols);
+      if (markets) {
+        const availableSymbols = getAvailableMarketSymbols(symbols, markets, {
+          search: "",
+          minVolume: definedSymbols?.filters?.volume?.min ?? 0,
+          minLeverage: definedSymbols?.filters?.leverage?.min ?? 0,
+        });
+
+        setValue("symbols", availableSymbols);
+      } else {
+        setValue("symbols", symbols);
+      }
     }
 
     setValue(
@@ -132,7 +139,7 @@ export const EditorModal: FC<EditorModalProps> = (props) => {
           options,
         })) ?? [{ ...defaultArgParam }]
     );
-  }, [selectedStrategy, exchange, definedArgs, definedSymbols, markets]);
+  }, [selectedStrategy, definedArgs, definedSymbols, markets]);
 
   const onSubmit = handleSubmit(
     (data: JobSchema) => {

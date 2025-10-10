@@ -51,19 +51,17 @@ export const PreviewReport: FC<PreviewReportProps> = (props) => {
     setArtifactView(artifact);
   }, [artifact]);
 
-  if (isLoading && !artifactView)
-    return (
-      <Stack alignItems={"center"} justifyContent={"center"}>
-        <CircularProgress />
-      </Stack>
-    );
+  useEffect(() => {
+    setArtifactView(null);
+  }, [strategy]);
 
   return (
-    <Box sx={{ position: "relative" }}>
+    <Box sx={{ ...(!artifactView ? { height: 0 } : {}), position: "relative" }}>
       {artifactView && <Report artifact={artifactView} isPreview />}
       {isLoading && (
         <Stack
           sx={{
+            opacity: !artifactView ? 0 : 1,
             position: "absolute",
             left: 0,
             top: 0,
