@@ -3,7 +3,7 @@ import Button from "@mui/material/Button";
 import IconButton from "@mui/material/IconButton";
 import Stack from "@mui/material/Stack";
 import { Job } from "@packages/types";
-import { FC } from "react";
+import { FC, useEffect } from "react";
 import { useBoolean } from "@/shared/lib/hooks/useBoolean";
 import { Iconify } from "@/shared/ui/iconify";
 import { RouterLink } from "@/shared/ui/router-link";
@@ -22,6 +22,10 @@ export const JobControlButtons: FC<JobControlButtonsProps> = (props) => {
   const { job, onOpenLogs, onEdit, onCopy, onDelete } = props;
 
   const loading = useBoolean();
+
+  useEffect(() => {
+    loading.onFalse();
+  }, [job]);
 
   const handleOpenLogs = () => {
     onOpenLogs(job.artifacts);
@@ -42,8 +46,6 @@ export const JobControlButtons: FC<JobControlButtonsProps> = (props) => {
   const handleRun = () => {
     loading.onTrue();
     runJob(job.id);
-
-    setTimeout(loading.onFalse, 3000);
   };
 
   const handleStop = () => {

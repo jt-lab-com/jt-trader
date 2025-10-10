@@ -34,6 +34,7 @@ import { HistoryBarsService } from '../environment/history-bars/history-bars.ser
 import { MonitoringService } from '../monitoring/monitoring.service';
 import { SiteApi } from '../common/api/site-api';
 import { MarketsService } from '../environment/exchange/markets.service';
+import { ExceptionReasonType } from '../exception/types';
 
 @WebSocketGateway()
 export class EventsGateway implements OnGatewayDisconnect, OnGatewayConnection {
@@ -124,17 +125,6 @@ export class EventsGateway implements OnGatewayDisconnect, OnGatewayConnection {
     });
   }
 
-  @OnEvent('client.notification')
-  async sendClientNotification(payload: { accountId: string; message: string; type: string }) {
-    const connection = this.connectionService.getUserConnections(payload.accountId);
-    connection.socketClients.forEach((client) => {
-      client.emit('message', {
-        event: WS_SERVER_EVENTS.CLIENT_NOTIFICATION,
-        payload,
-      });
-    });
-  }
-
   @OnEvent('client.prepare-tester-source-end')
   async prepareTesterSourceEnd(accountId: string) {
     const connection = this.connectionService.getUserConnections(accountId);
@@ -142,6 +132,17 @@ export class EventsGateway implements OnGatewayDisconnect, OnGatewayConnection {
       client.emit('message', {
         event: WS_SERVER_EVENTS.TESTER_SCENARIO_PREPARE_DATA_END,
         payload: null,
+      });
+    });
+  }
+
+  @OnEvent('client.notification')
+  async sendClientNotification(payload: { accountId: string; message: string; type: string }) {
+    const connection = this.connectionService.getUserConnections(payload.accountId);
+    connection.socketClients.forEach((client) => {
+      client.emit('message', {
+        event: WS_SERVER_EVENTS.CLIENT_NOTIFICATION,
+        payload,
       });
     });
   }
@@ -349,8 +350,18 @@ export class EventsGateway implements OnGatewayDisconnect, OnGatewayConnection {
       }
       case WS_CLIENT_EVENTS.RUN_BACKGROUND_JOB_REQUEST: {
         const data = payload as WS_CLIENT_EVENT_PAYLOAD[WS_CLIENT_EVENTS.RUN_BACKGROUND_JOB_REQUEST];
-        await this.scriptService.run(data);
-        return await this.processMessage(client, WS_CLIENT_EVENTS.BACKGROUND_JOBS_LIST_REQUEST, null);
+        try {
+          await this.scriptService.run(data);
+          return await this.processMessage(client, WS_CLIENT_EVENTS.BACKGROUND_JOBS_LIST_REQUEST, null);
+        } catch (e) {
+          if (e.cause !== ExceptionReasonType.ScriptAlreadyRegistered) {
+            this.server.emit(
+              'message',
+              await this.processMessage(client, WS_CLIENT_EVENTS.BACKGROUND_JOBS_LIST_REQUEST, null),
+            );
+          }
+          throw e;
+        }
       }
       case WS_CLIENT_EVENTS.STOP_BACKGROUND_JOB_REQUEST: {
         const data = payload as WS_CLIENT_EVENT_PAYLOAD[WS_CLIENT_EVENTS.STOP_BACKGROUND_JOB_REQUEST];
