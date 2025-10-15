@@ -37,7 +37,7 @@ export class OrderService implements OrderServiceInterface {
   private nextOrderId = 1;
 
   constructor(@InjectPinoLogger(OrderService.name) private readonly logger: PinoLogger) {
-    this.positions = [null, null];
+    this.positions = [];
     this.orderUpdates = new Set<OrderInterface>();
     this.positionUpdates = new Set<PositionInterface>();
     this.isHedgeMode = true;
@@ -212,30 +212,27 @@ export class OrderService implements OrderServiceInterface {
   public trigger = (symbol: string): void => {
     const kLine = this.kline;
 
-    if (this.positions.length) {
-      // обновляем unrealizedPnl и балансы
-      const [initialMarginAll, unrealizedPnlAll] = this.positions.reduce(
-        ([initialMargin, unrealizedPnl], item) => {
-          if (!item) return [initialMargin, unrealizedPnl];
-          if (item.symbol === symbol) {
-            item.markPrice = kLine.close;
-            const ratio = item.side === PositionSideType.long ? 1 : -1;
-            item.unrealizedPnl = (item.markPrice - item.entryPrice) * item.contracts * ratio * this.contractSize;
-            return [initialMargin + item.initialMargin, unrealizedPnl + item.unrealizedPnl];
-          }
-          return [initialMargin, unrealizedPnl];
-        },
-        [0, 0],
-      );
+    // обновляем unrealizedPnl и балансы
+    const [initialMarginAll, unrealizedPnlAll] = this.positions.reduce(
+      ([initialMargin, unrealizedPnl], item) => {
+        if (item.symbol === symbol && item.contracts > 0) {
+          item.markPrice = kLine.close;
+          const ratio = item.side === PositionSideType.long ? 1 : -1;
+          item.unrealizedPnl = (item.markPrice - item.entryPrice) * item.contracts * ratio * this.contractSize;
+          return [initialMargin + item.initialMargin, unrealizedPnl + item.unrealizedPnl];
+        }
+        return [initialMargin, unrealizedPnl];
+      },
+      [0, 0],
+    );
 
-      // const diff = initialMarginAll + unrealizedPnlAll > 0 ? initialMarginAll : unrealizedPnlAll;
-      // this.marginBalance = this.balance - diff;
+    // const diff = initialMarginAll + unrealizedPnlAll > 0 ? initialMarginAll : unrealizedPnlAll;
+    // this.marginBalance = this.balance - diff;
 
-      const diff = initialMarginAll + unrealizedPnlAll > 0 ? initialMarginAll : unrealizedPnlAll;
-      this.marginBalance = this.balance + diff;
+    const diff = initialMarginAll + unrealizedPnlAll > 0 ? initialMarginAll : unrealizedPnlAll;
+    this.marginBalance = this.balance + diff;
 
-      // this.marginBalance = initialMarginAll + unrealizedPnlAll > 0 ? initialMarginAll : unrealizedPnlAll;
-    }
+    // this.marginBalance = initialMarginAll + unrealizedPnlAll > 0 ? initialMarginAll : unrealizedPnlAll;
 
     // проверяем, где цена, и исполняем ордер
     if (
@@ -268,7 +265,7 @@ export class OrderService implements OrderServiceInterface {
   public checkPositionsUpdates(): PositionInterface[] | undefined {
     if (this.positionUpdates.size === 0) return;
 
-    const values = [...this.positionUpdates.values()];
+    const values = Array.from(this.positionUpdates.values());
     this.positionUpdates.clear();
     return values;
   }
@@ -279,43 +276,27 @@ export class OrderService implements OrderServiceInterface {
 
   private execute(order: OrderInterface): OrderInterface {
     const positionIndex = this.isHedgeMode ? (order.positionSide === PositionSideType.long ? 0 : 1) : 0;
-    let position = this.positions[positionIndex];
+    const position = this.positions[positionIndex];
 
-    if (order.reduceOnly && !position) {
+    if (order.reduceOnly && !position.contracts) {
       this.update(order.id, { status: 'canceled' });
       this.logger.info({ order }, 'ReduceOnly order cancelled');
       return;
     }
 
-    if (!position) {
+    if (!position.contracts) {
       const notional = parseFloat((order.amount * order.price * this.contractSize).toFixed(this.pricePrecision));
       const initialMargin = parseFloat((notional / this.defaultLeverage).toFixed(this.pricePrecision));
 
-      position = {
-        id: order.id,
-        symbol: order.symbol,
-        hedged: !!this.isHedgeMode,
-        side: this.positionBySide(order.side),
-        contracts: order.amount,
-        contractSize: this.contractSize,
-        entryPrice: order.price,
-        markPrice: order.price,
-        unrealizedPnl: 0,
-        timestamp: order.timestamp,
-        leverage: this.defaultLeverage,
-        liquidationPrice: 0,
-        collateral: 0,
-        notional,
-        initialMargin,
-        initialMarginPercentage: Math.round((1 / this.defaultLeverage) * 100),
-        maintenanceMargin: 0,
-        maintenanceMarginPercentage: 0,
-        marginRatio: 0,
-        datetime: '',
-        marginMode: 'cross',
-        marginType: 'cross',
-        percentage: 0,
-      };
+      position.id = order.id;
+      position.symbol = order.symbol;
+      position.side = this.positionBySide(order.side);
+      position.contracts = order.amount;
+      position.entryPrice = order.price;
+      position.markPrice = order.price;
+      position.timestamp = order.timestamp;
+      position.notional = notional;
+      position.initialMargin = initialMargin;
 
       this.balance -= initialMargin;
       this.marginBalance += this.balance + initialMargin;
@@ -369,10 +350,8 @@ export class OrderService implements OrderServiceInterface {
       // this.marginBalance = this.balance + unrealizedPnl;
     }
 
-    this.positions[positionIndex] = null;
-
-    if (position.contracts > 0) {
-      this.positions[positionIndex] = position;
+    if (!position.contracts) {
+      this.positions[positionIndex] = this.fillEmptyPosition();
     }
 
     this.balance -= order.fee.cost;
@@ -404,14 +383,7 @@ export class OrderService implements OrderServiceInterface {
   };
 
   public getPositions = (): object[] => {
-    const positions = [];
-
-    for (const pos of this.positions) {
-      if (!pos) continue;
-      positions.push({ ...pos });
-    }
-
-    return positions;
+    return this.positions;
   };
 
   public getOrders = (): OrderInterface[] => {
@@ -458,6 +430,11 @@ export class OrderService implements OrderServiceInterface {
         ? this.maxLeverage
         : config.defaultLeverage
       : this.defaultLeverage;
+
+    if (!this.positions.length) {
+      this.positions[0] = this.fillEmptyPosition();
+      this.positions[1] = this.fillEmptyPosition();
+    }
   };
 
   public getLeverageLimits() {
@@ -468,6 +445,34 @@ export class OrderService implements OrderServiceInterface {
     return {
       marketOrderSpread: this.marketOrderSpread,
       pricePrecision: this.pricePrecision,
+    };
+  }
+
+  private fillEmptyPosition(): PositionInterface {
+    return {
+      id: '',
+      symbol: '',
+      hedged: false,
+      side: '',
+      contracts: 0,
+      contractSize: this.contractSize,
+      entryPrice: 0,
+      markPrice: 0,
+      unrealizedPnl: 0,
+      timestamp: this.getCurrentTime(),
+      leverage: this.defaultLeverage,
+      liquidationPrice: 0,
+      collateral: 0,
+      notional: 0,
+      initialMargin: 0,
+      initialMarginPercentage: Math.round((1 / this.defaultLeverage) * 100),
+      maintenanceMargin: 0,
+      maintenanceMarginPercentage: 0,
+      marginRatio: 0,
+      datetime: '',
+      marginMode: 'cross',
+      marginType: 'cross',
+      percentage: 0,
     };
   }
 }
