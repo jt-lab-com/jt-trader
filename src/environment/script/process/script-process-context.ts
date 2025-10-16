@@ -278,7 +278,7 @@ export class ScriptProcessContext extends ScriptProcessContextBase {
     }
 
     for (const symbol of symbols) {
-      const orderBook: OrderBook = await this._call('fetchOrderBook', [symbol, 5]);
+      const orderBook: OrderBook = await this._call('fetchOrderBook', [symbol, this.orderBookLimit]);
       this.ordersBook[symbol] = {
         bids: orderBook.bids,
         asks: orderBook.asks,

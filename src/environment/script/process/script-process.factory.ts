@@ -15,7 +15,12 @@ import * as path from 'path';
 import { ExceptionReasonType } from '../../../exception/types';
 import { ScriptProcessContextSync } from './script-process-context-sync';
 import { AccountService } from '../../account/account.service';
-import { ACCOUNT_DEVELOPER_ACCESS, ACCOUNT_LIMIT_API_CALL_PER_SEC, ACCOUNT_LIMIT_RUNTIMES } from '../../account/const';
+import {
+  ACCOUNT_DEVELOPER_ACCESS,
+  ACCOUNT_LIMIT_API_CALL_PER_SEC,
+  ACCOUNT_LIMIT_ORDER_BOOK,
+  ACCOUNT_LIMIT_RUNTIMES,
+} from '../../account/const';
 import { StrategyItem } from '../types';
 import { nanoid } from 'nanoid';
 import { StrategyArgsType } from '../../exchange/interface/strategy.interface';
@@ -102,6 +107,7 @@ export class ScriptProcessFactory {
     );
     const developerAccess: boolean =
       (await this.accountService.getParam(meta.accountId, ACCOUNT_DEVELOPER_ACCESS)) === 'true';
+    const orderBookLimit = await this.accountService.getParam(meta.accountId, ACCOUNT_LIMIT_ORDER_BOOK);
 
     const markets = await this.marketsService.getExchangeMarkets(meta.exchange, meta.marketType);
     const getSymbolInfo = (symbol: string) => markets.find((market) => market.symbol === symbol);
@@ -124,6 +130,7 @@ export class ScriptProcessFactory {
         meta.prefix,
         apiCallLimitPerSecond,
         developerAccess,
+        orderBookLimit,
       );
 
       const isMock = meta.exchange.includes('-mock');
@@ -173,6 +180,7 @@ export class ScriptProcessFactory {
     const apiCallLimitPerSecond: number = parseInt(
       await this.accountService.getParam(accountId, ACCOUNT_LIMIT_API_CALL_PER_SEC),
     );
+    const orderBookLimit = await this.accountService.getParam(accountId, ACCOUNT_LIMIT_ORDER_BOOK);
     const markets = await this.marketsService.getExchangeMarkets('binanceusdm', 'swap');
     const getSymbolInfo = (symbol: string) => markets.find((market) => market.symbol === symbol);
     const context = new ScriptProcessContext(
@@ -191,6 +199,7 @@ export class ScriptProcessFactory {
       prefix,
       apiCallLimitPerSecond,
       false,
+      orderBookLimit,
     );
 
     if (!!args['exchange']) {
@@ -237,6 +246,9 @@ export class ScriptProcessFactory {
         bundle,
         id.toString(),
         id.toString(),
+        id,
+        false,
+        id,
       );
 
       if (!!args['exchange']) {

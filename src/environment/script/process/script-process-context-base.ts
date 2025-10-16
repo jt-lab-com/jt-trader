@@ -49,6 +49,7 @@ export class ScriptProcessContextBase {
     protected readonly prefix: string = '',
     protected readonly apiCallLimitPerSecond: number = undefined,
     protected readonly developerAccess: boolean = false,
+    protected readonly orderBookLimit: number,
   ) {
     this.ordersBook = {};
     this.ticker = {};
@@ -140,8 +141,8 @@ export class ScriptProcessContextBase {
         `orders-book::${item}`,
         this.dataFeedFactory.subscribeOrdersBook(connectionName, marketType, item, (data) => {
           this.ordersBook[item] = {
-            bids: data.bids.slice(0, 5),
-            asks: data.asks.slice(0, 5),
+            bids: data.bids,
+            asks: data.asks,
           };
         }),
       );
