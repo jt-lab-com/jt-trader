@@ -14,6 +14,13 @@ import { OrderInterface } from '../../exchange/interface/order.interface';
 import axios, { AxiosRequestConfig } from 'axios';
 import { SocksProxyAgent } from 'socks-proxy-agent';
 import { EventBusService } from '../../../common/event-bus.service';
+import { MarketType } from '@packages/types';
+
+interface SDKConnectionOptions {
+  connectionName?: string;
+  marketType?: MarketType;
+  keys?: ExchangeKeysType;
+}
 
 export class ScriptProcessContextBase {
   protected args: StrategyArgsType;
@@ -49,6 +56,7 @@ export class ScriptProcessContextBase {
     protected readonly prefix: string = '',
     protected readonly apiCallLimitPerSecond: number = undefined,
     protected readonly developerAccess: boolean = false,
+    protected readonly orderBookLimit: number,
   ) {
     this.ordersBook = {};
     this.ticker = {};
@@ -140,8 +148,8 @@ export class ScriptProcessContextBase {
         `orders-book::${item}`,
         this.dataFeedFactory.subscribeOrdersBook(connectionName, marketType, item, (data) => {
           this.ordersBook[item] = {
-            bids: data.bids.slice(0, 5),
-            asks: data.asks.slice(0, 5),
+            bids: data.bids,
+            asks: data.asks,
           };
         }),
       );
@@ -256,20 +264,24 @@ export class ScriptProcessContextBase {
     }
   }
 
-  protected _sdkObject() {
-    return this.exchange.getSDK(this.args.connectionName, this.args.marketType, this.keys);
+  protected _sdkObject(options?: SDKConnectionOptions) {
+    const connectionName = options?.connectionName ?? this.args.connectionName;
+    const marketType = options?.marketType ?? this.args.marketType;
+    const keys = options?.keys ?? this.keys;
+
+    return this.exchange.getSDK(connectionName, marketType, keys);
   }
 
-  public sdkCall(method: string, args: any[]) {
-    return this._sdkObject()[method](...args);
+  public sdkCall(method: string, args: any[], connectionOptions?: SDKConnectionOptions) {
+    return this._sdkObject(connectionOptions)[method](...args);
   }
 
-  public sdkGetProp(property: string) {
-    return this._sdkObject()[property];
+  public sdkGetProp(property: string, connectionOptions?: SDKConnectionOptions) {
+    return this._sdkObject(connectionOptions)[property];
   }
 
-  public sdkSetProp(property: string, value: any) {
-    this._sdkObject()[property] = value;
+  public sdkSetProp(property: string, value: any, connectionOptions?: SDKConnectionOptions) {
+    this._sdkObject(connectionOptions)[property] = value;
   }
 
   // public setPositionMode(value: boolean) {
