@@ -452,7 +452,9 @@ export class OrderService implements OrderServiceInterface {
   private fillEmptyPosition(): PositionInterface {
     const contractSize = this.contractSize;
     const pricePrecision = this.pricePrecision;
+    const defaultLeverage = this.defaultLeverage;
     let _notional = 0;
+    let _initialMargin = 0;
 
     return {
       id: '',
@@ -475,7 +477,13 @@ export class OrderService implements OrderServiceInterface {
         _notional = parseFloat((this.contracts * this.markPrice * contractSize).toFixed(pricePrecision));
         return _notional;
       },
-      initialMargin: 0,
+      set initialMargin(value: number) {
+        _initialMargin = value;
+      },
+      get initialMargin() {
+        _initialMargin = parseFloat((this.notional / defaultLeverage).toFixed(pricePrecision));
+        return _initialMargin;
+      },
       initialMarginPercentage: Math.round((1 / this.defaultLeverage) * 100),
       maintenanceMargin: 0,
       maintenanceMarginPercentage: 0,
