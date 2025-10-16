@@ -26,6 +26,7 @@ import { ScriptTesterController } from './script-tester/script-tester.controller
 import { ScriptController } from './script/script.controller';
 import { AccountController } from './account/account.controller';
 import { HistoryBarsModule } from './history-bars/history-bars.module';
+import { MarketsService } from './exchange/markets.service';
 
 @Module({
   imports: [CsvModule, EventEmitterModule.forRoot(), CommonModule, HistoryBarsModule],
@@ -41,6 +42,7 @@ import { HistoryBarsModule } from './history-bars/history-bars.module';
           production: CCXTService,
         }[process.env.NODE_ENV] ?? CCXTService,
     },
+    MarketsService,
     ScriptService,
     ScriptBundlerService,
     ScriptProcessFactory,
@@ -68,6 +70,7 @@ import { HistoryBarsModule } from './history-bars/history-bars.module';
     DataFeedFactory,
     OrderService,
     CCXTService,
+    MarketsService,
     ScriptTesterService,
     ScriptArtifactsService,
     ScriptLogsService,

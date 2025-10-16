@@ -108,20 +108,29 @@ LOGS_DIR_PATH=artifacts
 
 ### Environment Variables
 
-| Variable | Description | Example |
-|----------|-------------|---------|
-| `PORT` | Port for running the application | `8080` |
-| `SITE_API_HOST` | Base URL for site API | `https://jt-lab.com` |
-| `STANDALONE_APP` | Local mode operation (1 = enabled) | `1` |
-| `ENGINE_MODE` | Trading engine mode | `"both"`, `"realtime"`, `"tester"` |
-| `DATABASE_URL` | **Absolute path** to SQLite database file | `"file:/path/to/your/project/storage.db"` |
-| `STRATEGY_FILES_PATH` | **Absolute path** to strategy source code | `/path/to/your/project/strategy-source/src` |
-| `ROLLUP_TS_CONFIG` | Path to TypeScript configuration | `tsconfig.bundler.json` |
-| `MARKETS_FILE_PATH` | Path to markets configuration file | `markets.json` |
-| `ARTIFACTS_DIR_PATH` | Path to strategy reports directory | `/path/to/your/project/artifacts` |
-| `HISTORY_BARS_PATH` | Path to historical data directory | `downloaded-history-bars` |
-| `LOGS_DIR_PATH` | Path to logs directory | `artifacts` |
-| `REDIS_URL` | Redis connection URL (optional) | `redis://localhost:6379` |
+| Variable                             | Description                                                                                                  | Example                                     |
+|--------------------------------------|--------------------------------------------------------------------------------------------------------------|---------------------------------------------|
+| `PORT`                               | Port for running the application                                                                             | `8080`                                      |
+| `SITE_API_HOST`                      | Base URL for site API                                                                                        | `https://jt-lab.com`                        |
+| `STANDALONE_APP`                     | Local mode operation (1 = enabled)                                                                           | `1`                                         |
+| `ENGINE_MODE`                        | Trading engine mode                                                                                          | `"both"`, `"realtime"`, `"tester"`          |
+| `DATABASE_URL`                       | **Absolute path** to SQLite database file                                                                    | `"file:/path/to/your/project/storage.db"`   |
+| `STRATEGY_FILES_PATH`                | **Absolute path** to strategy source code                                                                    | `/path/to/your/project/strategy-source/src` |
+| `ROLLUP_TS_CONFIG`                   | Path to TypeScript configuration                                                                             | `tsconfig.bundler.json`                     |
+| `ARTIFACTS_DIR_PATH`                 | Path to strategy reports directory                                                                           | `/path/to/your/project/artifacts`           |
+| `HISTORY_BARS_PATH`                  | Path to historical data directory                                                                            | `downloaded-history-bars`                   |
+| `LOGS_DIR_PATH`                      | Path to logs directory                                                                                       | `artifacts`                                 |
+| `REDIS_URL`                          | Redis connection URL (optional)                                                                              | `redis://localhost:6379`                    |
+| `ACCESS_SECRET`                      | Secret code used for public servers to prevent unauthorized access                                           | `your_secret_key`                           |
+| `CACHE_DRIVER`                       | Specifies where the application cache is stored. Available options: `redis` or `disk` (local database file). | `redis`                                     |
+| `ACCOUNT_LIMIT_RUNTIMES`             | Maximum number of concurrently running runtimes. Default: 5                                                  |                                             |
+| `ACCOUNT_LIMIT_OPTIMIZER_SCENARIO`   | Maximum number of sets for script optimization. Default: 15                                                  |                                             |
+| `ACCOUNT_LIMIT_API_CALL_PER_SEC`     | Maximum allowed number of exchange API calls per second. Default: 5                                          |                                             |
+| `ACCOUNT_LIMIT_TESTER_MAX_PROCESSES` | Maximum number of concurrently running processes for the tester. Default: 5                                  |                                             |
+| `ACCOUNT_LIMIT_TESTER_MAX_MEMORY`    | Maximum memory (in MB) allocated for tester processes. Default: 1024                                         |                                             |
+| `ACCOUNT_LIMIT_TESTER_EXEC_TIMEOUT`  | Tester script execution time limit (in seconds). Default: 300                                                |                                             |
+| `ACCOUNT_LIMIT_REPORT_MAX_SIZE`      | Maximum report file size (in MB). Default: 1                                                                 |                                             |
+| `ACCOUNT_LIMIT_ORDER_BOOK`           | Defines the number of order book rows to load. Default: 5                                                    |                                             |
 
 ## 🚀 Running
 

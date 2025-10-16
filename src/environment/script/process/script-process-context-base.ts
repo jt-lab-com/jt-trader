@@ -6,7 +6,6 @@ import { CCXTService } from '../../exchange/ccxt.service';
 import { PinoLogger } from 'nestjs-pino';
 import { Logger } from 'pino';
 import { ScriptExchangeKeysService } from '../storage/script-exchange-keys.service';
-import { EventEmitter2 } from '@nestjs/event-emitter';
 import { CacheService } from '../../../common/cache/cache.service';
 import { ScriptArtifactsService } from '../artifacts/script-artifacts.service';
 import { StrategyBundle } from '../bundler/script-bundler.service';
@@ -14,6 +13,14 @@ import { ExceptionReasonType } from '../../../exception/types';
 import { OrderInterface } from '../../exchange/interface/order.interface';
 import axios, { AxiosRequestConfig } from 'axios';
 import { SocksProxyAgent } from 'socks-proxy-agent';
+import { EventBusService } from '../../../common/event-bus.service';
+import { MarketType } from '@packages/types';
+
+interface SDKConnectionOptions {
+  connectionName?: string;
+  marketType?: MarketType;
+  keys?: ExchangeKeysType;
+}
 
 export class ScriptProcessContextBase {
   protected args: StrategyArgsType;
@@ -31,6 +38,7 @@ export class ScriptProcessContextBase {
   protected tickIsLocked = false;
   protected _callInstance: (method: string, data?: any, emitOnly?: boolean) => Promise<any>;
   protected setTimeouts: any[] = [];
+  protected redisSubscribers: Map<string, number>;
 
   constructor(
     protected readonly accountId: string,
@@ -39,7 +47,7 @@ export class ScriptProcessContextBase {
     protected readonly logger: PinoLogger | Logger,
     protected readonly systemLogger: PinoLogger,
     protected readonly keysStorage: ScriptExchangeKeysService,
-    protected readonly eventEmitter: EventEmitter2,
+    protected readonly eventBus: EventBusService,
     protected readonly cacheService: CacheService,
     protected readonly artifactsService: ScriptArtifactsService,
     protected readonly getSymbolInfo: (symbol: string, connectionName: string) => any,
@@ -48,19 +56,28 @@ export class ScriptProcessContextBase {
     protected readonly prefix: string = '',
     protected readonly apiCallLimitPerSecond: number = undefined,
     protected readonly developerAccess: boolean = false,
+    protected readonly orderBookLimit: number,
   ) {
     this.ordersBook = {};
     this.ticker = {};
     this.subscribers = new Map<string, number>();
     this.callbacks = new Map<string, ((args: any[], data?: any) => Promise<void>)[]>();
+    this.redisSubscribers = new Map<string, number>();
     this.lastOnTimer = 0;
 
     this.updateReport({});
   }
 
+  protected hasAPIKeys() {
+    const { connectionName } = this.args;
+    const isMock = connectionName.includes('-mock');
+    if (isMock) return true;
+    return !!this.keys?.apiKey && !!this.keys?.secret;
+  }
+
   public _log(level, ...args) {
     this.logger[level](args[1] ? args[1] : {}, args[0]);
-    this.eventEmitter.emit('client.log', {
+    this.eventBus.emit('client.log', {
       accountId: this.accountId,
       processId: `${this.key}`,
       artifacts: this.getArtifactsKey(),
@@ -95,26 +112,25 @@ export class ScriptProcessContextBase {
     return ['tester', 'tester-sync'].indexOf(process.env.NODE_ENV) > -1;
   }
 
-  protected _hasDeveloperAccess(): boolean {
-    return this.developerAccess;
-  }
-
   public subscribeDataFeeds() {
-    const { symbols, connectionName, interval } = this.args;
+    const { symbols, connectionName, interval, marketType } = this.args;
     const [symbol] = symbols;
 
     symbols.map((item) => {
-      this.subscribers.set(
-        `orders::${item}`,
-        this.dataFeedFactory.subscribeOrders(connectionName, item, this.keys, (data) => {
-          if (data.length && data.length > 0) {
-            return this._callInstance('runOnOrderChange', data);
-          }
-        }),
-      );
+      if (this.hasAPIKeys()) {
+        this.subscribers.set(
+          `orders::${item}`,
+          this.dataFeedFactory.subscribeOrders(connectionName, marketType, item, this.keys, (data) => {
+            if (data.length && data.length > 0) {
+              return this._callInstance('runOnOrderChange', data);
+            }
+          }),
+        );
+      }
+
       this.subscribers.set(
         `ticker::${item}`,
-        this.dataFeedFactory.subscribeTicker(connectionName, item, (data) => {
+        this.dataFeedFactory.subscribeTicker(connectionName, marketType, item, (data) => {
           this._tickerUpdate(item, data);
           if (item !== symbol) return;
 
@@ -130,10 +146,10 @@ export class ScriptProcessContextBase {
       );
       this.subscribers.set(
         `orders-book::${item}`,
-        this.dataFeedFactory.subscribeOrdersBook(connectionName, item, (data) => {
+        this.dataFeedFactory.subscribeOrdersBook(connectionName, marketType, item, (data) => {
           this.ordersBook[item] = {
-            bids: data.bids.slice(0, 5),
-            asks: data.asks.slice(0, 5),
+            bids: data.bids,
+            asks: data.asks,
           };
         }),
       );
@@ -143,17 +159,33 @@ export class ScriptProcessContextBase {
   public unsubscribeDataFeeds() {
     this.setTimeouts.filter((timeout) => timeout._destroyed === false).map(clearTimeout);
 
-    const { symbols, connectionName } = this.args;
+    const { symbols, connectionName, marketType } = this.args;
     symbols.map((item) => {
-      this.dataFeedFactory.unsubscribeOrders(connectionName, item, this.keys, this.subscribers.get(`orders::${item}`));
-      this.dataFeedFactory.unsubscribeTicker(connectionName, item, this.subscribers.get(`ticker::${item}`));
-      this.dataFeedFactory.unsubscribeOrdersBook(connectionName, item, this.subscribers.get(`orders-book::${item}`));
+      if (this.hasAPIKeys()) {
+        this.dataFeedFactory.unsubscribeOrders(
+          connectionName,
+          marketType,
+          item,
+          this.keys,
+          this.subscribers.get(`orders::${item}`),
+        );
+      }
+
+      const tickerSubscribeId = this.subscribers.get(`ticker::${item}`);
+      const ordersBooksSubscribeId = this.subscribers.get(`orders-book::${item}`);
+
+      if (tickerSubscribeId) {
+        this.dataFeedFactory.unsubscribeTicker(connectionName, marketType, item, tickerSubscribeId);
+      }
+      if (ordersBooksSubscribeId) {
+        this.dataFeedFactory.unsubscribeOrdersBook(connectionName, marketType, item, ordersBooksSubscribeId);
+      }
     });
   }
 
   protected _call(method: string, args: any[]) {
-    const { connectionName } = this.args;
-    const sdk: Exchange = this.exchange.getSDK(connectionName, this.keys);
+    const { connectionName, marketType } = this.args;
+    const sdk: Exchange = this.exchange.getSDK(connectionName, marketType, this.keys);
     const internalMethod = method === 'getHistory' ? 'fetchOHLCV' : method;
 
     try {
@@ -232,28 +264,24 @@ export class ScriptProcessContextBase {
     }
   }
 
-  public ccxt() {
-    if (!this._hasDeveloperAccess()) throw new Error('Invalid method ccxt().');
+  protected _sdkObject(options?: SDKConnectionOptions) {
+    const connectionName = options?.connectionName ?? this.args.connectionName;
+    const marketType = options?.marketType ?? this.args.marketType;
+    const keys = options?.keys ?? this.keys;
 
-    return this.exchange.getSDK(this.args.connectionName, this.keys);
+    return this.exchange.getSDK(connectionName, marketType, keys);
   }
 
-  protected _sdkObject() {
-    if (!this._hasDeveloperAccess()) throw new Error('Invalid method sdkGetProp() / sdkSetProp() / sdkCall().');
-
-    return this.exchange.getSDK(this.args.connectionName, this.keys);
+  public sdkCall(method: string, args: any[], connectionOptions?: SDKConnectionOptions) {
+    return this._sdkObject(connectionOptions)[method](...args);
   }
 
-  public sdkCall(method: string, args: any[]) {
-    return this._sdkObject()[method](...args);
+  public sdkGetProp(property: string, connectionOptions?: SDKConnectionOptions) {
+    return this._sdkObject(connectionOptions)[property];
   }
 
-  public sdkGetProp(property: string) {
-    return this._sdkObject()[property];
-  }
-
-  public sdkSetProp(property: string, value: any) {
-    this._sdkObject()[property] = value;
+  public sdkSetProp(property: string, value: any, connectionOptions?: SDKConnectionOptions) {
+    this._sdkObject(connectionOptions)[property] = value;
   }
 
   // public setPositionMode(value: boolean) {
@@ -405,7 +433,7 @@ export class ScriptProcessContextBase {
       return;
     }
 
-    this.eventEmitter.emit('process.force-stop', { id: parseInt(this.getId()), accountId: this.accountId });
+    this.eventBus.emit('process.force-stop', { id: parseInt(this.getId()), accountId: this.accountId });
   }
 
   tms(symbol: string = undefined) {
@@ -433,4 +461,24 @@ export class ScriptProcessContextBase {
   }
 
   loadTickers() {}
+
+  public async subscribeChannel(channel: string, callback: VoidFunction) {
+    const subscribeId = this.cacheService.subscribeChannel(channel, callback);
+    this.redisSubscribers.set(channel, subscribeId);
+  }
+
+  public async publishChannel(channel: string, data: unknown, toJSON = false) {
+    await this.cacheService.publishChannel(channel, data, toJSON);
+  }
+
+  public async unsubscribeChannel(channel: string) {
+    const subscribeId = this.redisSubscribers.get(channel);
+    this.cacheService.unsubscribeChannel(subscribeId);
+  }
+
+  public unsubscribeAllChannels() {
+    for (const subscribeId of this.redisSubscribers.values()) {
+      this.cacheService.unsubscribe(subscribeId);
+    }
+  }
 }

@@ -37,7 +37,7 @@ interface EditorModalProps {
 export const EditorModal: FC<EditorModalProps> = (props) => {
   const { open, editMode, scenario, onSave, onClose } = props;
   const { fetchStrategies, getStrategyDefinedArgs } = useStrategy();
-  const { exchangeList, testerDefaults } = useConfig();
+  const { exchanges, testerDefaults } = useConfig();
   const { completeOptions, updateAutoComplete } = useAutoComplete();
 
   const methods = useForm<ScenarioSchema>({
@@ -195,7 +195,7 @@ export const EditorModal: FC<EditorModalProps> = (props) => {
               ))}
               <Grid item xs={4}>
                 <RHFSelect variant={"outlined"} name={"exchange"} size={"small"} label={"Exchange"}>
-                  {exchangeList.map((exchange) => (
+                  {exchanges.main.map((exchange) => (
                     <MenuItem key={exchange.code} value={exchange.code}>
                       {exchange.name}
                     </MenuItem>

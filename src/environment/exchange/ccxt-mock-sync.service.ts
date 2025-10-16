@@ -6,6 +6,7 @@ import { InjectPinoLogger, PinoLogger } from 'nestjs-pino';
 import { HistoryBarsService } from '../history-bars/history-bars.service';
 import { ExceptionReasonType } from '../../exception/types';
 import { SystemParamsInterface } from '../script/scenario/script-scenario.service';
+import { MarketType } from '@packages/types';
 
 const csvHeaders = [
   'open_time',
@@ -89,7 +90,7 @@ export class CCXTMockSyncService implements ExchangeSDKInterface {
     this.updateRows();
   };
 
-  public getSDK = (name: string, keys: ExchangeKeysType) => {
+  public getSDK = (name: string, marketType: MarketType, keys: ExchangeKeysType) => {
     return this.sdk;
   };
 

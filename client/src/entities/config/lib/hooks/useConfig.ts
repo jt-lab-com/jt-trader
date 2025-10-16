@@ -1,25 +1,39 @@
 import { Exchange, TesterDefaultArgs } from "@packages/types";
 import { useSelector } from "react-redux";
-import { getEngineMode, getEngineVersion, getExchangesList, getTesterDefaults } from "../../model/selectors";
+import {
+  getEngineMode,
+  getEngineVersion,
+  getMainExchangeList,
+  getAdditionalExchangeList,
+  getTesterDefaults,
+} from "../../model/selectors";
 import { EngineMode } from "../../model/types";
 
 interface UseConfigReturnParams {
   engineVersion: string | null;
   engineMode: EngineMode | null;
-  exchangeList: Exchange[];
+  exchanges: {
+    main: Exchange[];
+    additional?: Exchange[];
+  };
   testerDefaults: TesterDefaultArgs | null;
 }
 
 export const useConfig = (): UseConfigReturnParams => {
   const engineVersion = useSelector(getEngineVersion);
   const engineMode = useSelector(getEngineMode);
-  const exchangeList = useSelector(getExchangesList);
+  const mainExchangeList = useSelector(getMainExchangeList);
+  const additionalExchangeList = useSelector(getAdditionalExchangeList);
+
   const testerDefaults = useSelector(getTesterDefaults);
 
   return {
     engineVersion,
     engineMode,
-    exchangeList,
+    exchanges: {
+      main: mainExchangeList,
+      additional: additionalExchangeList,
+    },
     testerDefaults,
   };
 };

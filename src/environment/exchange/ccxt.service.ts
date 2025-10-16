@@ -4,9 +4,8 @@ import { SystemParamsInterface } from '../script/scenario/script-scenario.servic
 import { SocksProxyAgent } from 'socks-proxy-agent';
 import { ExchangeSdkFactory } from './ccxt-sdk.factory';
 import { InjectPinoLogger, PinoLogger } from 'nestjs-pino';
-import { CacheService } from '../../common/cache/cache.service';
-import { BINANCE_USDM_HARDCODED_LEVERAGES } from './exchange-connector/const';
 import { ExtendedExchange } from './interface/exchange.interface';
+import { MarketType } from '@packages/types';
 
 @Injectable()
 export class CCXTService implements ExchangeSDKInterface {
@@ -15,7 +14,6 @@ export class CCXTService implements ExchangeSDKInterface {
 
   constructor(
     private readonly sdkFactory: ExchangeSdkFactory,
-    private readonly cacheService: CacheService,
     @InjectPinoLogger(CCXTService.name) private readonly logger: PinoLogger,
   ) {
     this.sdk = new Map();
@@ -24,59 +22,33 @@ export class CCXTService implements ExchangeSDKInterface {
     }
   }
 
-  public getSDK(name: string, keys: ExchangeKeysType): ExtendedExchange {
+  public getSDK(name: string, marketType: MarketType, keys?: ExchangeKeysType): ExtendedExchange {
     const isMock = name.endsWith('-mock');
-    const key = [name, keys.apiKey].join('::');
     const formattedName = name.replace('-testnet', '').replace('-mock', '');
 
+    const key: string = [formattedName, marketType, keys?.apiKey].join('::');
     let exchange: ExtendedExchange = this.sdk.get(key);
+
     if (!exchange) {
       exchange = this.sdkFactory.build(formattedName, isMock, {
-        defaultType: 'swap',
+        options: {
+          defaultType: marketType,
+        },
+        defaultType: marketType,
         agent: this.agent,
-        ...keys,
+        ...(!!keys?.apiKey && !!keys?.secret && { ...keys }),
       });
-      if (keys.sandboxMode === true) {
+      if (keys?.sandboxMode === true) {
         exchange.setSandboxMode(true);
       }
-      exchange.options['adjustForTimeDifference'] = true;
-      exchange.options['defaultType'] = 'swap';
-      exchange.options['marginMode'] = 'cross'; // or 'cross' or 'isolated'
-      exchange.options['defaultMarginMode'] = 'cross'; // 'cross' or 'isolated'
+      // exchange.options['adjustForTimeDifference'] = true;
+      exchange.options['defaultType'] = marketType;
+      // exchange.options['marginMode'] = 'cross'; // or 'cross' or 'isolated'
+      // exchange.options['defaultMarginMode'] = 'cross'; // 'cross' or 'isolated'
 
       this.sdk.set(key, exchange);
     }
     return exchange as ExtendedExchange;
-  }
-
-  public async getExchangeMarkets(name: string): Promise<any[]> {
-    const key = `EXCHANGE_MARKETS_${name}`;
-
-    const data = await this.cacheService.get(key);
-    if (!data) {
-      const sdk = this.getSDK(name, { apiKey: '', secret: '' });
-      await sdk.loadMarkets(false);
-      const tickers = await sdk.fetchTickers();
-      const markets = Object.values(sdk.markets);
-      const values = [];
-      for (let i = 0; i < markets.length; i++) {
-        const market = markets[i];
-        if (market.swap !== true || market.linear !== true) continue;
-
-        const mergedData = { ...market, ...tickers[market.symbol] };
-        if (name === 'binanceusdm') {
-          const leverage = { max: BINANCE_USDM_HARDCODED_LEVERAGES[market.symbol], min: undefined };
-          mergedData['limits'] ? (mergedData['limits']['leverage'] = leverage) : (mergedData['limits'] = { leverage });
-        }
-        values.push(mergedData);
-      }
-
-      await this.cacheService.set(key, JSON.stringify(values), 60 * 60);
-
-      return values;
-    } else {
-      return JSON.parse(data);
-    }
   }
 
   async setSource(dir: string, key: string, startDate: Date, endDate: Date) {

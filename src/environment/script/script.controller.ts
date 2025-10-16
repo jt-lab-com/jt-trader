@@ -4,7 +4,7 @@ import { ScriptService } from './script.service';
 import { SiteApi } from '../../common/api/site-api';
 import { StrategyItem } from './types';
 import { nanoid } from 'nanoid';
-import { EXCHANGE_LIST } from '../exchange/exchange-connector/const';
+import { EXCHANGE_LIST } from '@packages/const/exchanges';
 
 @Controller()
 export class ScriptController {
@@ -58,11 +58,12 @@ export class ScriptController {
           })) ?? [],
         'market',
         exchangeCode,
+        'swap',
       );
 
       return { runtimeId };
     } catch (e) {
-      this.logger.error({ stack: e.stack?.split("\n"), message: e.message }, 'Runtime remote create error');
+      this.logger.error({ stack: e.stack?.split('\n'), message: e.message }, 'Runtime remote create error');
       throw forbiddenError;
     }
   }

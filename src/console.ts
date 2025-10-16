@@ -7,9 +7,9 @@ import { CacheService } from './common/cache/cache.service';
 import * as process from 'process';
 import { CCXTService } from './environment/exchange/ccxt.service';
 import { OrderService } from './environment/exchange/order.service';
-import { ScriptProcessFactory } from './environment/script/process/script-process.factory';
 import { MainProcessExceptionHandler } from './exception/main-process-exception.handler';
 import { formatTesterSymbol } from './environment/script-tester/utils/format-tester-symbol';
+import { MarketsService } from './environment/exchange/markets.service';
 
 const yargs = require('yargs/yargs');
 const { hideBin } = require('yargs/helpers');
@@ -18,8 +18,8 @@ async function bootstrap() {
   const app = await NestFactory.createApplicationContext(AppModule, { bufferLogs: true });
   const logger = app.get(Logger);
   const cacheService = app.get(CacheService);
-  const exchangeSdk = app.get(CCXTService).getSDK('', { apiKey: '', password: '', secret: '' });
-  const processFactory = app.get(ScriptProcessFactory);
+  const marketsService = app.get(MarketsService);
+  const exchangeSdk = app.get(CCXTService).getSDK('', 'swap', { apiKey: '', password: '', secret: '' });
   const handler = app.get(MainProcessExceptionHandler);
 
   const argv = yargs(hideBin(process.argv)).argv;
@@ -87,7 +87,8 @@ async function bootstrap() {
   const dataFeed = app.get(DataFeedFactory);
   dataFeed.setDataFlow('subscriber');
 
-  const symbolInfo = processFactory.getSymbolInfo(symbol, argv.exchange);
+  const markets = await marketsService.getExchangeMarkets(argv.exchange, 'swap');
+  const symbolInfo = markets.find((markets) => markets.symbol === symbol);
   const pricePrecision = symbolInfo?.precision?.price?.toString().split('.')[1]?.length ?? 2;
   const amountPrecision = symbolInfo?.precision?.amount ?? 1;
   const contractSize = symbolInfo?.contractSize ?? 1;

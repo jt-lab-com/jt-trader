@@ -56,7 +56,7 @@ export class SiteApi {
   }
 
   async getBundle(strategy: StrategyItem, accountId: string): Promise<StoreBundleResponse> {
-    const cacheKey: string = `${SiteApi.BUNDLE_CACHE_KEY}_${accountId}_${strategy.type}_${strategy.id}`;
+    const cacheKey = `${SiteApi.BUNDLE_CACHE_KEY}_${accountId}_${strategy.type}_${strategy.id}`;
     const cached = await this.cacheService.get(cacheKey);
     if (!!cached) {
       return JSON.parse(cached) as StoreBundleResponse;

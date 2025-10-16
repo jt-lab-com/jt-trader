@@ -70,7 +70,7 @@ const BINANCE = {
 
 const BINANCE_USDM = {
   code: 'binanceusdm',
-  name: 'Binance (Futures)',
+  name: 'Binance',
   disabled: false,
   sandbox: false,
   fields: [
@@ -127,7 +127,7 @@ const BINANCE_TESTNET = {
 
 const OKX = {
   code: 'okx',
-  name: 'OKX (Futures)',
+  name: 'OKX',
   disabled: false,
   sandbox: false,
   fields: [
@@ -151,7 +151,7 @@ const OKX = {
 
 const GATE_IO = {
   code: 'gateio',
-  name: 'Gate.io (Futures)',
+  name: 'Gate.io',
   disabled: false,
   sandbox: false,
   fields: [
@@ -199,7 +199,7 @@ const GATE_IO_TESTNET = {
 
 const GATE_IO_MOCK = {
   code: 'gateio-mock',
-  name: 'Gate.io Mock (Futures)',
+  name: 'Gate.io Mock',
   disabled: false,
   sandbox: false,
   fields: [],
@@ -207,7 +207,7 @@ const GATE_IO_MOCK = {
 
 const BYBIT = {
   code: 'bybit',
-  name: 'Bybit (Futures)',
+  name: 'Bybit',
   disabled: false,
   sandbox: false,
   fields: [
@@ -243,30 +243,6 @@ const BYBIT_TESTNET = {
   ],
 };
 
-const KUCOIN = {
-  code: 'kucoin',
-  name: 'Kucoin (Futures)',
-  disabled: false,
-  sandbox: false,
-  fields: [
-    {
-      name: KUCOIN_KEYS.API_KEY,
-      type: 'string' as const,
-      label: 'API Key',
-    },
-    {
-      name: KUCOIN_KEYS.API_SECRET,
-      type: 'string' as const,
-      label: 'API Secret',
-    },
-    {
-      name: KUCOIN_KEYS.PASSWORD,
-      type: 'string' as const,
-      label: 'Password',
-    },
-  ],
-};
-
 export const EXCHANGE_KEYS = {
   BINANCE: BINANCE_KEYS,
   BINANCE_TESTNET: BINANCE_TESTNET_KEYS,
@@ -284,7 +260,6 @@ export const EXCHANGE_LIST: Exchange[] = [
   // BINANCE_US,
   GATE_IO,
   BYBIT,
-  KUCOIN,
   OKX,
   // GATE_IO_TESTNET,
   BYBIT_TESTNET,

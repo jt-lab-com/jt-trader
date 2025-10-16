@@ -5,8 +5,8 @@ import { ScriptProcessContextBase } from './script-process-context-base';
 
 export class ScriptProcessContextSync extends ScriptProcessContextBase {
   public updateArgs(instance: BaseScriptInterface) {
-    const { symbols, connectionName, interval } = instance;
-    this.args = { symbols, connectionName, interval };
+    const { symbols, connectionName, interval, marketType = 'swap' } = instance;
+    this.args = { symbols, connectionName, interval, marketType };
     this.keys = { apiKey: 'xxxxx', secret: 'yyyyy' };
     this._callInstance = (method, data = undefined) => {
       try {
@@ -85,6 +85,14 @@ export class ScriptProcessContextSync extends ScriptProcessContextBase {
     const [symbol, ...rest] = args;
     return this._call('fetchClosedOrders', [symbol, ...rest]);
   }
+
+  public async subscribeChannel(channel: string, callback: VoidFunction) {}
+
+  public async publishChannel(channel: string, data: unknown, toJSON = false) {}
+
+  public async unsubscribeChannel(channel: string) {}
+
+  public async unsubscribeAllChannels() {}
 
   getOrder(...args: any[]): OrderInterface {
     const [orderId, ...rest] = args;

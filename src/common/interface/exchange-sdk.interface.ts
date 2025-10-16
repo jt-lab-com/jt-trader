@@ -1,10 +1,16 @@
-import { Exchange } from 'ccxt';
 import { SystemParamsInterface } from '../../environment/script/scenario/script-scenario.service';
+import { MarketType } from '@packages/types';
 
-export type ExchangeKeysType = { apiKey: string; secret: string; password?: string; uid?: string; sandboxMode?: boolean };
+export type ExchangeKeysType = {
+  apiKey: string;
+  secret: string;
+  password?: string;
+  uid?: string;
+  sandboxMode?: boolean;
+};
 
 export interface ExchangeSDKInterface {
-  getSDK(exchange: string, keys: ExchangeKeysType);
+  getSDK(exchange: string, marketType: MarketType, keys: ExchangeKeysType);
 
   enableHedgeMode(): void;
 

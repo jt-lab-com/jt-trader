@@ -1,1 +1,26 @@
-import { SavePushBundleResponsePayload, WS_CLIENT_EVENTS, WS_SERVER_EVENTS } from "@packages/types";import { createAsyncThunk } from "@reduxjs/toolkit";import { emitSocketEvent, subscribe } from "@/shared/api/socket";import { ThunkConfig } from "@/shared/types/store";export const buildBundle = createAsyncThunk<  SavePushBundleResponsePayload,  string,  ThunkConfig<{ error: boolean; message: string }>>("strategy/buildBundle", (strategyPath) => {  return new Promise((res) => {    const unsub = subscribe(WS_SERVER_EVENTS.CODE_EDITOR_BUILD_BUNDLE_RESPONSE, (payload) => {      res(payload);      unsub();    });    setTimeout(() => {      res({ error: true, message: "Response timed out" });    }, 15000);    emitSocketEvent({      event: WS_CLIENT_EVENTS.CODE_EDITOR_BUILD_BUNDLE_REQUEST,      payload: { filePath: strategyPath.replace("/", "") },    });  });});
+import { SavePushBundleResponsePayload, WS_CLIENT_EVENTS, WS_SERVER_EVENTS } from "@packages/types";
+import { createAsyncThunk } from "@reduxjs/toolkit";
+import { emitSocketEvent, subscribe } from "@/shared/api/socket";
+import { ThunkConfig } from "@/shared/types/store";
+
+export const buildBundle = createAsyncThunk<
+  SavePushBundleResponsePayload,
+  string,
+  ThunkConfig<{ error: boolean; message: string }>
+>("strategy/buildBundle", (strategyPath) => {
+  return new Promise((res) => {
+    const unsub = subscribe(WS_SERVER_EVENTS.CODE_EDITOR_BUILD_BUNDLE_RESPONSE, (payload) => {
+      res(payload);
+      unsub();
+    });
+
+    setTimeout(() => {
+      res({ error: true, message: "Response timed out" });
+    }, 15000);
+
+    emitSocketEvent({
+      event: WS_CLIENT_EVENTS.BUILD_BUNDLE_REQUEST,
+      payload: { filePath: strategyPath.replace("/", "") },
+    });
+  });
+});

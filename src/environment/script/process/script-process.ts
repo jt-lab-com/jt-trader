@@ -1,3 +1,4 @@
+import * as assert from 'assert';
 import { VM, VMScript } from 'vm2';
 import { ScriptProcessContext } from './script-process-context';
 import { StrategyBundle } from '../bundler/script-bundler.service';
@@ -7,7 +8,7 @@ import { performance } from 'node:perf_hooks';
 import { ScriptProcessContextSync } from './script-process-context-sync';
 import { getAllObjectMethods } from '../../../common/utils';
 import { StrategyArgsType } from '../../exchange/interface/strategy.interface';
-import * as assert from 'assert';
+import { SystemProcessContext } from './system-process-context';
 
 export class ScriptProcess {
   private _instance: BaseScriptInterface;
@@ -17,7 +18,10 @@ export class ScriptProcess {
   private isStarted: boolean;
   private isStopped: boolean;
 
-  constructor(private readonly context: ScriptProcessContext | ScriptProcessContextSync, args?: object) {
+  constructor(
+    private readonly context: ScriptProcessContext | ScriptProcessContextSync | SystemProcessContext,
+    args?: object,
+  ) {
     const keys = getAllObjectMethods(context);
     const sandbox: any = keys
       .filter((method) => method.slice(0, 1) !== '_')
@@ -82,6 +86,7 @@ export class ScriptProcess {
 
     if (this.isInited) {
       this.context.unsubscribeDataFeeds();
+      this.context.unsubscribeAllChannels();
       await this._instance.stop();
     }
   }

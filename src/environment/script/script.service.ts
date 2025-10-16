@@ -7,8 +7,9 @@ import { StrategyItem } from './types';
 import { StoreBundleResponse } from '../../common/api/types';
 import { ExceptionReasonType } from '../../exception/types';
 import { CacheService } from '../../common/cache/cache.service';
-import { EventEmitter2 } from '@nestjs/event-emitter';
+import { EventEmitter2, OnEvent } from '@nestjs/event-emitter';
 import { ScriptArtifactsService } from './artifacts/script-artifacts.service';
+import { MarketType } from '@packages/types';
 
 const ENABLED_RUNTIME_PREFIX = 'ENABLED_RUNTIME_PREFIX::';
 
@@ -31,6 +32,7 @@ export class ScriptService {
     // }, 5000);
   }
 
+  @OnEvent('system-script.run')
   async run(id: number) {
     if (this.runIsLocked) {
       const error: any = new Error('Process start is locked while another is starting');
@@ -48,6 +50,7 @@ export class ScriptService {
     }
   }
 
+  @OnEvent('system-script.stop')
   async stop(id: number, softMode = false) {
     await this.factory.stop(id);
     if (softMode) {
@@ -85,27 +88,23 @@ export class ScriptService {
     }
   }
 
-  getStrategiesList = this.storage.getStrategies;
+  @OnEvent('system-script.get-strategies')
+  getStrategiesList() {
+    return this.storage.getStrategies();
+  }
 
   getStrategyContent = this.storage.getContent;
 
-  getSourceFileTree = this.storage.getFileTree;
-
-  getFileTreeStrategyContent = this.storage.getFileTreeStrategyContent;
-
-  saveStrategy = this.storage.saveStrategy;
-
-  removeStrategy = this.storage.removeStrategy;
-
-  renameStrategy = this.storage.renameStrategy;
-
-  getRuntimeList = async (accountId: string) =>
-    (await this.storage.getRuntimeList(accountId)).map((item) => ({
+  @OnEvent('system-script.get-runtime-list')
+  async getRuntimeList(accountId: string) {
+    return (await this.storage.getRuntimeList(accountId)).map((item) => ({
       ...item,
       isEnabled: this.factory.check(item.id),
     }));
+  }
 
-  addRuntime = async (
+  @OnEvent('system-script.add-runtime')
+  async addRuntime(
     accountId: string,
     name: string,
     prefix: string,
@@ -113,7 +112,8 @@ export class ScriptService {
     args: { key: string; value: string | number }[],
     runtimeType: 'market' | 'system',
     exchange: string,
-  ): Promise<number> => {
+    marketType: MarketType,
+  ): Promise<number> {
     return await this.storage.saveRuntime({
       accountId,
       name,
@@ -125,10 +125,12 @@ export class ScriptService {
       strategyPath: strategy.path,
       args,
       runtimeType,
+      marketType,
     });
-  };
+  }
 
-  updateRuntime = async (
+  @OnEvent('system-script.update-runtime')
+  async updateRuntime(
     accountId: string,
     id: number,
     name: string,
@@ -137,7 +139,8 @@ export class ScriptService {
     args: { key: string; value: string | number }[],
     runtimeType: 'market' | 'system',
     exchange: string,
-  ): Promise<void> => {
+    marketType: MarketType,
+  ): Promise<void> {
     await this.storage.saveRuntime({
       accountId,
       id,
@@ -150,12 +153,13 @@ export class ScriptService {
       strategyPath: strategy.path,
       args,
       runtimeType,
+      marketType,
     });
 
     if (this.factory.check(id)) {
       await this.factory.forceUpdateProcessArgs(id);
     }
-  };
+  }
 
   submitReportAction = async (accountId: string, artifacts: string, action: string, payload: any): Promise<void> => {
     const item = (await this.getRuntimeList(accountId))?.find((runtime) => runtime.artifacts === artifacts);
@@ -172,6 +176,7 @@ export class ScriptService {
     await this.storage.removeRuntime(id);
   };
 
+  @OnEvent('system-script.get-remote-bundles')
   async getRemoteBundles(accountId: string) {
     const response = await this.siteApi.getBundles(accountId);
 
@@ -190,8 +195,10 @@ export class ScriptService {
     };
   }
 
-  async previewExecution(accountId: string, strategy: StrategyItem, args: object): Promise<string> {
+  async previewExecution(accountId: string, strategy: StrategyItem, args: object): Promise<string | null> {
     const artifactsKey = await this.factory.createPreviewExecution(accountId, strategy, args);
+    if (!artifactsKey) return null;
+
     const artifacts = this.artifactsService.read(artifactsKey);
     this.artifactsService.delete(artifactsKey);
     return artifacts;

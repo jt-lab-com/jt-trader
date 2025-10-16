@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../../common/prisma/prisma.service';
 
-type ConfigParamType = {
+export type ConfigParamType = {
   name: string;
   value: string;
 };
@@ -17,7 +17,7 @@ export class ConfigService {
   }
 
   public async updateParam(accountId: string, name: string, value: any, type: ConfigValueType): Promise<void> {
-    let param = await this.getParam(accountId, name);
+    const param = await this.getParam(accountId, name);
     let formattedValue: string;
 
     if (type === 'boolean' && !value) {
@@ -42,11 +42,19 @@ export class ConfigService {
     await this.prisma.config.update({ where: { id: param.id }, data: { value: formattedValue } });
   }
 
-  public async updateParamsList(accountId: string, list: { name: string; value: any; type: ConfigValueType }[]): Promise<void> {
+  public async updateParamsList(
+    accountId: string,
+    list: { name: string; value: any; type: ConfigValueType }[],
+  ): Promise<void> {
     for (const row of list) {
       const { name, value, type } = row;
       await this.updateParam(accountId, name, value, type);
     }
+  }
+
+  public async deleteParam(accountId: string, name: string): Promise<void> {
+    const param = await this.getParam(accountId, name);
+    await this.prisma.config.delete({ where: { id: param.id } });
   }
 
   public async getParam(accountId: string, name: string): Promise<{ id: number; type: string } & ConfigParamType> {

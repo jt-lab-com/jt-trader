@@ -6,8 +6,6 @@ import { InjectPinoLogger, PinoLogger } from 'nestjs-pino';
 import { DataFeedFactory } from '../../data-feed/data-feed.factory';
 import { CCXTService } from '../../exchange/ccxt.service';
 import { ScriptExchangeKeysService } from '../storage/script-exchange-keys.service';
-import { EventEmitter2 } from '@nestjs/event-emitter';
-import * as fs from 'fs';
 import { CacheService } from '../../../common/cache/cache.service';
 import { Runtime } from '@prisma/client';
 import { ScriptArtifactsService } from '../artifacts/script-artifacts.service';
@@ -17,10 +15,18 @@ import * as path from 'path';
 import { ExceptionReasonType } from '../../../exception/types';
 import { ScriptProcessContextSync } from './script-process-context-sync';
 import { AccountService } from '../../account/account.service';
-import { ACCOUNT_DEVELOPER_ACCESS, ACCOUNT_LIMIT_API_CALL_PER_SEC, ACCOUNT_LIMIT_RUNTIMES } from '../../account/const';
+import {
+  ACCOUNT_DEVELOPER_ACCESS,
+  ACCOUNT_LIMIT_API_CALL_PER_SEC,
+  ACCOUNT_LIMIT_ORDER_BOOK,
+  ACCOUNT_LIMIT_RUNTIMES,
+} from '../../account/const';
 import { StrategyItem } from '../types';
 import { nanoid } from 'nanoid';
 import { StrategyArgsType } from '../../exchange/interface/strategy.interface';
+import { MarketsService } from '../../exchange/markets.service';
+import { SystemProcessContext } from './system-process-context';
+import { EventBusService } from '../../../common/event-bus.service';
 
 interface Process {
   process: ScriptProcess;
@@ -35,7 +41,6 @@ export interface ProcessMeta extends Runtime {
 @Injectable()
 export class ScriptProcessFactory {
   private readonly processes: Map<number, Process>;
-  private readonly markets: Record<string, any[]>;
   static readonly monitoringInterval: number = 5000;
   private readonly runtimeLogger: Map<string, Logger>;
 
@@ -45,29 +50,16 @@ export class ScriptProcessFactory {
     private readonly storage: ScriptStorageService,
     private readonly scriptBundler: ScriptBundlerService,
     private readonly keysStorage: ScriptExchangeKeysService,
-    private readonly eventEmitter: EventEmitter2,
+    private readonly eventBusService: EventBusService,
     private readonly cacheService: CacheService,
     private readonly artifactsService: ScriptArtifactsService,
     private readonly accountService: AccountService,
+    private readonly marketsService: MarketsService,
     @InjectPinoLogger(ScriptProcessFactory.name) private readonly logger: PinoLogger,
   ) {
     this.processes = new Map([]);
     this.runtimeLogger = new Map([]);
-    this.markets = {};
-
-    const marketsDirPath = process.env.MARKETS_DIR_PATH;
-    const files = fs.readdirSync(marketsDirPath);
-    const jsonFiles = files
-      .filter((file) => path.extname(file).toLowerCase() === '.json')
-      .map((file) => path.basename(file, '.json'));
-    jsonFiles.forEach((file) => {
-      this.markets[file] = JSON.parse(fs.readFileSync(path.join(marketsDirPath, `${file}.json`)).toString());
-    });
   }
-
-  getSymbolInfo = (symbol: string, exchange: string) => {
-    return this.markets[exchange]?.find((market) => market.symbol === symbol);
-  };
 
   private async processesLimit(accountId: string): Promise<boolean> {
     const enabledProcessesLimit: number = parseInt(
@@ -115,39 +107,45 @@ export class ScriptProcessFactory {
     );
     const developerAccess: boolean =
       (await this.accountService.getParam(meta.accountId, ACCOUNT_DEVELOPER_ACCESS)) === 'true';
+    const orderBookLimit = await this.accountService.getParam(meta.accountId, ACCOUNT_LIMIT_ORDER_BOOK);
+
+    const markets = await this.marketsService.getExchangeMarkets(meta.exchange, meta.marketType);
+    const getSymbolInfo = (symbol: string) => markets.find((market) => market.symbol === symbol);
+
     try {
-      const context = new ScriptProcessContext(
+      const ContextClass = meta.runtimeType === 'market' ? ScriptProcessContext : SystemProcessContext;
+      const context = new ContextClass(
         meta.accountId,
         this.dataFeedFactory,
         this.exchange,
         logger,
         this.logger,
         this.keysStorage,
-        this.eventEmitter,
+        this.eventBusService,
         this.cacheService,
         this.artifactsService,
-        this.getSymbolInfo,
+        getSymbolInfo,
         bundle,
         key.toString(),
         meta.prefix,
         apiCallLimitPerSecond,
         developerAccess,
+        orderBookLimit,
       );
 
       const isMock = meta.exchange.includes('-mock');
 
       if (isMock) {
         const keys = await this.keysStorage.selectKeys(meta.exchange, meta.accountId);
-        const sdk = this.exchange.getSDK(meta.exchange, keys);
+        const sdk = this.exchange.getSDK(meta.exchange, 'swap', keys);
         const orderService = sdk.getMockOrderService();
         const symbolsArgs = Array.isArray(meta.args) ? meta.args.find((arg) => arg.key === 'symbols') : [];
         const symbols = !Array.isArray(symbolsArgs) ? symbolsArgs.value.toString().split(',') : [];
-        await sdk.loadMarkets(false);
 
         for (const symbol of symbols) {
-          const data = sdk.markets[symbol];
-          const pricePrecision = data.precision.price.toString().split('.')[1]?.length;
-          orderService.updateConfig({ balance: 1000, pricePrecision, contractSize: data.contractSize }, symbol);
+          const data = markets.find((market) => market.symbol === symbol);
+          const pricePrecision = data?.precision.price.toString().split('.')[1]?.length ?? 2;
+          orderService.updateConfig({ balance: 1000, pricePrecision, contractSize: data?.contractSize ?? 1 }, symbol);
         }
       }
 
@@ -161,9 +159,9 @@ export class ScriptProcessFactory {
       e.logger = logger;
       e.key = key;
 
-      this.eventEmitter.emit('client.notification', {
+      this.eventBusService.emit('client.notification', {
         accountId: meta.accountId,
-        message: 'Error starting bot. See logs for details.',
+        message: `Error starting bot. See logs for details.`,
         type: 'error',
       });
 
@@ -171,14 +169,20 @@ export class ScriptProcessFactory {
     }
   }
 
-  async createPreviewExecution(accountId: string, strategy: StrategyItem, args: object): Promise<string> {
+  async createPreviewExecution(accountId: string, strategy: StrategyItem, args: object): Promise<string | null> {
     const key = nanoid(8);
+    const bundle = await this.scriptBundler.generatePreviewExecutionBundle(accountId, key, strategy);
+
+    if (!bundle.hasPreview) return null;
+
     const prefix = `${key}-preview`;
     const logger = this.getRuntimeLogger(key.toString());
-    const bundle = await this.scriptBundler.generatePreviewExecutionBundle(accountId, key, strategy);
     const apiCallLimitPerSecond: number = parseInt(
       await this.accountService.getParam(accountId, ACCOUNT_LIMIT_API_CALL_PER_SEC),
     );
+    const orderBookLimit = await this.accountService.getParam(accountId, ACCOUNT_LIMIT_ORDER_BOOK);
+    const markets = await this.marketsService.getExchangeMarkets('binanceusdm', 'swap');
+    const getSymbolInfo = (symbol: string) => markets.find((market) => market.symbol === symbol);
     const context = new ScriptProcessContext(
       accountId,
       this.dataFeedFactory,
@@ -186,15 +190,16 @@ export class ScriptProcessFactory {
       logger,
       this.logger,
       this.keysStorage,
-      this.eventEmitter,
+      this.eventBusService,
       this.cacheService,
       this.artifactsService,
-      this.getSymbolInfo,
+      getSymbolInfo,
       bundle,
       key.toString(),
       prefix,
       apiCallLimitPerSecond,
       false,
+      orderBookLimit,
     );
 
     if (!!args['exchange']) {
@@ -220,6 +225,11 @@ export class ScriptProcessFactory {
       this.logger.warn(bundle.warn);
     }
 
+    const metaArgs = JSON.parse(meta.args);
+    const exchange = metaArgs.find(({ key }) => key === 'exchange')?.value ?? 'binanceusdm';
+    const markets = await this.marketsService.getExchangeMarkets(exchange, 'swap');
+    const getSymbolInfo = (symbol: string) => markets.find((market) => market.symbol === symbol);
+
     const ContextClass = process.env.NODE_ENV === 'tester-sync' ? ScriptProcessContextSync : ScriptProcessContext;
     try {
       const context = new ContextClass(
@@ -229,13 +239,16 @@ export class ScriptProcessFactory {
         this.logger,
         this.logger,
         this.keysStorage,
-        this.eventEmitter,
+        this.eventBusService,
         this.cacheService,
         this.artifactsService,
-        this.getSymbolInfo,
+        getSymbolInfo,
         bundle,
         id.toString(),
         id.toString(),
+        id,
+        false,
+        id,
       );
 
       if (!!args['exchange']) {

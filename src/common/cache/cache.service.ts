@@ -28,6 +28,14 @@ export class CacheService {
     return this.driver.delete(this.formatKey(key));
   }
 
+  public setPublic(key: string, data: string, ttl: number = DEFAULT_TTL): Promise<void> {
+    return this.driver.set(key, data, ttl);
+  }
+
+  public getPublic(key: string) {
+    return this.driver.get(key);
+  }
+
   public async deleteAllHostKeys(): Promise<void> {
     const keys = await this.keys('');
     if (!keys.length) return;
@@ -35,7 +43,23 @@ export class CacheService {
     return this.driver.deleteBulk(keys);
   }
 
-  subscribe = this.driver.subscribe
+  // methods for subscriptions within a single machine (container)
+  public subscribeChannel(channel: string, callback: (data: unknown) => void): number {
+    channel = this.formatKey(channel);
+    return this.driver.subscribe(channel, callback);
+  }
+
+  public unsubscribeChannel(subscribeId: number) {
+    return this.driver.unsubscribe(subscribeId);
+  }
+
+  public publishChannel(channel: string, data: unknown, toJSON = false) {
+    channel = this.formatKey(channel);
+    return this.driver.publish(channel, data, toJSON);
+  }
+
+  // methods for subscriptions between shared server instances
+  subscribe = this.driver.subscribe;
 
   unsubscribe = this.driver.unsubscribe;
 

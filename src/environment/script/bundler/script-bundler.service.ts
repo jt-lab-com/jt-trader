@@ -9,7 +9,7 @@ import { ExceptionReasonType } from '../../../exception/types';
 import { createInstancePlugin, removeAsyncAwaitPlugin, parseArgumentsPlugin, previewExecutionPlugin } from './plugins';
 import { tsConfig } from './config/ts-config';
 import { SiteApi } from '../../../common/api/site-api';
-import { DEFINED_ARGS_FILENAME, SCRIPT_VERSION_FILENAME } from './config/const';
+import { DEFINED_ARGS_FILENAME, HAS_PREVIEW_FILENAME, SCRIPT_VERSION_FILENAME } from './config/const';
 import { StrategyItem } from '../types';
 import { parseVersionPlugin } from './plugins/parse-version';
 import * as virtual from 'rollup-plugin-virtual';
@@ -23,6 +23,7 @@ export interface StrategyBundle {
   warn?: string;
   definedArgs?: string;
   version?: number;
+  hasPreview?: boolean;
 }
 
 @Injectable()
@@ -138,10 +139,15 @@ export class ScriptBundlerService {
       const { output } = await bundle.generate({ format: 'es', name: 'vm.js', sourcemap: false });
 
       content = output[0].code;
+      const hasPreviewAsset = output.find(
+        (asset) => asset.type === 'asset' && asset.fileName === HAS_PREVIEW_FILENAME,
+      ) as OutputAsset;
+      const hasPreview = hasPreviewAsset?.source.toString() === 'true' ?? false;
 
       const result = {
         content,
         getStackTrace: this.getStackTrace,
+        hasPreview,
         sourceMap: null,
       };
 
@@ -190,9 +196,15 @@ export class ScriptBundlerService {
 
     await bundle.close();
 
+    const hasPreviewAsset = output.find(
+      (asset) => asset.type === 'asset' && asset.fileName === HAS_PREVIEW_FILENAME,
+    ) as OutputAsset;
+    const hasPreview = hasPreviewAsset?.source.toString() === 'true' ?? false;
+
     return {
       content: code,
       sourceMap: null,
+      hasPreview,
       getStackTrace: this.getStackTrace,
     };
   }

@@ -1,7 +1,9 @@
 import * as acorn from 'acorn';
-import { SCRIPT_NAMES } from '../config/const';
+import { SCRIPT_NAMES, HAS_PREVIEW_FILENAME } from '../config/const';
 
 export function previewExecutionPlugin(filePath?: string) {
+  let hasPreview = false;
+
   return {
     name: 'preview-execution',
     transform: (code, id) => {
@@ -50,8 +52,6 @@ export function previewExecutionPlugin(filePath?: string) {
 
       traverse(ast, null);
 
-      // if (ranges.length === 0) return null;
-
       ranges.sort((a, b) => b[0] - a[0]);
 
       let transformed = code;
@@ -60,18 +60,44 @@ export function previewExecutionPlugin(filePath?: string) {
       }
 
       let className = '';
+      let classHasPreload = false;
 
-      for (const node of ast.body) {
+      for (const node of ast.body as any[]) {
         if (node.type !== 'ClassDeclaration') continue;
-        className = node.id.name;
+        const currentName = node.id?.name;
+        if (!currentName || !SCRIPT_NAMES.includes(currentName)) continue;
+        className = currentName;
+        const bodyElements = node.body?.body ?? [];
+        for (const element of bodyElements) {
+          if (
+            element?.type === 'MethodDefinition' &&
+            element.static === true &&
+            element.key?.type === 'Identifier' &&
+            element.key.name === 'preload'
+          ) {
+            classHasPreload = true;
+            break;
+          }
+        }
         break;
       }
 
       if (!SCRIPT_NAMES.includes(className)) throw new Error('Script class declaration not found');
 
+      if (classHasPreload) {
+        hasPreview = true;
+      }
+
       const extendedCodeStrings = [`(async () => { if (${className}.preload) await ${className}.preload(ARGS); })()`];
 
       return { code: transformed + `\n\n` + extendedCodeStrings.join('\n') };
+    },
+    generateBundle() {
+      this.emitFile({
+        type: 'asset',
+        fileName: HAS_PREVIEW_FILENAME,
+        source: hasPreview.toString(),
+      });
     },
   };
 }
