@@ -215,6 +215,7 @@ export class OrderService implements OrderServiceInterface {
     // обновляем unrealizedPnl и балансы
     const [initialMarginAll, unrealizedPnlAll] = this.positions.reduce(
       ([initialMargin, unrealizedPnl], item) => {
+        // console.log(symbol, item.symbol);
         if (item.symbol === symbol && item.contracts > 0) {
           item.markPrice = kLine.close;
           const ratio = item.side === PositionSideType.long ? 1 : -1;
@@ -449,6 +450,10 @@ export class OrderService implements OrderServiceInterface {
   }
 
   private fillEmptyPosition(): PositionInterface {
+    const contractSize = this.contractSize;
+    const pricePrecision = this.pricePrecision;
+    let _notional = 0;
+
     return {
       id: '',
       symbol: '',
@@ -463,7 +468,13 @@ export class OrderService implements OrderServiceInterface {
       leverage: this.defaultLeverage,
       liquidationPrice: 0,
       collateral: 0,
-      notional: 0,
+      set notional(value) {
+        _notional = value;
+      },
+      get notional() {
+        _notional = parseFloat((this.contracts * this.markPrice * contractSize).toFixed(pricePrecision));
+        return _notional;
+      },
       initialMargin: 0,
       initialMarginPercentage: Math.round((1 / this.defaultLeverage) * 100),
       maintenanceMargin: 0,
