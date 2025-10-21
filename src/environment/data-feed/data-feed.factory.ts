@@ -1,18 +1,30 @@
 import { Injectable } from '@nestjs/common';
-import { DataFeed } from './data-feed';
-import { OrderBook, Trade, Ticker, Order, Balance, Position } from 'ccxt';
+import { DataFeed, DatafeedSubscriber } from './data-feed';
+import { OrderBook, Ticker, Order, Balance, Position, Trade } from 'ccxt';
 import { InjectPinoLogger, PinoLogger } from 'nestjs-pino';
 import { CCXTService } from '../exchange/ccxt.service';
 import { ExchangeKeysType } from '../../common/interface/exchange-sdk.interface';
 import { CacheService } from '../../common/cache/cache.service';
 import { MarketType } from '@packages/types';
+import { nanoid } from 'nanoid';
 
 type DataFeedType = OrderBook | Trade | Ticker | Order[] | Balance | Position[];
-const MAX_RECEIVED_TIMEOUT = 5 * 60000;
 
 @Injectable()
 export class DataFeedFactory {
   private dataFeeds: Map<string, DataFeed<DataFeedType>>;
+  // private systemScriptSubscribers: DatafeedSubscriber<DataFeedType>[];
+  // private systemScriptSubscribers: Array<{
+  //   subscriber: DatafeedSubscriber<DataFeedType>;
+  //   subscribesInfo: Array<{ dataFeedKey: string, subscribeId: number; }>;
+  // }>;
+  private systemScriptSubscribers: Map<
+    string,
+    {
+      subscriber: DatafeedSubscriber<DataFeedType>;
+      subscribesInfo: Array<{ dataFeedKey: string; subscribeId: number }>;
+    }
+  >;
   private dataFlow: 'subscriber' | 'awaiter';
   private dataProxyMode: boolean;
 
@@ -22,6 +34,7 @@ export class DataFeedFactory {
     private readonly cacheService: CacheService,
   ) {
     this.dataFeeds = new Map<string, DataFeed<DataFeedType>>();
+    this.systemScriptSubscribers = new Map();
     this.dataFlow = 'awaiter';
     this.dataProxyMode = process.env.DATA_PROXY_MODE === '1';
     setInterval(this.monitoring, 5 * 1000);
@@ -49,23 +62,54 @@ export class DataFeedFactory {
 
     let dataFeed: DataFeed<DataFeedType> = this.dataFeeds.get(key);
     if (!dataFeed) {
-      dataFeed = new DataFeed<DataFeedType>(
+      dataFeed = new DataFeed(
         this.sdk.getSDK(exchange, marketType, { apiKey, secret, password, sandboxMode }),
         [method, symbol, ...rest],
         this.logger,
         dataFlow,
       );
       this.dataFeeds.set(key, dataFeed);
+
+      this.systemScriptSubscribers.forEach(({ subscriber, subscribesInfo }) => {
+        const id = dataFeed.subscribe(subscriber);
+        subscribesInfo.push({ dataFeedKey: key, subscribeId: id });
+      });
     }
 
     return dataFeed;
+  }
+
+  public subscribeAllDataFeeds(subscriber: DatafeedSubscriber<DataFeedType>) {
+    const key = nanoid(8);
+    const subscribesInfo = [];
+
+    for (const [dataFeedKey, dataFeed] of this.dataFeeds.entries()) {
+      const id = dataFeed.subscribe(subscriber);
+      subscribesInfo.push({ dataFeedKey, subscribeId: id });
+    }
+
+    this.systemScriptSubscribers.set(key, { subscriber, subscribesInfo });
+
+    return key;
+  }
+
+  public unsubscribeAllDataFeeds(key: string): boolean {
+    const subscriberData = this.systemScriptSubscribers.get(key);
+    if (!subscriberData) return false;
+
+    for (const { dataFeedKey, subscribeId } of subscriberData.subscribesInfo) {
+      const dataFeed = this.dataFeeds.get(dataFeedKey);
+      dataFeed.unsubscribe(subscribeId);
+    }
+
+    return true;
   }
 
   public subscribeTicker(
     exchange: string,
     marketType: MarketType,
     symbol: string,
-    subscriber: (data: Ticker) => void,
+    subscriber: DatafeedSubscriber<Ticker>,
   ): number {
     if (!this.dataProxyMode) {
       return this.subscribeTickerNative(exchange, marketType, symbol, subscriber);
@@ -73,7 +117,7 @@ export class DataFeedFactory {
 
     const key = `${exchange.toUpperCase()}::${marketType.toUpperCase()}::TICKER::${symbol.toUpperCase()}`;
     const id = this.cacheService.subscribe(key, (data) => {
-      subscriber(JSON.parse(data));
+      void subscriber(JSON.parse(data), exchange, marketType);
     });
     this.cacheService.publish('SUBSCRIBE_QUOTES', key).catch((e) => {
       this.logger.error({ e, key }, 'DataProxy subscribe error');
@@ -85,7 +129,7 @@ export class DataFeedFactory {
     exchange: string,
     marketType: MarketType,
     symbol: string,
-    subscriber: (data: Ticker) => void,
+    subscriber: DatafeedSubscriber<Ticker>,
   ): number {
     const dataFeed = this.selectDataFeed([exchange, marketType, 'watchTicker', symbol, '', '', '', false]);
     return dataFeed.subscribe(subscriber);
@@ -108,7 +152,7 @@ export class DataFeedFactory {
     exchange: string,
     marketType: MarketType,
     symbol: string,
-    subscriber: (data: OrderBook) => void,
+    subscriber: DatafeedSubscriber<OrderBook>,
   ): number {
     if (!this.dataProxyMode) {
       return this.subscribeOrdersBookNative(exchange, marketType, symbol, subscriber);
@@ -116,7 +160,7 @@ export class DataFeedFactory {
 
     const key = `${exchange.toUpperCase()}::${marketType.toUpperCase()}::ORDERS-BOOK::${symbol.toUpperCase()}`;
     const id = this.cacheService.subscribe(key, (data) => {
-      subscriber(JSON.parse(data));
+      void subscriber(JSON.parse(data), exchange, marketType);
     });
     this.cacheService.publish('SUBSCRIBE_QUOTES', key).catch((e) => {
       this.logger.error({ e, key }, 'DataProxy subscribe error');
@@ -128,7 +172,7 @@ export class DataFeedFactory {
     exchange: string,
     marketType: MarketType,
     symbol: string,
-    subscriber: (data: OrderBook) => void,
+    subscriber: DatafeedSubscriber<OrderBook>,
   ): number {
     const dataFeed = this.selectDataFeed([exchange, marketType, 'watchOrderBook', symbol, '', '', '', false]);
     return dataFeed.subscribe(subscriber);
@@ -157,7 +201,7 @@ export class DataFeedFactory {
     marketType: MarketType,
     symbol: string,
     keys: ExchangeKeysType | null,
-    subscriber: (data: Order[]) => void,
+    subscriber: DatafeedSubscriber<Order[]>,
   ): number {
     const dataFeed = this.selectDataFeed([
       exchange,
@@ -196,7 +240,7 @@ export class DataFeedFactory {
     exchange: string,
     marketType: MarketType,
     keys: ExchangeKeysType | null,
-    subscriber: (data: Balance) => void,
+    subscriber: DatafeedSubscriber<Balance>,
   ): number {
     const dataFeed = this.selectDataFeed([
       exchange,
@@ -235,7 +279,7 @@ export class DataFeedFactory {
     marketType: MarketType,
     symbols: string[],
     keys: ExchangeKeysType | null,
-    subscriber: (data: Position[]) => void,
+    subscriber: DatafeedSubscriber<Position[]>,
   ): number {
     const dataFeed = this.selectDataFeed([
       exchange,

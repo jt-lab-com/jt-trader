@@ -4,9 +4,26 @@ import { StrategyItem } from '../types';
 import { ScriptProcessContext } from './script-process-context';
 
 export class SystemProcessContext extends ScriptProcessContext {
+  private systemDataFeedSubscribeId: string;
+
   constructor(...args) {
     // @ts-ignore
     super(...args);
+  }
+
+  subscribeDataFeeds() {
+    super.subscribeDataFeeds();
+
+    this.systemDataFeedSubscribeId = this.dataFeedFactory.subscribeAllDataFeeds((data, exchangeName, marketType) => {
+      return this._callInstance('runOnDataFeedEvent', { data, connectionName: exchangeName, marketType });
+    });
+  }
+
+  unsubscribeDataFeeds() {
+    super.unsubscribeDataFeeds();
+    if (this.systemDataFeedSubscribeId) {
+      this.dataFeedFactory.unsubscribeAllDataFeeds(this.systemDataFeedSubscribeId);
+    }
   }
 
   public async getStrategies(): Promise<StrategyItem[]> {

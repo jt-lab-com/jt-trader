@@ -1,10 +1,13 @@
 import { PinoLogger } from 'nestjs-pino';
 import { ExceptionReasonType } from '../../exception/types';
+import { MarketType } from '@packages/types';
 
 const MAX_RETRIES = 25;
 
+export type DatafeedSubscriber<T> = (data: T, exchangeName: string, marketType: MarketType) => void;
+
 export class DataFeed<T> {
-  private subscribers: Map<number, (data: T) => void>;
+  private subscribers: Map<number, DatafeedSubscriber<T>>;
   private currentValue: T;
   private isStarted: boolean;
   private sequence: number;
@@ -18,7 +21,7 @@ export class DataFeed<T> {
     private readonly logger: PinoLogger,
     private readonly type: 'subscriber' | 'awaiter',
   ) {
-    this.subscribers = new Map<number, (data: T) => void>();
+    this.subscribers = new Map<number, DatafeedSubscriber<T>>();
     this.isStarted = false;
     this.sequence = 0;
     this._isStopped = false;
@@ -54,13 +57,17 @@ export class DataFeed<T> {
             }
             try {
               const data: T = await this.sdk[this.args[0]](...this.args.slice(1));
-              if (data) this.onData(data);
+              const marketType = this.sdk.options.defaultType;
+              if (data) this.onData(data, this.sdk.exchangeName, marketType);
             } catch (e) {
-              this.logger.error({
-                cause: ExceptionReasonType.SDKError,
-                exchange: this.sdk.exchangeName,
-                stack: e.stack?.split("\n")
-              }, e.toString());
+              this.logger.error(
+                {
+                  cause: ExceptionReasonType.SDKError,
+                  exchange: this.sdk.exchangeName,
+                  stack: e.stack?.split('\n'),
+                },
+                e.toString(),
+              );
               this._isStopped = true;
               // if (this.retriesCounter >= MAX_RETRIES) {
               //   throw e;
@@ -78,7 +85,7 @@ export class DataFeed<T> {
     }
   };
 
-  public subscribe(subscriber: (data: T) => void): number {
+  public subscribe(subscriber: DatafeedSubscriber<T>): number {
     const key = ++this.sequence;
     this.subscribers.set(key, subscriber);
     this.sequence++;
@@ -92,9 +99,9 @@ export class DataFeed<T> {
     this.subscribers.delete(key);
   }
 
-  private onData = (data: T): void => {
-    for (let [, subscriber] of this.subscribers.entries()) {
-      subscriber(data);
+  private onData = (data: T, exchangeName: string, marketType: MarketType): void => {
+    for (const [, subscriber] of this.subscribers.entries()) {
+      void subscriber(data, exchangeName, marketType);
     }
     this.currentValue = data;
     this._lastReceiveTms = Date.now();
