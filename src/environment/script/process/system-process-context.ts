@@ -14,9 +14,11 @@ export class SystemProcessContext extends ScriptProcessContext {
   subscribeDataFeeds() {
     super.subscribeDataFeeds();
 
-    this.systemDataFeedSubscribeId = this.dataFeedFactory.subscribeAllDataFeeds((data, exchangeName, marketType) => {
-      return this._callInstance('runOnDataFeedEvent', { data, connectionName: exchangeName, marketType });
-    });
+    this.systemDataFeedSubscribeId = this.dataFeedFactory.subscribeAllDataFeeds(
+      (data, method, exchangeName, marketType) => {
+        return this._callInstance('runOnDataFeedEvent', { data, method, connectionName: exchangeName, marketType });
+      },
+    );
   }
 
   unsubscribeDataFeeds() {
