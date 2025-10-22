@@ -4,7 +4,7 @@ import { MarketType } from '@packages/types';
 
 const MAX_RETRIES = 25;
 
-export type DatafeedSubscriber<T> = (data: T, exchangeName: string, marketType: MarketType) => void;
+export type DatafeedSubscriber<T> = (data: T, method: string, exchangeName: string, marketType: MarketType) => void;
 
 export class DataFeed<T> {
   private subscribers: Map<number, DatafeedSubscriber<T>>;
@@ -58,7 +58,7 @@ export class DataFeed<T> {
             try {
               const data: T = await this.sdk[this.args[0]](...this.args.slice(1));
               const marketType = this.sdk.options.defaultType;
-              if (data) this.onData(data, this.sdk.exchangeName, marketType);
+              if (data) this.onData(data, this.args[0], this.sdk.exchangeName, marketType);
             } catch (e) {
               this.logger.error(
                 {
@@ -99,9 +99,9 @@ export class DataFeed<T> {
     this.subscribers.delete(key);
   }
 
-  private onData = (data: T, exchangeName: string, marketType: MarketType): void => {
+  private onData = (data: T, method: string, exchangeName: string, marketType: MarketType): void => {
     for (const [, subscriber] of this.subscribers.entries()) {
-      void subscriber(data, exchangeName, marketType);
+      void subscriber(data, method, exchangeName, marketType);
     }
     this.currentValue = data;
     this._lastReceiveTms = Date.now();

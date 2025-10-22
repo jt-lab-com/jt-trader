@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { DataFeed, DatafeedSubscriber } from './data-feed';
-import { OrderBook, Ticker, Order, Balance, Position, Trade } from 'ccxt';
+import { Balance, Order, OrderBook, Position, Ticker, Trade } from 'ccxt';
 import { InjectPinoLogger, PinoLogger } from 'nestjs-pino';
 import { CCXTService } from '../exchange/ccxt.service';
 import { ExchangeKeysType } from '../../common/interface/exchange-sdk.interface';
@@ -117,7 +117,7 @@ export class DataFeedFactory {
 
     const key = `${exchange.toUpperCase()}::${marketType.toUpperCase()}::TICKER::${symbol.toUpperCase()}`;
     const id = this.cacheService.subscribe(key, (data) => {
-      void subscriber(JSON.parse(data), exchange, marketType);
+      void subscriber(JSON.parse(data), 'watchTicker', exchange, marketType);
     });
     this.cacheService.publish('SUBSCRIBE_QUOTES', key).catch((e) => {
       this.logger.error({ e, key }, 'DataProxy subscribe error');
@@ -160,7 +160,7 @@ export class DataFeedFactory {
 
     const key = `${exchange.toUpperCase()}::${marketType.toUpperCase()}::ORDERS-BOOK::${symbol.toUpperCase()}`;
     const id = this.cacheService.subscribe(key, (data) => {
-      void subscriber(JSON.parse(data), exchange, marketType);
+      void subscriber(JSON.parse(data), 'watchOrderBook', exchange, marketType);
     });
     this.cacheService.publish('SUBSCRIBE_QUOTES', key).catch((e) => {
       this.logger.error({ e, key }, 'DataProxy subscribe error');
