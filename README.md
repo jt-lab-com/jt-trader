@@ -130,7 +130,7 @@ LOGS_DIR_PATH=artifacts
 | `ACCOUNT_LIMIT_TESTER_MAX_MEMORY`    | Maximum memory (in MB) allocated for tester processes. Default: 1024                                         |                                             |
 | `ACCOUNT_LIMIT_TESTER_EXEC_TIMEOUT`  | Tester script execution time limit (in seconds). Default: 300                                                |                                             |
 | `ACCOUNT_LIMIT_REPORT_MAX_SIZE`      | Maximum report file size (in MB). Default: 1                                                                 |                                             |
-| `ACCOUNT_LIMIT_ORDER_BOOK`           | Defines the number of order book rows to load. Default: 5                                                    |                                             |
+| `LIMIT_ORDER_BOOK`                   | Defines the number of order book rows to load. Default: 5                                                    |                                             |
 
 ## 🚀 Running
 
