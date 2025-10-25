@@ -7,7 +7,6 @@ import { ExchangeKeysType } from '../../common/interface/exchange-sdk.interface'
 import { CacheService } from '../../common/cache/cache.service';
 import { MarketType } from '@packages/types';
 import { nanoid } from 'nanoid';
-import { ACCOUNT_LIMIT_ORDER_BOOK, DEFAULT_VALUES } from '../account/const';
 
 type DataFeedType = OrderBook | Trade | Ticker | Order[] | Balance | Position[];
 
@@ -175,17 +174,10 @@ export class DataFeedFactory {
     symbol: string,
     subscriber: DatafeedSubscriber<OrderBook>,
   ): number {
-    const dataFeed = this.selectDataFeed([
-      exchange,
-      marketType,
-      'watchOrderBook',
-      symbol,
-      '',
-      '',
-      '',
-      false,
-      DEFAULT_VALUES[ACCOUNT_LIMIT_ORDER_BOOK],
-    ]);
+    const limit =
+      process.env[`LIMIT_ORDER_BOOK_${exchange.replace('-mock', '').replace('-testnet', '').toUpperCase()}`] ??
+      process.env.LIMIT_ORDER_BOOK;
+    const dataFeed = this.selectDataFeed([exchange, marketType, 'watchOrderBook', symbol, '', '', '', false, limit]);
     return dataFeed.subscribe(subscriber);
   }
 
