@@ -88,22 +88,23 @@ Create a `.env` file in the project root directory by copying `.env.example` and
 # Main settings
 PORT=8080
 SITE_API_HOST=https://jt-lab.com
+DATABASE_URL="file:/<path>/storage.db"
+ROLLUP_TS_CONFIG=/<path>/tsconfig.bundler.json
+STRATEGY_FILES_PATH=/<path>/strategy-source/src
+EXCHANGE_LIST_FILE_PATH=/<path>/exchanges.conf
+ARTIFACTS_DIR_PATH=/<path>/artifacts
+HISTORY_BARS_PATH=/<path>/history-bars
+LOGS_DIR_PATH=/<path>/artifacts
 STANDALONE_APP=1
 
-# Trading engine mode: both, realtime, tester
+# both, realtime, tester
 ENGINE_MODE="both"
 
-# File and directory paths
-DATABASE_URL="file:/path/to/your/project/storage.db"
-ROLLUP_TS_CONFIG=tsconfig.bundler.json
-STRATEGY_FILES_PATH=/path/to/your/project/strategy-source/src
-MARKETS_FILE_PATH=markets.json
-ARTIFACTS_DIR_PATH=/path/to/your/project/artifacts
-HISTORY_BARS_PATH=downloaded-history-bars
-LOGS_DIR_PATH=artifacts
+# disk | redis
+CACHE_DRIVER=disk
 
-# Redis (optional - system can work with file cache)
-# REDIS_URL=redis://localhost:6379
+# secret code used for public servers to prevent unauthorized access
+#ACCESS_SECRET=your_secret_key
 ```
 
 ### Environment Variables
