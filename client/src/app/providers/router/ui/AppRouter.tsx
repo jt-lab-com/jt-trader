@@ -1,5 +1,5 @@
 import { FC, useCallback, Suspense, useState, useEffect } from "react";
-import { Route, Routes, useLocation } from "react-router";
+import { Route, Routes } from "react-router";
 import { useNavigate } from "react-router-dom";
 import { PageLoader } from "@/widgets/page-loader";
 import { useConfig } from "@/entities/config";
@@ -18,13 +18,6 @@ export const AppRouter: FC = () => {
   const [routes, setRoutes] = useState<AppRouteProps[]>([]);
   const pathname = usePathname();
   const navigate = useNavigate();
-  const location = useLocation();
-
-  useEffect(() => {
-    if (window.ym) {
-      window.ym(__YANDEX_METRIKA_ID__, "hit", location.pathname + location.search);
-    }
-  }, [location]);
 
   useEffect(() => {
     if (inited.value) return;

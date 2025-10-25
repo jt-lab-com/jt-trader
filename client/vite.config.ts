@@ -24,7 +24,6 @@ export default defineConfig(({ mode }) => {
     define: {
       __SITE_API_HOST__: JSON.stringify(SITE_HOST),
       __DEV__: process.env.NODE_ENV === "development",
-      __YANDEX_METRIKA_ID__: JSON.stringify(process.env.VITE_YANDEX_METRIKA_ID),
       __AUTH_LINK__: JSON.stringify(AUTH_LINK),
     },
   };
