@@ -15,12 +15,7 @@ import * as path from 'path';
 import { ExceptionReasonType } from '../../../exception/types';
 import { ScriptProcessContextSync } from './script-process-context-sync';
 import { AccountService } from '../../account/account.service';
-import {
-  ACCOUNT_DEVELOPER_ACCESS,
-  ACCOUNT_LIMIT_API_CALL_PER_SEC,
-  ACCOUNT_LIMIT_ORDER_BOOK,
-  ACCOUNT_LIMIT_RUNTIMES,
-} from '../../account/const';
+import { ACCOUNT_DEVELOPER_ACCESS, ACCOUNT_LIMIT_API_CALL_PER_SEC, ACCOUNT_LIMIT_RUNTIMES } from '../../account/const';
 import { StrategyItem } from '../types';
 import { nanoid } from 'nanoid';
 import { StrategyArgsType } from '../../exchange/interface/strategy.interface';
@@ -107,7 +102,10 @@ export class ScriptProcessFactory {
     );
     const developerAccess: boolean =
       (await this.accountService.getParam(meta.accountId, ACCOUNT_DEVELOPER_ACCESS)) === 'true';
-    const orderBookLimit = await this.accountService.getParam(meta.accountId, ACCOUNT_LIMIT_ORDER_BOOK);
+    const orderBookLimit =
+      process.env[`LIMIT_ORDER_BOOK_${meta.exchange.replace('-mock', '').replace('-testnet', '')}`] ??
+      process.env.LIMIT_ORDER_BOOK ??
+      20;
 
     const markets = await this.marketsService.getExchangeMarkets(meta.exchange, meta.marketType);
     const getSymbolInfo = (symbol: string) => markets.find((market) => market.symbol === symbol);
@@ -169,7 +167,11 @@ export class ScriptProcessFactory {
     }
   }
 
-  async createPreviewExecution(accountId: string, strategy: StrategyItem, args: object): Promise<string | null> {
+  async createPreviewExecution(
+    accountId: string,
+    strategy: StrategyItem,
+    args: { [key: string]: any },
+  ): Promise<string | null> {
     const key = nanoid(8);
     const bundle = await this.scriptBundler.generatePreviewExecutionBundle(accountId, key, strategy);
 
@@ -180,7 +182,10 @@ export class ScriptProcessFactory {
     const apiCallLimitPerSecond: number = parseInt(
       await this.accountService.getParam(accountId, ACCOUNT_LIMIT_API_CALL_PER_SEC),
     );
-    const orderBookLimit = await this.accountService.getParam(accountId, ACCOUNT_LIMIT_ORDER_BOOK);
+    const orderBookLimit =
+      process.env[`LIMIT_ORDER_BOOK_${args.exchange.replace('-mock', '').replace('-testnet', '')}`] ??
+      process.env.LIMIT_ORDER_BOOK ??
+      20;
     const markets = await this.marketsService.getExchangeMarkets('binanceusdm', 'swap');
     const getSymbolInfo = (symbol: string) => markets.find((market) => market.symbol === symbol);
     const context = new ScriptProcessContext(
