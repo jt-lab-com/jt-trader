@@ -102,11 +102,11 @@ export class ScriptProcessFactory {
     );
     const developerAccess: boolean =
       (await this.accountService.getParam(meta.accountId, ACCOUNT_DEVELOPER_ACCESS)) === 'true';
-    const orderBookLimit =
+    let orderBookLimit =
       process.env[`LIMIT_ORDER_BOOK_${meta.exchange.replace('-mock', '').replace('-testnet', '')}`] ??
       process.env.LIMIT_ORDER_BOOK ??
       20;
-
+    orderBookLimit = parseInt(orderBookLimit.toString());
     const markets = await this.marketsService.getExchangeMarkets(meta.exchange, meta.marketType);
     const getSymbolInfo = (symbol: string) => markets.find((market) => market.symbol === symbol);
 

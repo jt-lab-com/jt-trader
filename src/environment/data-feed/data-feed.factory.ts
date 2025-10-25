@@ -174,9 +174,11 @@ export class DataFeedFactory {
     symbol: string,
     subscriber: DatafeedSubscriber<OrderBook>,
   ): number {
-    const limit =
+    let limit: any =
       process.env[`LIMIT_ORDER_BOOK_${exchange.replace('-mock', '').replace('-testnet', '').toUpperCase()}`] ??
       process.env.LIMIT_ORDER_BOOK;
+    limit = parseInt(limit);
+
     const dataFeed = this.selectDataFeed([exchange, marketType, 'watchOrderBook', symbol, '', '', '', false, limit]);
     return dataFeed.subscribe(subscriber);
   }
