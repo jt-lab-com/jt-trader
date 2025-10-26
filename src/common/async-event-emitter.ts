@@ -1,4 +1,4 @@
-import { EventEmitterInterface } from "./interface/event-emitter.interface";
+import { EventEmitterInterface } from './interface/event-emitter.interface';
 
 export class AsyncEventEmitter implements EventEmitterInterface {
   private subscribers: Map<string, ((data: any) => Promise<void> | void)[]>;

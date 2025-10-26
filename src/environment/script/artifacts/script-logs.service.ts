@@ -14,7 +14,7 @@ export class ScriptLogsService {
   read(key: string) {
     const fileName = path.join(this.filePath, `${key}.log`);
     if (!fs.existsSync(fileName)) {
-      fs.writeFileSync(fileName, "", { encoding: "utf8" });
+      fs.writeFileSync(fileName, '', { encoding: 'utf8' });
     }
     try {
       const raw = fs.readFileSync(fileName, { encoding: 'utf8' });

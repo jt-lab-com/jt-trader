@@ -5,7 +5,7 @@ import * as path from 'path';
 import { CsvModule } from 'nest-csv-parser';
 import { EnvironmentModule } from './environment/environment.module';
 import * as process from 'process';
-import { ExceptionModule } from "./exception/exception.module";
+import { ExceptionModule } from './exception/exception.module';
 
 @Module({
   imports: [
@@ -46,7 +46,7 @@ import { ExceptionModule } from "./exception/exception.module";
     }),
     CsvModule,
     EnvironmentModule,
-    ExceptionModule
+    ExceptionModule,
   ],
 })
 export class AppModule {}

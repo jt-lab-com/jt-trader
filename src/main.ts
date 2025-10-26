@@ -32,7 +32,7 @@ async function bootstrap() {
     // Restore running scripts after restart or crash
     await scriptService.restoreRunningProcesses();
   } catch (e) {
-    logger.error({ stack: e.stack?.split("\n") }, 'Failed to restore runtime' + e.toString());
+    logger.error({ stack: e.stack?.split('\n') }, 'Failed to restore runtime' + e.toString());
   }
 
   await app.listen(process.env.PORT);

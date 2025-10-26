@@ -12,7 +12,7 @@ export class ConsoleProcessExceptionHandler implements ExceptionHandler {
     @InjectPinoLogger(ConsoleProcessExceptionHandler.name) private readonly systemLogger: PinoLogger,
     private readonly scriptService: ScriptService,
     private readonly processFactory: ScriptProcessFactory,
-    private readonly scenarioStorageService: ScriptScenarioStorageService
+    private readonly scenarioStorageService: ScriptScenarioStorageService,
   ) {}
 
   handle = async (

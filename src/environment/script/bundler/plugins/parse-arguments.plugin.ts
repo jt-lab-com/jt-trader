@@ -19,7 +19,7 @@ export function parseArgumentsPlugin(filePath: string, logger: PinoLogger) {
       try {
         definedArguments = parseDefinedArgs(code);
       } catch (e) {
-        logger.error({ message: e.message, stack: e.stack?.split("\n") }, 'parseArgumentsPlugin');
+        logger.error({ message: e.message, stack: e.stack?.split('\n') }, 'parseArgumentsPlugin');
       }
 
       return {

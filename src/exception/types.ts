@@ -5,5 +5,5 @@ export enum ExceptionReasonType {
   SDKError = 'sdk-error',
   BundlerError = 'bundler-error',
   TesterDataFailed = 'tester-data-failed',
-  TesterDataEnd = 'tester-data-end'
+  TesterDataEnd = 'tester-data-end',
 }
