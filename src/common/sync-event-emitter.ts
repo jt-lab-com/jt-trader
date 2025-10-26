@@ -1,4 +1,4 @@
-import { EventEmitterInterface } from "./interface/event-emitter.interface";
+import { EventEmitterInterface } from './interface/event-emitter.interface';
 
 export class SyncEventEmitter implements EventEmitterInterface {
   private subscribers: Map<string, ((data: any) => void)[]>;

@@ -102,12 +102,14 @@ export class ScriptProcessFactory {
     );
     const developerAccess: boolean =
       (await this.accountService.getParam(meta.accountId, ACCOUNT_DEVELOPER_ACCESS)) === 'true';
-    let orderBookLimit =
-      process.env[`LIMIT_ORDER_BOOK_${meta.exchange.replace('-mock', '').replace('-testnet', '')}`] ??
-      process.env.LIMIT_ORDER_BOOK ??
-      20;
+
+    const exchangeName = meta.exchange.replace('-mock', '').replace('-testnet', '').toUpperCase();
+    let orderBookLimit = process.env[`LIMIT_ORDER_BOOK_${exchangeName}`] ?? process.env.LIMIT_ORDER_BOOK ?? 1;
     orderBookLimit = parseInt(orderBookLimit.toString());
     const markets = await this.marketsService.getExchangeMarkets(meta.exchange, meta.marketType);
+
+    //this.logger.info({ exchangeName, orderBookLimit, marketsLength: markets.length }, 'ScriptProcessFactory::register');
+
     const getSymbolInfo = (symbol: string) => markets.find((market) => market.symbol === symbol);
 
     try {
