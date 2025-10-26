@@ -80,12 +80,12 @@ export class AppModule {
   constructor() {
     rotator.register(path.join(process.env.LOGS_DIR_PATH, `system.log`), {
       schedule: '2m',
-      size: '10m',
+      size: '3m',
       compress: false,
       count: 10,
     });
     rotator.on('error', (err) => {
-      console.log('oops, an error occured!');
+      console.log('oops, an error occured!', err);
     });
     rotator.on('rotate', (file) => {
       console.log('file ' + file + ' was rotated!');
