@@ -29,6 +29,7 @@ export class CCXTService implements ExchangeSDKInterface {
     const key: string = [formattedName, marketType, keys?.apiKey].join('::');
     let exchange: ExtendedExchange = this.sdk.get(key);
 
+    // this.logger.info({ name, marketType, keys, key }, 'getSDK ------------>');
     if (!exchange) {
       exchange = this.sdkFactory.build(formattedName, isMock, {
         options: {
