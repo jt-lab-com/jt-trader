@@ -13,14 +13,18 @@ export class SystemProcessContext extends ScriptProcessContext {
   }
 
   subscribeDataFeeds() {
-    super.subscribeDataFeeds();
-
+    return; //System should subscribe to all data by itself
+    // super.subscribeDataFeeds();
+    //
+    // this.subscribeAllDataFeeds();
+  }
+  subscribeAllDataFeeds() {
     const subscriber = (data, method, exchangeName, marketType) => {
       return this._callInstance('runOnDataFeedEvent', { data, method, connectionName: exchangeName, marketType });
     };
-
     this.systemDataFeedSubscribeId = this.dataFeedFactory.subscribeAllDataFeeds(subscriber);
   }
+
   subscribeDataFeedDynamic(
     method: string,
     exchange: string,
