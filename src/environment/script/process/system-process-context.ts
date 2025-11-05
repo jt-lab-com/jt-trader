@@ -3,6 +3,7 @@ import { MarketType, Strategy as ServerResponseStrategy } from '@packages/types'
 import { StrategyItem } from '../types';
 import { ScriptProcessContext } from './script-process-context';
 import { DataFeed, DatafeedSubscriber } from '../../data-feed/data-feed';
+import { DataFeedFactory } from '../../data-feed/data-feed.factory';
 
 export class SystemProcessContext extends ScriptProcessContext {
   private systemDataFeedSubscribeId: string;
@@ -29,11 +30,11 @@ export class SystemProcessContext extends ScriptProcessContext {
     method: string,
     exchange: string,
     marketType: MarketType,
-    symbol: string,
+    symbol: string | string[],
     keys?: { apiKey: string; secret: string; password?: string; sandboxMode?: boolean },
   ): { subscribeId: number; subscriptionKey: string } {
-    // Создаем subscriptionKey в зависимости от типа подписки
-    const subscriptionKey = `${method}-dynamic::${exchange}::${marketType}::${symbol}`;
+    const symbolKey = Array.isArray(symbol) ? symbol.join(',') : symbol;
+    const subscriptionKey = `${method}-dynamic::${exchange}::${marketType}::${symbolKey}`;
 
     // Проверяем, не подписан ли уже
     if (this.subscribers.has(subscriptionKey)) {
@@ -105,9 +106,9 @@ export class SystemProcessContext extends ScriptProcessContext {
     // Сохраняем subscribeId в subscribers Map
     this.subscribers.set(subscriptionKey, subscribeId);
 
-    this.logger.info(
-      { subscriptionKey, subscribeId, method, exchange, marketType, symbol },
-      'subscribeDynamic - Subscribed dynamic data feed',
+    this.systemLogger.info(
+      { prefix: this.getPrefix(), subscriptionKey, subscribeId, method, exchange, marketType, symbol },
+      'subscribeDataFeedDynamic',
     );
 
     return { subscribeId, subscriptionKey };
@@ -117,20 +118,24 @@ export class SystemProcessContext extends ScriptProcessContext {
     method: string,
     exchange: string,
     marketType: MarketType,
-    symbol: string,
+    symbol: string | string[],
     keys?: { apiKey: string; secret: string; password?: string; sandboxMode?: boolean },
   ): any {
     // Создаем subscriptionKey таким же образом, как при подписке
 
-    const subscriptionKey = `${method}-dynamic::${exchange}::${marketType}::${symbol}`;
+    const symbolKey = Array.isArray(symbol) ? symbol.join(',') : symbol;
+    const subscriptionKey = `${method}-dynamic::${exchange}::${marketType}::${symbolKey}`;
 
     const subscribeId = this.subscribers.get(subscriptionKey);
 
     const result = { status: 'ok', message: '' };
+    // if (1) {
+    //   throw new Error('Debug break');
+    // }
     if (!subscribeId) {
       result.status = 'error';
       result.message = `Subscription not found: ${subscriptionKey}`;
-      this.warning(`Subscription not found: ${subscriptionKey}`);
+      this.logger.warn(`Subscription not found: ${subscriptionKey}`);
       return result;
     }
 
@@ -158,7 +163,7 @@ export class SystemProcessContext extends ScriptProcessContext {
           throw new Error('watchOrders requires string symbol');
         }
         // Используем this.keys из контекста
-        if (!this.keys) {
+        if (!keys) {
           throw new Error('unsubscribeDynamic for watchOrders requires API keys in context');
         }
         this.dataFeedFactory.unsubscribeOrders(exchange, marketType, symbol, keys, subscribeId);
@@ -170,19 +175,19 @@ export class SystemProcessContext extends ScriptProcessContext {
           throw new Error('watchPositions requires array of symbols');
         }
         // Используем this.keys из контекста
-        if (!this.keys) {
+        if (!keys) {
           throw new Error('unsubscribeDynamic for watchPositions requires API keys in context');
         }
-        this.dataFeedFactory.unsubscribePositions(exchange, marketType, symbol, this.keys, subscribeId);
+        this.dataFeedFactory.unsubscribePositions(exchange, marketType, symbol, keys, subscribeId);
         break;
       }
 
       case 'watchBalance': {
         // Используем this.keys из контекста
-        if (!this.keys) {
+        if (!keys) {
           throw new Error('unsubscribeDynamic for watchBalance requires API keys in context');
         }
-        this.dataFeedFactory.unsubscribeBalance(exchange, marketType, this.keys, subscribeId);
+        this.dataFeedFactory.unsubscribeBalance(exchange, marketType, keys, subscribeId);
         break;
       }
 
@@ -195,12 +200,19 @@ export class SystemProcessContext extends ScriptProcessContext {
     // Удаляем из subscribers Map
     this.subscribers.delete(subscriptionKey);
 
-    this.logger.info(
-      { subscriptionKey, subscribeId, method, exchange, marketType, symbol },
-      'unsubscribeDynamic - Unsubscribed dynamic data feed',
+    this.systemLogger.info(
+      { prefix: this.getPrefix(), subscriptionKey, subscribeId, method, exchange, marketType, symbol },
+      'unsubscribeDataFeedDynamic',
     );
 
-    return result;
+    return { ...result, subscribeId };
+  }
+
+  dataFeedInfo() {
+    const report = {};
+    report[DataFeedFactory.name] = this.dataFeedFactory.statusReport();
+    return report;
+    //this.logger.info(report, 'App STATUS UNSUBSCRIBE DYNAMIC');
   }
 
   unsubscribeDataFeeds() {
